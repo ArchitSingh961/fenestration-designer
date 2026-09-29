@@ -1,0 +1,155 @@
+using System.Windows;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Threading;
+using Fenestration.Designer.Interaction;
+using Fenestration.Designer.Rendering;
+using Fenestration.Designer.ViewModels;
+
+namespace Fenestration.Designer.Controls;
+
+/// <summary>
+/// The 2D drawing surface. A lightweight <see cref="FrameworkElement"/> that hosts two
+/// <see cref="DrawingVisual"/>s: the background (grid, axes) and the content (layers). No WPF element is
+/// created per grid line or per object. Redraws are coalesced to at most one per render pass, and
+/// mouse movement alone never redraws anything.
+///
+/// Usage: <c>&lt;controls:ViewportControl Viewport="{Binding Canvas}" /&gt;</c>
+/// </summary>
+public sealed class ViewportControl : FrameworkElement
+{
+    public static readonly DependencyProperty ViewportProperty = DependencyProperty.Register(
+        nameof(Viewport), typeof(CanvasViewModel), typeof(ViewportControl),
+        new PropertyMetadata(null, OnViewportChanged));
+
+    /// <summary>The editing tool that receives left-button and Esc/Delete input (optional).</summary>
+    public static readonly DependencyProperty ToolProperty = DependencyProperty.Register(
+        nameof(Tool), typeof(IViewportTool), typeof(ViewportControl), new PropertyMetadata(null));
+
+    private readonly DrawingVisual _backgroundVisual = new();
+    private readonly DrawingVisual _contentVisual = new();
+    private readonly VisualCollection _visuals;
+    private readonly ViewportRenderer _renderer = new();
+    private readonly ViewportInteractionController _interaction;
+
+    private bool _viewRedrawPending;
+    private bool _contentRedrawPending;
+
+    public ViewportControl()
+    {
+        _visuals = new VisualCollection(this) { _backgroundVisual, _contentVisual };
+        _interaction = new ViewportInteractionController(this, () => Viewport, () => Tool);
+
+        Focusable = true;
+        FocusVisualStyle = null;
+        ClipToBounds = true;
+        Cursor = Cursors.Cross;
+        SnapsToDevicePixels = true;
+    }
+
+    public CanvasViewModel? Viewport
+    {
+        get => (CanvasViewModel?)GetValue(ViewportProperty);
+        set => SetValue(ViewportProperty, value);
+    }
+
+    public IViewportTool? Tool
+    {
+        get => (IViewportTool?)GetValue(ToolProperty);
+        set => SetValue(ToolProperty, value);
+    }
+
+    // ── Visual tree plumbing ────────────────────────────────────────
+
+    protected override int VisualChildrenCount => _visuals.Count;
+
+    protected override Visual GetVisualChild(int index) => _visuals[index];
+
+    /// <summary>The whole surface is hit-testable, so mouse input works over empty background too.</summary>
+    protected override HitTestResult HitTestCore(PointHitTestParameters hitTestParameters)
+        => new PointHitTestResult(this, hitTestParameters.HitPoint);
+
+    protected override Size MeasureOverride(Size availableSize) => new(0, 0);
+
+    protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
+    {
+        base.OnRenderSizeChanged(sizeInfo);
+        Viewport?.SetViewportSize(ActualWidth, ActualHeight);
+        RequestViewRedraw();
+    }
+
+    // ── View model wiring ───────────────────────────────────────────
+
+    private static void OnViewportChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var control = (ViewportControl)d;
+        if (e.OldValue is CanvasViewModel oldVm)
+        {
+            oldVm.ViewChanged -= control.RequestViewRedraw;
+            oldVm.ContentChanged -= control.RequestContentRedraw;
+        }
+        if (e.NewValue is CanvasViewModel newVm)
+        {
+            newVm.ViewChanged += control.RequestViewRedraw;
+            newVm.ContentChanged += control.RequestContentRedraw;
+            if (control.ActualWidth > 0)
+                newVm.SetViewportSize(control.ActualWidth, control.ActualHeight);
+        }
+        control.RequestViewRedraw();
+    }
+
+    // ── Redraw scheduling ───────────────────────────────────────────
+
+    private void RequestViewRedraw()
+    {
+        _viewRedrawPending = true;
+        ScheduleRedraw();
+    }
+
+    private void RequestContentRedraw()
+    {
+        _contentRedrawPending = true;
+        ScheduleRedraw();
+    }
+
+    private bool _redrawScheduled;
+
+    /// <summary>
+    /// Several changes in one input event (zoom sets zoom and pan, a resize fits the view, …) collapse
+    /// into a single redraw at render priority.
+    /// </summary>
+    private void ScheduleRedraw()
+    {
+        if (_redrawScheduled) return;
+        _redrawScheduled = true;
+        Dispatcher.BeginInvoke(DispatcherPriority.Render, Redraw);
+    }
+
+    private void Redraw()
+    {
+        _redrawScheduled = false;
+        var vm = Viewport;
+        if (vm is null) return;
+
+        var size = new Size(ActualWidth, ActualHeight);
+        double pixelsPerDip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+
+        if (_viewRedrawPending)
+        {
+            using DrawingContext dc = _backgroundVisual.RenderOpen();
+            var context = new ViewportDrawingContext(dc, vm.Transform, size, pixelsPerDip);
+            _renderer.RenderBackground(context, new ViewportRenderOptions(vm.ShowGrid, vm.ShowAxes, vm.Settings));
+        }
+
+        // Content is in world space, so any view change moves it too.
+        if (_viewRedrawPending || _contentRedrawPending)
+        {
+            using DrawingContext dc = _contentVisual.RenderOpen();
+            var context = new ViewportDrawingContext(dc, vm.Transform, size, pixelsPerDip);
+            _renderer.RenderContent(context, vm.ContentLayers);
+        }
+
+        _viewRedrawPending = false;
+        _contentRedrawPending = false;
+    }
+}

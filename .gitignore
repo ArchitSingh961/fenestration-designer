@@ -1,0 +1,16 @@
+# Build output
+bin/
+obj/
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Test results
+TestResults/
+
+# Local .NET SDK installed for this workspace (not source)
+.dotnet/
+dotnet-install.ps1

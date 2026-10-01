@@ -1,200 +1,238 @@
-using System.Globalization;
-using Fenestration.Core.Commands;
 using Fenestration.Core.Design;
 using Fenestration.Core.Geometry;
-using Fenestration.Core.Models;
+using Fenestration.Core.Interaction;
 using Fenestration.Designer.Interaction;
 using Fenestration.Designer.ViewModels;
 
 namespace Fenestration.Designer.Tools;
 
 /// <summary>
-/// The default tool: click to select a frame, mullion, transom or glass (Ctrl+click toggles), and drag a
-/// mullion/transom to move it.
+/// The default tool: select, box-select, move and resize.
 ///
-/// Everything is worked out in WORLD millimetres: the pointer arrives already converted by
-/// <c>ScreenToWorld</c>, the hit tolerance is a pixel radius converted to mm at the current zoom, and a
-/// drag moves the division by the world distance the mouse travelled. The drag updates the model live
-/// through <see cref="FrameEditor"/> (always valid: it stops at the last valid position), and on release
-/// records the whole drag as ONE undoable command.
+/// <b>Hit-test priority</b> (deterministic, never collection order):
+/// <list type="number">
+///   <item>resize handles of the single selected frame;</item>
+///   <item>mullions / transoms (the nearest centreline wins);</item>
+///   <item>glass panels;</item>
+///   <item>the frame (its outer profiles / border).</item>
+/// </list>
+///
+/// <b>Clicks:</b> click selects one object (and clears the rest); Shift+click adds; Ctrl+click toggles;
+/// a click on empty space clears the selection (unless Shift/Ctrl is held).
+/// <b>Drags:</b> from a handle → resize the frame; from a frame/mullion/transom → move the selection; from empty space →
+/// box selection (left→right window = fully inside, right→left crossing = touching). Glass is derived and never moves.
+///
+/// Every drag goes Begin → preview (snap → validate) on each move → ONE command on release. Esc or lost capture
+/// discards the preview; the model was never changed.
 /// </summary>
-public sealed class SelectTool : IViewportTool
+public sealed class SelectTool : DesignerToolBase
 {
     public const double HitTolerancePixels = 5.0;
     public const double DragThresholdPixels = 3.0;
-    public const double SnapTolerancePixels = 8.0;
 
-    /// <summary>Drag positions are whole millimetres unless the snap grid is on.</summary>
-    public const double DragIncrementMm = 1.0;
+    /// <summary>Handles can be grabbed a little outside their drawn square.</summary>
+    public const double HandleGrabPixels = 7.0;
 
-    private readonly MainViewModel _host;
-    private DragState? _drag;
+    private enum Gesture { None, PendingMove, Moving, PendingResize, Resizing, PendingBox, Boxing }
 
-    public SelectTool(MainViewModel host) => _host = host;
+    private Gesture _gesture;
+    private Point2D _startScreen;
+    private Point2D _startWorld;
+    private Guid _grabbedId;
+    private DesignElementKind _grabbedKind;
+    private Guid? _collapseTo;
+    private bool _boxAdditive;
+    private Rectangle2D? _box;
+    private bool _boxCrossing;
+    private FrameHandle _handle;
+    private Guid _handleFrameId;
+    private MoveElementsOperation? _move;
+    private ResizeFrameOperation? _resize;
 
-    public bool IsCapturing => _drag is not null;
+    public SelectTool(MainViewModel host) : base(host) { }
 
-    public bool IsDragging => _drag?.Started == true;
+    public override bool IsCapturing => _gesture != Gesture.None;
 
-    public void OnPointerDown(ViewportPointerEventArgs e)
+    /// <summary>True once a drag (move, resize or box) has actually started.</summary>
+    public bool IsDragging => _gesture is Gesture.Moving or Gesture.Resizing or Gesture.Boxing;
+
+    public override void OnPointerDown(ViewportPointerEventArgs e)
     {
+        if (_gesture != Gesture.None) Cancel();
         e.Handled = true;
-        var hit = HitTest(e.World);
+        _startScreen = e.Screen;
+        _startWorld = e.World;
+        _collapseTo = null;
 
+        // 1. Resize handles of the selected frame.
+        if (Host.SingleSelectedFrame is { } selectedFrame
+            && FrameHandles.HitTest(selectedFrame, e.World, PixelsToMm(HandleGrabPixels)) is { } handle)
+        {
+            _gesture = Gesture.PendingResize;
+            _handle = handle;
+            _handleFrameId = selectedFrame.Id;
+            e.Cursor = CursorFor(handle);
+            return;
+        }
+
+        // 2–4. Divisions, glass, frame.
+        var hit = FrameHitTester.HitTest(Host.Project, e.World, PixelsToMm(HitTolerancePixels));
         if (hit is not { } h)
         {
-            if (!e.IsControlPressed) _host.ClearSelection();
+            _boxAdditive = e.IsShiftPressed || e.IsControlPressed;
+            if (!_boxAdditive) Host.ClearSelection();
+            _gesture = Gesture.PendingBox;
             return;
         }
 
         if (e.IsControlPressed)
         {
-            if (_host.IsSelected(h.ElementId)) _host.Deselect(h.ElementId);
-            else _host.Select(h.ElementId, addToSelection: true);
+            Host.Selection.Toggle(h.ElementId);
             return;
         }
 
-        _host.Select(h.ElementId);
+        if (e.IsShiftPressed) Host.Selection.Add(h.ElementId);
+        else if (!Host.IsSelected(h.ElementId)) Host.Select(h.ElementId);
+        else if (Host.Selection.Count > 1) _collapseTo = h.ElementId;   // a click (not a drag) narrows to this object
 
-        if (h.Kind is DesignElementKind.Mullion or DesignElementKind.Transom
-            && _host.Project.Frames.FirstOrDefault(f => f.Id == h.FrameId) is { } frame
-            && frame.Profiles.FirstOrDefault(p => p.Id == h.ElementId) is { } division)
+        if (h.Kind != DesignElementKind.Glass)
         {
-            double position = Members.DivisionPosition(division);
-            _drag = new DragState(frame, division.Id, h.Kind, e.Screen, e.World, position, FrameSnapshot.Capture(frame))
-            {
-                LastValidPosition = position
-            };
+            _gesture = Gesture.PendingMove;
+            _grabbedId = h.ElementId;
+            _grabbedKind = h.Kind;
             e.Cursor = CursorFor(h.Kind);
         }
     }
 
-    public void OnPointerMove(ViewportPointerEventArgs e)
+    public override void OnPointerMove(ViewportPointerEventArgs e)
     {
-        if (_drag is not { } drag)
+        if (_gesture == Gesture.None)
         {
-            e.Cursor = HitTest(e.World) is { } hover ? CursorFor(hover.Kind) : ViewportCursor.Default;
+            e.Cursor = HoverCursor(e.World);
             return;
         }
 
         e.Handled = true;
-        e.Cursor = CursorFor(drag.Kind);
-
-        if (!drag.Started)
+        if (_gesture is Gesture.PendingMove or Gesture.PendingResize or Gesture.PendingBox)
         {
-            if (drag.StartScreen.DistanceTo(e.Screen) < DragThresholdPixels) return;
-            drag.Started = true;
+            if (_startScreen.DistanceTo(e.Screen) < DragThresholdPixels) return;
+            BeginDrag();
+            if (_gesture == Gesture.None) return;
         }
 
-        bool vertical = drag.Kind == DesignElementKind.Mullion;
-        double delta = vertical ? e.World.X - drag.StartWorld.X : e.World.Y - drag.StartWorld.Y;
-
-        double snapTolerance = _host.Canvas.ScreenToWorldDistance(SnapTolerancePixels);
-        double increment = _host.Canvas.SnapToGrid ? _host.Canvas.GridSpacingMm : DragIncrementMm;
-        var snap = DivisionSnapper.Snap(drag.Frame, drag.DivisionId, drag.StartPosition + delta, snapTolerance, increment);
-
-        double position = ClampToValid(drag, snap.Position);
-        if (position != drag.LastValidPosition)
+        switch (_gesture)
         {
-            FrameEditor.MoveDivision(drag.Frame, drag.DivisionId, position, _host.Rules);
-            drag.LastValidPosition = position;
-            _host.OnDesignChanged();
+            case Gesture.Moving:
+                Host.Interaction.SetPreview(_move!.Update(e.World, Host.SnapToleranceMm));
+                e.Cursor = CursorFor(_grabbedKind);
+                break;
+            case Gesture.Resizing:
+                Host.Interaction.SetPreview(_resize!.Update(e.World, Host.SnapToleranceMm));
+                e.Cursor = CursorFor(_handle);
+                break;
+            case Gesture.Boxing:
+                _box = Rectangle2D.FromCorners(_startWorld, e.World);
+                _boxCrossing = e.World.X < _startWorld.X;
+                Host.Interaction.SetSelectionBox(_box, _boxCrossing);
+                break;
         }
-
-        string name = vertical ? "Mullion" : "Transom";
-        string snapNote = snap.Kind switch
-        {
-            DivisionSnapKind.FrameCenter => "  (frame centre)",
-            DivisionSnapKind.BayCenter => "  (equal split)",
-            DivisionSnapKind.AlignedDivision => "  (aligned)",
-            _ => ""
-        };
-        _host.Hint = string.Create(CultureInfo.InvariantCulture, $"{name} at {drag.LastValidPosition:0.#} mm{snapNote}");
     }
 
-    public void OnPointerUp(ViewportPointerEventArgs e)
+    public override void OnPointerUp(ViewportPointerEventArgs e)
     {
-        if (_drag is not { } drag) return;
+        if (_gesture == Gesture.None) return;
         e.Handled = true;
-        _drag = null;
 
-        if (drag.Started && drag.LastValidPosition != drag.StartPosition)
+        var gesture = _gesture;
+        var command = gesture switch
         {
-            string name = drag.Kind == DesignElementKind.Mullion ? "mullion" : "transom";
-            _host.CommandHistory.Execute(FrameEditCommand.FromCompletedEdit(
-                $"Move {name} to {drag.LastValidPosition:0.#} mm", drag.Frame, drag.Before, FrameSnapshot.Capture(drag.Frame)));
+            Gesture.Moving => _move!.CreateCommand(),
+            Gesture.Resizing => _resize!.CreateCommand(),
+            _ => null
+        };
+        var box = _box;
+        bool crossing = _boxCrossing, additive = _boxAdditive;
+        var collapseTo = _collapseTo;
+        Reset();
+
+        switch (gesture)
+        {
+            case Gesture.Moving or Gesture.Resizing when command is not null:
+                Host.Execute(command);
+                break;
+            case Gesture.Boxing when box is { } rect:
+                var ids = SelectionQuery.InRectangle(Host.Project, rect, crossing);
+                if (additive) Host.Selection.AddMany(ids);
+                else Host.Selection.SelectMany(ids);
+                break;
+            case Gesture.PendingMove when collapseTo is { } id:
+                Host.Select(id);
+                break;
         }
-        _host.Hint = null;
     }
 
-    public bool OnKey(ViewportKey key)
+    public override void Cancel() => Reset();
+
+    /// <summary>Esc with nothing in progress clears the selection.</summary>
+    protected override bool OnEscapeIdle()
     {
-        switch (key)
+        Host.ClearSelection();
+        return true;
+    }
+
+    private void BeginDrag()
+    {
+        switch (_gesture)
         {
-            case ViewportKey.Escape when _drag is { } drag:
-                // Cancel the drag: put everything back exactly as it was.
-                if (drag.Started)
-                {
-                    drag.Before.ApplyTo(drag.Frame);
-                    _host.OnDesignChanged();
-                }
-                _drag = null;
-                _host.Hint = null;
-                return true;
-
-            case ViewportKey.Escape:
-                _host.ClearSelection();
-                return true;
-
-            case ViewportKey.Delete when _drag is null:
-                _host.DeleteSelection();
-                return true;
-
+            case Gesture.PendingMove:
+                _move = new MoveElementsOperation(Host.Project, Host.SelectedIds, _grabbedId, _startWorld, Host.Rules, Host.SnapEngine);
+                _gesture = _move.IsEmpty ? Gesture.None : Gesture.Moving;
+                break;
+            case Gesture.PendingResize when Host.Project.Frames.FirstOrDefault(f => f.Id == _handleFrameId) is { } frame:
+                _resize = new ResizeFrameOperation(Host.Project, frame, _handle, _startWorld, Host.Rules, Host.SnapEngine);
+                _gesture = Gesture.Resizing;
+                break;
+            case Gesture.PendingBox:
+                _gesture = Gesture.Boxing;
+                break;
             default:
-                return false;
+                _gesture = Gesture.None;
+                break;
         }
+        _collapseTo = null;
     }
 
-    private DesignHit? HitTest(Point2D world)
-        => FrameHitTester.HitTest(_host.Project, world, _host.Canvas.ScreenToWorldDistance(HitTolerancePixels));
-
-    /// <summary>
-    /// The target if it's valid, otherwise the valid position closest to it on the way from the last valid
-    /// position (binary search in whole mm). The division stops at the limit instead of refusing to move.
-    /// </summary>
-    private double ClampToValid(DragState drag, double target)
+    private void Reset()
     {
-        if (FrameEditor.CanMoveDivision(drag.Frame, drag.DivisionId, target, _host.Rules))
-            return target;
+        _gesture = Gesture.None;
+        _move = null;
+        _resize = null;
+        _box = null;
+        _collapseTo = null;
+        Host.Interaction.Clear();
+    }
 
-        double valid = drag.LastValidPosition, invalid = target;
-        while (Math.Abs(invalid - valid) > DragIncrementMm)
-        {
-            double mid = Math.Round((valid + invalid) / 2.0);
-            if (mid == valid || mid == invalid) break;
-            if (FrameEditor.CanMoveDivision(drag.Frame, drag.DivisionId, mid, _host.Rules)) valid = mid;
-            else invalid = mid;
-        }
-        return valid;
+    private ViewportCursor HoverCursor(Point2D world)
+    {
+        if (Host.SingleSelectedFrame is { } frame && FrameHandles.HitTest(frame, world, PixelsToMm(HandleGrabPixels)) is { } handle)
+            return CursorFor(handle);
+        return FrameHitTester.HitTest(Host.Project, world, PixelsToMm(HitTolerancePixels)) is { } hit
+            ? CursorFor(hit.Kind)
+            : ViewportCursor.Default;
     }
 
     private static ViewportCursor CursorFor(DesignElementKind kind) => kind switch
     {
         DesignElementKind.Mullion => ViewportCursor.ResizeHorizontal,
         DesignElementKind.Transom => ViewportCursor.ResizeVertical,
+        DesignElementKind.Frame => ViewportCursor.Move,
         _ => ViewportCursor.Default
     };
 
-    private sealed record DragState(
-        Frame Frame,
-        Guid DivisionId,
-        DesignElementKind Kind,
-        Point2D StartScreen,
-        Point2D StartWorld,
-        double StartPosition,
-        FrameSnapshot Before)
+    private static ViewportCursor CursorFor(FrameHandle handle) => handle switch
     {
-        public bool Started { get; set; }
-        public double LastValidPosition { get; set; }
-    }
+        FrameHandle.Right => ViewportCursor.ResizeHorizontal,
+        FrameHandle.Bottom => ViewportCursor.ResizeVertical,
+        _ => ViewportCursor.ResizeDiagonal
+    };
 }

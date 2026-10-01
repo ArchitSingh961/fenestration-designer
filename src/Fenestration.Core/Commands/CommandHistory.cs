@@ -4,7 +4,7 @@ namespace Fenestration.Core.Commands;
 /// Manages the undo and redo stacks.
 /// Commands are executed through this manager so that they are automatically tracked.
 /// </summary>
-public class CommandHistory
+public class CommandHistory : ICommandHistory
 {
     private readonly Stack<IUndoableCommand> _undoStack = new();
     private readonly Stack<IUndoableCommand> _redoStack = new();

@@ -47,4 +47,11 @@ public sealed class ViewportRenderer
                 layer.Render(context);
         }
     }
+
+    /// <summary>Overlay layers draw screen feedback and decide for themselves what is visible, so they aren't culled.</summary>
+    public void RenderOverlay(ViewportDrawingContext context, IEnumerable<IViewportLayer> layers)
+    {
+        foreach (var layer in layers)
+            layer.Render(context);
+    }
 }

@@ -11,7 +11,20 @@ Fenestration.Core       (models, geometry, viewport math, commands, JSON)  net8.
 ```
 
 `Fenestration.Tests` (net8.0-windows) references Core and Designer. `ArchitectureTests` fail if Core
-ever references WPF, Designer or App.
+ever references WPF, Designer or App; if any command holds a WPF object; or if Core or a future Calculation/Data
+project turns on WPF or a Windows-only target.
+
+```text
+                      Core  (models, geometry, design rules, snapping, interaction ops, commands)
+                        │
+          ┌─────────────┼──────────────┐
+          ↓             ↓              ↓
+      Designer     Calculation*      Data*          * future; consume Core only
+          │             │              │
+          └─────────────┼──────────────┘
+                        ↓
+                        UI (App)
+```
 
 ## Core
 
@@ -20,8 +33,11 @@ ever references WPF, Designer or App.
 | `Geometry/` | Point2D, Vector2D, LineSegment2D, Rectangle2D, BoundingBox2D, Transform2D, ViewportTransform, projection, intersection, tolerance, validation — see [geometry.md](geometry.md) |
 | `Viewport/` | `ViewportSettings`, `GridSpacing`, `GridAxisRange`: viewport logic in world millimetres, with no WPF |
 | `Models/` | Project, Frame, Profile, GlassPanel, Dimension |
-| `Commands/` | `IUndoableCommand`, `CommandHistory` |
-| `Interfaces/` | `IDesignService` (integration contract), `ISnapProvider` (snapping seam), `IRenderer` |
+| `Design/` | `FrameEditor` (validated `Xxx` / `TryXxx` edits), `FrameLayout`, hit testing, handles, box-selection query — see [domain-model.md](domain-model.md) |
+| `Commands/` | `IUndoableCommand`, `ICommandHistory` / `CommandHistory`, frame commands, `CompositeCommand` — see [commands.md](commands.md) |
+| `Snapping/` | `SnapEngine`, providers, `SnapSettings` — see [snapping.md](snapping.md) |
+| `Interaction/` | `ISelectionService`, `OperationPreview`, drag/create operations, `DragClamp` — see [interaction.md](interaction.md) |
+| `Interfaces/` | `IDesignService` (integration contract), `ISnapProvider` (legacy snapping contract, adapted by `ProjectSnapProvider`), `IRenderer` |
 | `Serialization/` | versioned JSON project files |
 
 ## Designer — viewport (Milestone 3)
@@ -95,7 +111,7 @@ ProjectLayer      reads the model → ViewportDrawingContext → ViewportTransfo
 | `ProjectLayer` (Rendering) | The content layer: glass (with size labels) → divisions (face to face) → outer frame → selection → dimensions. Culls off-screen frames. |
 | `DimensionRenderer`, `DesignTheme` (Rendering) | CAD-style dimensions; frozen design pens and brushes. |
 | `IViewportTool` (Interaction) | Tool contract: pointer down/move/up in world coordinates, cursor feedback, Esc/Delete. |
-| `SelectTool` (Tools) | Click to select (Ctrl toggles); drag a mullion/transom live (snapped, clamped to the last valid position); the release records one undo step; Esc cancels. |
+| `SelectTool` (Tools) | Selection, box selection, move and resize. Rewritten in Milestone 5 on top of the Core interaction operations (see below). |
 | `PropertiesViewModel` | Shows model data; frame width/height and division position are editable and applied through commands. |
 | `MainViewModel` | Owns project, selection, history, rules and the design actions (create frame, add mullion/transom, delete). |
 
@@ -108,9 +124,25 @@ The temporary `DemoRectangleLayer` has been removed.
 - Line widths, dimension offsets and text are in screen pixels, so drawings read the same at any zoom.
 - Only the content visual is redrawn after an edit. Hovering redraws nothing.
 
-## Snapping seam
+## Interaction engine (Milestone 5)
 
-`Core.Interfaces.ISnapProvider` (`FindSnap(worldPoint, toleranceMm, excludeIds)`) remains the contract for general
-point snapping (Milestone 8). Milestone 4 adds only one-dimensional division snapping (`DivisionSnapper`).
-Its tolerance is 8 px converted with `CanvasViewModel.ScreenToWorldDistance`; with Snap to Grid on, positions round to
-`CanvasViewModel.GridSpacingMm`.
+Details: [interaction.md](interaction.md), [snapping.md](snapping.md), [commands.md](commands.md).
+
+```text
+ViewportInteractionController (screen → world) → active IViewportTool (Designer/Tools)
+    → Core/Interaction operation: snap (Core/Snapping) → validate on a copy (FrameEditor.TryXxx) → OperationPreview
+    → on release: ONE IUndoableCommand → ICommandHistory → domain model → OnDesignChanged → redraw
+```
+
+- **Layering.** Everything below the tools is WPF-free Core code: selection (`ISelectionService`), snapping, the
+  drag/create operations, validation and commands. Tools are thin adapters from pointer events to those operations,
+  so another front end (web, CLI, tests) can drive the same interaction logic.
+- **Preview vs committed.** During a drag `InteractionState.Preview` holds validated candidate frame copies.
+  `ProjectLayer` draws them in place of the committed frames, and `InteractionOverlayLayer` draws ghosts, the snap
+  marker, handles and the selection box on a third visual. The model changes once, on release; cancel discards the preview.
+- **Modes.** `InteractionMode` { Select, Pan, CreateFrame, AddMullion, AddTransom } maps to `SelectTool`, `PanTool`,
+  `FrameTool` and `DivisionTool` (×2). New tools plug in without touching the controller.
+- **Snapping.** `SnapEngine` with modular providers replaces the Milestone 4 `DivisionSnapper` in the tools (the class
+  remains for compatibility). The Milestone 1 `ISnapProvider` contract is served by `ProjectSnapProvider`.
+- **Commands.** `ICommandHistory` abstracts the existing `CommandHistory`. `CompositeCommand` makes multi-object
+  operations one undo step, and `MoveFrameCommand`, `MoveDivisionsCommand` and `DeleteDivisionsCommand` were added.

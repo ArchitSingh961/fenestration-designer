@@ -9,12 +9,13 @@ using Fenestration.Designer.ViewModels;
 namespace Fenestration.Designer.Controls;
 
 /// <summary>
-/// The 2D drawing surface. A lightweight <see cref="FrameworkElement"/> that hosts two
-/// <see cref="DrawingVisual"/>s: the background (grid, axes) and the content (layers). No WPF element is
-/// created per grid line or per object. Redraws are coalesced to at most one per render pass, and
-/// mouse movement alone never redraws anything.
+/// The 2D drawing surface. A lightweight <see cref="FrameworkElement"/> that hosts three
+/// <see cref="DrawingVisual"/>s: the background (grid, axes), the content (the design) and the overlay
+/// (selection box, handles, snap markers, previews). No WPF element is created per grid line or per object.
+/// Redraws are coalesced to at most one per render pass, and each visual is only redrawn when its own
+/// inputs changed, so a selection-box drag doesn't re-render the design.
 ///
-/// Usage: <c>&lt;controls:ViewportControl Viewport="{Binding Canvas}" /&gt;</c>
+/// Usage: <c>&lt;controls:ViewportControl Viewport="{Binding Canvas}" Tool="{Binding ActiveTool}" /&gt;</c>
 /// </summary>
 public sealed class ViewportControl : FrameworkElement
 {
@@ -22,22 +23,24 @@ public sealed class ViewportControl : FrameworkElement
         nameof(Viewport), typeof(CanvasViewModel), typeof(ViewportControl),
         new PropertyMetadata(null, OnViewportChanged));
 
-    /// <summary>The editing tool that receives left-button and Esc/Delete input (optional).</summary>
+    /// <summary>The editing tool that receives left-button and Esc/Delete/Ctrl+A input (optional).</summary>
     public static readonly DependencyProperty ToolProperty = DependencyProperty.Register(
-        nameof(Tool), typeof(IViewportTool), typeof(ViewportControl), new PropertyMetadata(null));
+        nameof(Tool), typeof(IViewportTool), typeof(ViewportControl), new PropertyMetadata(null, OnToolChanged));
 
     private readonly DrawingVisual _backgroundVisual = new();
     private readonly DrawingVisual _contentVisual = new();
+    private readonly DrawingVisual _overlayVisual = new();
     private readonly VisualCollection _visuals;
     private readonly ViewportRenderer _renderer = new();
     private readonly ViewportInteractionController _interaction;
 
     private bool _viewRedrawPending;
     private bool _contentRedrawPending;
+    private bool _overlayRedrawPending;
 
     public ViewportControl()
     {
-        _visuals = new VisualCollection(this) { _backgroundVisual, _contentVisual };
+        _visuals = new VisualCollection(this) { _backgroundVisual, _contentVisual, _overlayVisual };
         _interaction = new ViewportInteractionController(this, () => Viewport, () => Tool);
 
         Focusable = true;
@@ -87,15 +90,28 @@ public sealed class ViewportControl : FrameworkElement
         {
             oldVm.ViewChanged -= control.RequestViewRedraw;
             oldVm.ContentChanged -= control.RequestContentRedraw;
+            oldVm.OverlayChanged -= control.RequestOverlayRedraw;
         }
         if (e.NewValue is CanvasViewModel newVm)
         {
             newVm.ViewChanged += control.RequestViewRedraw;
             newVm.ContentChanged += control.RequestContentRedraw;
+            newVm.OverlayChanged += control.RequestOverlayRedraw;
             if (control.ActualWidth > 0)
                 newVm.SetViewportSize(control.ActualWidth, control.ActualHeight);
         }
         control.RequestViewRedraw();
+    }
+
+    /// <summary>Switching tools abandons whatever the old tool was doing.</summary>
+    private static void OnToolChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var control = (ViewportControl)d;
+        if (e.OldValue is IViewportTool { IsCapturing: true } oldTool)
+            oldTool.Cancel();
+        if (control.IsMouseCaptured)
+            control.ReleaseMouseCapture();
+        control.Cursor = Cursors.Cross;
     }
 
     // ── Redraw scheduling ───────────────────────────────────────────
@@ -112,11 +128,17 @@ public sealed class ViewportControl : FrameworkElement
         ScheduleRedraw();
     }
 
+    private void RequestOverlayRedraw()
+    {
+        _overlayRedrawPending = true;
+        ScheduleRedraw();
+    }
+
     private bool _redrawScheduled;
 
     /// <summary>
-    /// Several changes in one input event (zoom sets zoom and pan, a resize fits the view, …) collapse
-    /// into a single redraw at render priority.
+    /// Several changes in one input event (zoom sets zoom and pan, a drag updates preview and overlay, …)
+    /// collapse into a single redraw at render priority.
     /// </summary>
     private void ScheduleRedraw()
     {
@@ -141,7 +163,7 @@ public sealed class ViewportControl : FrameworkElement
             _renderer.RenderBackground(context, new ViewportRenderOptions(vm.ShowGrid, vm.ShowAxes, vm.Settings));
         }
 
-        // Content is in world space, so any view change moves it too.
+        // Content and overlay are in world space, so any view change moves them too.
         if (_viewRedrawPending || _contentRedrawPending)
         {
             using DrawingContext dc = _contentVisual.RenderOpen();
@@ -149,7 +171,15 @@ public sealed class ViewportControl : FrameworkElement
             _renderer.RenderContent(context, vm.ContentLayers);
         }
 
+        if (_viewRedrawPending || _contentRedrawPending || _overlayRedrawPending)
+        {
+            using DrawingContext dc = _overlayVisual.RenderOpen();
+            var context = new ViewportDrawingContext(dc, vm.Transform, size, pixelsPerDip);
+            _renderer.RenderOverlay(context, vm.OverlayLayers);
+        }
+
         _viewRedrawPending = false;
         _contentRedrawPending = false;
+        _overlayRedrawPending = false;
     }
 }

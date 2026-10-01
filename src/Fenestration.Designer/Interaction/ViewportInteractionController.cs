@@ -16,7 +16,7 @@ namespace Fenestration.Designer.Interaction;
 ///   Left button            active tool (select / drag divisions)
 ///   F                      fit to screen
 ///   G                      toggle grid
-///   Esc / Delete           active tool (cancel, clear selection / delete)
+///   Esc / Delete / Ctrl+A  active tool (cancel, clear selection / delete / select all)
 /// </summary>
 public sealed class ViewportInteractionController
 {
@@ -138,8 +138,9 @@ public sealed class ViewportInteractionController
 
     private void OnMouseLeave(object sender, MouseEventArgs e)
     {
-        if (!_isPanning && _tool()?.IsCapturing != true)
-            _viewport()?.ClearCursor();
+        if (_isPanning || _tool()?.IsCapturing == true) return;
+        _viewport()?.ClearCursor();
+        _tool()?.Cancel();   // drop hover previews (e.g. the Mullion tool's ghost) when the pointer leaves
     }
 
     private void OnLostMouseCapture(object sender, MouseEventArgs e)
@@ -148,7 +149,7 @@ public sealed class ViewportInteractionController
         if (_isPanning)
             EndPan();
         else if (_tool() is { IsCapturing: true } tool)
-            tool.OnKey(ViewportKey.Escape);
+            tool.Cancel();
     }
 
     private void EndPan()
@@ -164,6 +165,12 @@ public sealed class ViewportInteractionController
     private void OnKeyDown(object sender, KeyEventArgs e)
     {
         if (_viewport() is not { } vm) return;
+
+        if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.A)
+        {
+            e.Handled = _tool()?.OnKey(ViewportKey.SelectAll) == true;
+            return;
+        }
         if (Keyboard.Modifiers != ModifierKeys.None) return;
 
         switch (e.Key)
@@ -205,7 +212,8 @@ public sealed class ViewportInteractionController
     {
         if (_viewport() is not { } vm) return null;
         var screen = ToPoint2D(e.GetPosition(_element));
-        return new ViewportPointerEventArgs(screen, vm.ScreenToWorld(screen), Keyboard.Modifiers.HasFlag(ModifierKeys.Control));
+        return new ViewportPointerEventArgs(screen, vm.ScreenToWorld(screen),
+            Keyboard.Modifiers.HasFlag(ModifierKeys.Control), Keyboard.Modifiers.HasFlag(ModifierKeys.Shift));
     }
 
     private void ReleaseIfToolDone()
@@ -221,6 +229,9 @@ public sealed class ViewportInteractionController
         {
             ViewportCursor.ResizeHorizontal => Cursors.SizeWE,
             ViewportCursor.ResizeVertical => Cursors.SizeNS,
+            ViewportCursor.ResizeDiagonal => Cursors.SizeNWSE,
+            ViewportCursor.Move => Cursors.SizeAll,
+            ViewportCursor.Hand => Cursors.Hand,
             _ => Cursors.Cross
         };
     }

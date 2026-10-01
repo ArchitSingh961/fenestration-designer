@@ -1,9 +1,11 @@
 using System.Windows.Input;
 using Fenestration.Core.Commands;
 using Fenestration.Core.Design;
+using Fenestration.Core.Interaction;
 using Fenestration.Core.Interfaces;
 using Fenestration.Core.Models;
 using Fenestration.Core.Serialization;
+using Fenestration.Core.Snapping;
 using Fenestration.Core.Viewport;
 using Fenestration.Designer.Interaction;
 using Fenestration.Designer.Rendering;
@@ -12,12 +14,12 @@ using Fenestration.Designer.Tools;
 namespace Fenestration.Designer.ViewModels;
 
 /// <summary>
-/// Top-level view model. Owns the current project, selection state, command history,
-/// canvas view model and the frame-designer actions.
+/// Top-level view model (application layer for the designer). Owns the current project, selection,
+/// command history, snapping, interaction mode/tools and the frame-designer actions.
 ///
-/// Data flow for every edit: user action → undoable command → <see cref="FrameEditor"/> (validates,
-/// updates the domain model, re-derives glass) → <see cref="OnDesignChanged"/> → the renderer redraws
-/// from the model.
+/// Data flow for every edit: user input → tool / action → undoable command → <see cref="FrameEditor"/>
+/// (validates, updates the domain model, re-derives glass) → history change → the renderer redraws from the
+/// model. During a drag only a preview (<see cref="Interaction"/>) changes; the model changes once, on release.
 /// </summary>
 public class MainViewModel : ViewModelBase, IDesignService
 {
@@ -27,27 +29,52 @@ public class MainViewModel : ViewModelBase, IDesignService
     /// </summary>
     private const double FitMarginForDimensions = 0.25;
 
+    private readonly Dictionary<InteractionMode, IViewportTool> _tools;
+    private bool _refreshingProperties;
+
     public MainViewModel()
     {
         Rules = new DesignRules();
         Rules.Validate();
-        Canvas = new CanvasViewModel(new ViewportSettings { FitMarginFraction = FitMarginForDimensions });
+        SnapSettings = new SnapSettings();
+        SnapEngine = new SnapEngine(SnapSettings, Rules);
+        Selection = new SelectionService();
+        Interaction = new InteractionState();
+        Canvas = new CanvasViewModel(new ViewportSettings { FitMarginFraction = FitMarginForDimensions })
+        {
+            GridSpacingMm = SnapSettings.GridSpacingMm,
+            SnapToGrid = SnapSettings.GridEnabled
+        };
         Properties = new PropertiesViewModel
         {
             ResizeFrame = ResizeSelectedFrame,
             MoveDivision = MoveSelectedDivision
         };
         CommandHistory = new CommandHistory();
-        ActiveTool = new SelectTool(this);
+
+        _tools = new Dictionary<InteractionMode, IViewportTool>
+        {
+            [InteractionMode.Select] = new SelectTool(this),
+            [InteractionMode.Pan] = new PanTool(this),
+            [InteractionMode.CreateFrame] = new FrameTool(this),
+            [InteractionMode.AddMullion] = new DivisionTool(this, MemberAxis.Vertical),
+            [InteractionMode.AddTransom] = new DivisionTool(this, MemberAxis.Horizontal)
+        };
 
         NewProjectCommand = new RelayCommand(NewProject);
         ResetViewCommand = Canvas.ResetViewCommand;
-        UndoCommand = new RelayCommand(() => CommandHistory.Undo(), () => CommandHistory.CanUndo);
-        RedoCommand = new RelayCommand(() => CommandHistory.Redo(), () => CommandHistory.CanRedo);
+        UndoCommand = new RelayCommand(Undo, () => CommandHistory.CanUndo);
+        RedoCommand = new RelayCommand(Redo, () => CommandHistory.CanRedo);
         CreateFrameCommand = new RelayCommand(CreateFrame);
         AddMullionCommand = new RelayCommand(() => AddDivision(MemberAxis.Vertical));
         AddTransomCommand = new RelayCommand(() => AddDivision(MemberAxis.Horizontal));
         DeleteSelectedCommand = new RelayCommand(DeleteSelection, () => HasSelection);
+        SelectAllCommand = new RelayCommand(SelectAll);
+        SetModeCommand = new RelayCommand(p =>
+        {
+            if (p is InteractionMode mode) Mode = mode;
+            else if (p is string name && Enum.TryParse(name, out InteractionMode parsed)) Mode = parsed;
+        });
 
         CommandHistory.HistoryChanged += () =>
         {
@@ -56,14 +83,33 @@ public class MainViewModel : ViewModelBase, IDesignService
             OnDesignChanged();
         };
 
-        // Only properties shown in StatusText; cursor moves must not rebuild the status string.
-        Canvas.PropertyChanged += (_, e) =>
+        Selection.Changed += OnSelectionChanged;
+
+        Interaction.Changed += previewChanged =>
         {
-            if (e.PropertyName == nameof(CanvasViewModel.SnapToGrid))
-                OnPropertyChanged(nameof(StatusText));
+            if (previewChanged) Canvas.InvalidateContent();
+            Canvas.InvalidateOverlay();
+            var preview = Interaction.Preview;
+            Hint = preview.Message;
+            HintIsError = preview.Message is not null && !preview.IsValid;
         };
 
-        Canvas.ContentLayers.Add(new ProjectLayer(() => Project, IsSelected));
+        Canvas.PropertyChanged += (_, e) =>
+        {
+            switch (e.PropertyName)
+            {
+                case nameof(CanvasViewModel.SnapToGrid):
+                    SnapSettings.GridEnabled = Canvas.SnapToGrid;
+                    OnPropertyChanged(nameof(StatusText));
+                    break;
+                case nameof(CanvasViewModel.GridSpacingMm):
+                    SnapSettings.GridSpacingMm = Canvas.GridSpacingMm;
+                    break;
+            }
+        };
+
+        Canvas.ContentLayers.Add(new ProjectLayer(() => Project, IsSelected, PreviewFrameFor));
+        Canvas.OverlayLayers.Add(new InteractionOverlayLayer(Interaction, () => SingleSelectedFrame));
 
         NewProject();
     }
@@ -74,9 +120,80 @@ public class MainViewModel : ViewModelBase, IDesignService
     public PropertiesViewModel Properties { get; }
     public CommandHistory CommandHistory { get; }
     public DesignRules Rules { get; }
+    public ISelectionService Selection { get; }
+    public SnapSettings SnapSettings { get; }
+    public SnapEngine SnapEngine { get; }
+
+    /// <summary>Preview/selection-box state of the interaction in progress (never domain data).</summary>
+    public InteractionState Interaction { get; }
+
+    /// <summary>The snap radius in world mm at the current zoom.</summary>
+    public double SnapToleranceMm => SnapSettings.ToleranceMm(Canvas.ZoomLevel);
+
+    /// <summary>Incremented whenever the design changes, so tools can drop cached state.</summary>
+    public int DesignVersion { get; private set; }
+
+    // ── Interaction mode ────────────────────────────────────────────
+
+    private InteractionMode _mode = InteractionMode.Select;
+
+    /// <summary>The active interaction mode. Switching cancels whatever the previous tool was doing.</summary>
+    public InteractionMode Mode
+    {
+        get => _mode;
+        set
+        {
+            if (_mode == value) return;
+            ActiveTool.Cancel();
+            Interaction.Clear();
+            _mode = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ActiveTool));
+            OnPropertyChanged(nameof(ModeHint));
+        }
+    }
 
     /// <summary>The tool receiving left-button input in the viewport.</summary>
-    public IViewportTool ActiveTool { get; }
+    public IViewportTool ActiveTool => _tools[_mode];
+
+    public IViewportTool ToolFor(InteractionMode mode) => _tools[mode];
+
+    public string ModeHint => _mode switch
+    {
+        InteractionMode.Pan => "Pan: drag to move the view.",
+        InteractionMode.CreateFrame => "Frame: drag a rectangle to draw a frame.",
+        InteractionMode.AddMullion => "Mullion: click a glass panel (Shift = whole frame).",
+        InteractionMode.AddTransom => "Transom: click a glass panel (Shift = whole frame).",
+        _ => ""
+    };
+
+    public ICommand SetModeCommand { get; }
+
+    // ── Snapping options ────────────────────────────────────────────
+
+    public bool ObjectSnapEnabled
+    {
+        get => SnapSettings.ObjectSnapEnabled;
+        set
+        {
+            if (SnapSettings.ObjectSnapEnabled == value) return;
+            SnapSettings.ObjectSnapEnabled = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(StatusText));
+        }
+    }
+
+    /// <summary>Snap radius in screen pixels (converted to mm at the current zoom).</summary>
+    public double SnapTolerancePixels
+    {
+        get => SnapSettings.TolerancePixels;
+        set
+        {
+            if (!double.IsFinite(value) || value < 0 || SnapSettings.TolerancePixels.Equals(value)) return;
+            SnapSettings.TolerancePixels = value;
+            OnPropertyChanged();
+        }
+    }
 
     // ── Project ─────────────────────────────────────────────────────
 
@@ -110,45 +227,42 @@ public class MainViewModel : ViewModelBase, IDesignService
         : $"eVA Fenestration Designer — {Project.Name}";
 
     /// <summary>
-    /// Call after anything changes the design outside the command history (e.g. a live drag):
-    /// redraws the content and refreshes the properties panel and status bar from the model.
+    /// Call after the committed design changed: redraws the content and refreshes the properties panel and
+    /// status bar from the model.
     /// </summary>
     public void OnDesignChanged()
     {
+        DesignVersion++;
         Canvas.InvalidateContent();
+        Canvas.InvalidateOverlay();
         RefreshProperties();
         OnPropertyChanged(nameof(StatusText));
     }
 
-    // ── Selection ───────────────────────────────────────────────────
+    // ── Selection (backed by ISelectionService; ids of domain objects) ─
 
-    private readonly HashSet<Guid> _selectedIds = new();
+    public IReadOnlySet<Guid> SelectedIds => Selection.SelectedIds;
 
-    public IReadOnlySet<Guid> SelectedIds => _selectedIds;
-
-    public bool HasSelection => _selectedIds.Count > 0;
+    public bool HasSelection => Selection.Count > 0;
 
     public void Select(Guid id, bool addToSelection = false)
     {
-        if (!addToSelection)
-            _selectedIds.Clear();
-        _selectedIds.Add(id);
-        OnSelectionChanged();
+        if (addToSelection) Selection.Add(id);
+        else Selection.Select(id);
     }
 
-    public void Deselect(Guid id)
-    {
-        _selectedIds.Remove(id);
-        OnSelectionChanged();
-    }
+    public void Deselect(Guid id) => Selection.Remove(id);
 
-    public void ClearSelection()
-    {
-        _selectedIds.Clear();
-        OnSelectionChanged();
-    }
+    public void ClearSelection() => Selection.Clear();
 
-    public bool IsSelected(Guid id) => _selectedIds.Contains(id);
+    public bool IsSelected(Guid id) => Selection.Contains(id);
+
+    /// <summary>Selects every frame, division and glass panel (Ctrl+A).</summary>
+    public void SelectAll() => Selection.SelectMany(SelectionQuery.All(Project));
+
+    /// <summary>The selected frame when exactly one frame is selected (it shows resize handles).</summary>
+    public Frame? SingleSelectedFrame
+        => Selection.Count == 1 && FindObject(Selection.SelectedIds.First()) is Frame frame ? frame : null;
 
     private void OnSelectionChanged()
     {
@@ -157,33 +271,37 @@ public class MainViewModel : ViewModelBase, IDesignService
         ((RelayCommand)DeleteSelectedCommand).RaiseCanExecuteChanged();
         RefreshProperties();
         Canvas.InvalidateContent();
+        Canvas.InvalidateOverlay();
     }
 
     /// <summary>Rebuilds the properties panel from the current selection.</summary>
     private void RefreshProperties()
     {
-        // Drop ids whose objects no longer exist (e.g. after undo of a create).
-        if (_selectedIds.RemoveWhere(id => FindObject(id) is null) > 0)
-            ((RelayCommand)DeleteSelectedCommand).RaiseCanExecuteChanged();
-
-        if (_selectedIds.Count == 0)
+        if (_refreshingProperties) return;
+        _refreshingProperties = true;
+        try
         {
-            Properties.ShowNothing();
-            return;
+            // Drop ids whose objects no longer exist (e.g. after undo of a create).
+            Selection.Prune(id => FindObject(id) is not null);
+
+            if (Selection.Count == 0)
+                Properties.ShowNothing();
+            else if (Selection.Count > 1)
+                Properties.ShowMultiple(Selection.Count);
+            else
+            {
+                switch (FindObject(Selection.SelectedIds.First()))
+                {
+                    case Frame frame: Properties.ShowFrame(frame); break;
+                    case Profile profile: Properties.ShowProfile(profile); break;
+                    case GlassPanel glass: Properties.ShowGlass(glass); break;
+                    default: Properties.ShowNothing(); break;
+                }
+            }
         }
-
-        if (_selectedIds.Count > 1)
+        finally
         {
-            Properties.ShowMultiple(_selectedIds.Count);
-            return;
-        }
-
-        switch (FindObject(_selectedIds.First()))
-        {
-            case Frame frame: Properties.ShowFrame(frame); break;
-            case Profile profile: Properties.ShowProfile(profile); break;
-            case GlassPanel glass: Properties.ShowGlass(glass); break;
-            default: Properties.ShowNothing(); break;
+            _refreshingProperties = false;
         }
     }
 
@@ -207,6 +325,9 @@ public class MainViewModel : ViewModelBase, IDesignService
             || f.Profiles.Any(p => p.Id == id)
             || f.GlassPanels.Any(g => g.Id == id));
 
+    private Frame? PreviewFrameFor(Guid frameId)
+        => Interaction.Preview.ReplacementFrames.TryGetValue(frameId, out var frame) ? frame : null;
+
     // ── Commands ────────────────────────────────────────────────────
 
     public ICommand NewProjectCommand { get; }
@@ -217,9 +338,12 @@ public class MainViewModel : ViewModelBase, IDesignService
     public ICommand AddMullionCommand { get; }
     public ICommand AddTransomCommand { get; }
     public ICommand DeleteSelectedCommand { get; }
+    public ICommand SelectAllCommand { get; }
 
     private void NewProject()
     {
+        ActiveTool.Cancel();
+        Interaction.Clear();
         Project = new Project { Name = "New Project" };
         CommandHistory.Clear();
         ClearSelection();
@@ -227,6 +351,38 @@ public class MainViewModel : ViewModelBase, IDesignService
         DesignMessage = null;
         Canvas.InvalidateContent();
         Canvas.FitToContent();
+    }
+
+    /// <summary>Undo/redo first abandon any drag in progress, whose preview would otherwise be stale.</summary>
+    private void Undo()
+    {
+        ActiveTool.Cancel();
+        CommandHistory.Undo();
+    }
+
+    private void Redo()
+    {
+        ActiveTool.Cancel();
+        CommandHistory.Redo();
+    }
+
+    /// <summary>
+    /// Runs a command through the history. On a validation failure nothing is recorded, the model is unchanged,
+    /// the reason is shown in <see cref="DesignMessage"/> and returned; null means success.
+    /// </summary>
+    public string? Execute(IUndoableCommand command)
+    {
+        try
+        {
+            CommandHistory.Execute(command);
+            DesignMessage = null;
+            return null;
+        }
+        catch (DesignValidationException ex)
+        {
+            DesignMessage = ex.Message;
+            return ex.Message;
+        }
     }
 
     // ── Frame designer ──────────────────────────────────────────────
@@ -260,11 +416,19 @@ public class MainViewModel : ViewModelBase, IDesignService
     public bool HasDesignMessage => !string.IsNullOrEmpty(_designMessage);
 
     private string? _hint;
-    /// <summary>Transient status-bar feedback, e.g. the position while dragging a mullion.</summary>
+    /// <summary>Transient status-bar feedback from the interaction in progress (position, snap, or why it's invalid).</summary>
     public string? Hint
     {
         get => _hint;
         set => SetProperty(ref _hint, value);
+    }
+
+    private bool _hintIsError;
+    /// <summary>True when <see cref="Hint"/> explains why the current candidate is invalid.</summary>
+    public bool HintIsError
+    {
+        get => _hintIsError;
+        private set => SetProperty(ref _hintIsError, value);
     }
 
     /// <summary>Creates a frame from the width/height fields, to the right of any existing frames.</summary>
@@ -291,7 +455,7 @@ public class MainViewModel : ViewModelBase, IDesignService
     /// </summary>
     public void AddDivision(MemberAxis axis)
     {
-        Guid? selected = _selectedIds.Count == 1 ? _selectedIds.First() : null;
+        Guid? selected = Selection.Count == 1 ? Selection.SelectedIds.First() : null;
         Frame? frame = selected is { } id ? FindFrameOf(id) : null;
         frame ??= Project.Frames.Count == 1 ? Project.Frames[0] : null;
         if (frame is null)
@@ -307,36 +471,47 @@ public class MainViewModel : ViewModelBase, IDesignService
             Select(newId);
     }
 
-    /// <summary>Deletes the selected division or frame. Glass is derived, so it can't be deleted on its own.</summary>
+    /// <summary>
+    /// Deletes the selection as one undo step: selected frames (with everything in them) and selected divisions
+    /// of other frames. Glass is derived, so it can't be deleted on its own. If the remaining structure would be
+    /// invalid (e.g. a transom left hanging), nothing is deleted and the reason is shown.
+    /// </summary>
     public void DeleteSelection()
     {
-        if (_selectedIds.Count != 1) return;
-        Guid id = _selectedIds.First();
+        if (Selection.Count == 0) return;
+        var ids = Selection.SelectedIds.ToHashSet();
 
-        switch (FindObject(id))
+        var frames = Project.Frames.Where(f => ids.Contains(f.Id)).ToList();
+        var commands = new List<IUndoableCommand>();
+        commands.AddRange(frames.Select(f => new DeleteFrameCommand(Project, f)));
+        foreach (var frame in Project.Frames.Except(frames))
         {
-            case Frame frame:
-                Run(() => new DeleteFrameCommand(Project, frame));
-                break;
-            case Profile profile when Members.IsDivision(profile) && FindFrameOf(id) is { } owner:
-                Run(() => new DeleteDivisionCommand(owner, id, Rules));
-                break;
-            case GlassPanel:
-                DesignMessage = "Glass is created from the frame layout. Delete the mullion or transom beside it instead.";
-                break;
+            var divisions = frame.Profiles.Where(p => Members.IsDivision(p) && ids.Contains(p.Id)).Select(p => p.Id).ToList();
+            if (divisions.Count > 0)
+                commands.Add(new DeleteDivisionsCommand(frame, divisions, Rules));
         }
+
+        if (commands.Count == 0)
+        {
+            if (ids.Any(id => FindObject(id) is GlassPanel))
+                DesignMessage = "Glass is created from the frame layout. Delete the mullion or transom beside it instead.";
+            return;
+        }
+
+        int count = commands.Count;
+        Execute(CompositeCommand.Combine($"Delete {count} objects", commands)!);
     }
 
     private string? ResizeSelectedFrame(double width, double height)
     {
-        if (_selectedIds.Count != 1 || FindObject(_selectedIds.First()) is not Frame frame)
+        if (SingleSelectedFrame is not { } frame)
             return "Select a frame first.";
         return RunForMessage(() => new ResizeFrameCommand(frame, width, height, Rules));
     }
 
     private string? MoveSelectedDivision(double position)
     {
-        if (_selectedIds.Count != 1 || FindObject(_selectedIds.First()) is not Profile profile
+        if (Selection.Count != 1 || FindObject(Selection.SelectedIds.First()) is not Profile profile
             || !Members.IsDivision(profile) || FindFrameOf(profile.Id) is not { } frame)
             return "Select a mullion or transom first.";
         return RunForMessage(() => new MoveDivisionCommand(frame, profile.Id, position, Rules));
@@ -348,9 +523,7 @@ public class MainViewModel : ViewModelBase, IDesignService
         try
         {
             var command = createCommand();
-            CommandHistory.Execute(command);
-            DesignMessage = null;
-            return command;
+            return Execute(command) is null ? command : null;
         }
         catch (DesignValidationException ex)
         {
@@ -383,7 +556,7 @@ public class MainViewModel : ViewModelBase, IDesignService
             int profiles = Project.Frames.Sum(f => f.Profiles.Count);
             int glass = Project.Frames.Sum(f => f.GlassPanels.Count);
             return $"Frames: {frames}  |  Profiles: {profiles}  |  Glass: {glass}  |  " +
-                   $"Snap: {(Canvas.SnapToGrid ? "ON" : "OFF")}";
+                   $"Snap: {(SnapSettings.ObjectSnapEnabled ? "objects" : "off")}{(Canvas.SnapToGrid ? " + grid" : "")}";
         }
     }
 
@@ -395,7 +568,7 @@ public class MainViewModel : ViewModelBase, IDesignService
 
     public Frame? GetSelectedFrame()
     {
-        return Project.Frames.FirstOrDefault(f => _selectedIds.Contains(f.Id));
+        return Project.Frames.FirstOrDefault(f => Selection.Contains(f.Id));
     }
 
     public IReadOnlyList<Profile> GetAllProfiles()

@@ -139,20 +139,23 @@ public static class FrameLayout
     /// Endpoints of perpendicular structural members that lie on <paramref name="profile"/>'s centreline,
     /// i.e. members that end on it (T-junctions). Moving the profile drags these endpoints with it.
     /// </summary>
-    public static int CountMembersEndingOn(Frame frame, Profile profile)
+    public static int CountMembersEndingOn(Frame frame, Profile profile) => GetMembersEndingOn(frame, profile).Count;
+
+    /// <summary>The perpendicular structural members with an end on <paramref name="profile"/>'s centreline.</summary>
+    public static IReadOnlyList<Profile> GetMembersEndingOn(Frame frame, Profile profile)
     {
         var axis = Members.AxisOf(profile);
-        if (axis is null) return 0;
+        if (axis is null) return Array.Empty<Profile>();
         double position = Members.PositionOf(profile, axis.Value);
         var (start, end) = Members.SpanOf(profile, axis.Value);
 
-        int count = 0;
+        var result = new List<Profile>();
         foreach (var other in BuildMembers(frame))
         {
             if (other.Axis == axis || other.Profile.Id == profile.Id) continue;
-            if (EndsOn(other.Profile.StartPoint) || EndsOn(other.Profile.EndPoint)) count++;
+            if (EndsOn(other.Profile.StartPoint) || EndsOn(other.Profile.EndPoint)) result.Add(other.Profile);
         }
-        return count;
+        return result;
 
         bool EndsOn(Point2D p)
         {

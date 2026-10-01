@@ -175,6 +175,17 @@ public class CanvasViewModel : ViewModelBase
     /// <summary>Requests a redraw of the content layers (e.g. after the model changed).</summary>
     public void InvalidateContent() => ContentChanged?.Invoke();
 
+    /// <summary>
+    /// Screen-feedback layers drawn above the content (selection box, handles, snap markers, previews).
+    /// They are redrawn on their own, without re-rendering the design, and are not part of Fit to Screen.
+    /// </summary>
+    public ObservableCollection<IViewportLayer> OverlayLayers { get; } = new();
+
+    /// <summary>Raised when only the overlay needs redrawing.</summary>
+    public event Action? OverlayChanged;
+
+    public void InvalidateOverlay() => OverlayChanged?.Invoke();
+
     // ── Cursor ──────────────────────────────────────────────────────
 
     private Point2D? _cursorWorldPosition;

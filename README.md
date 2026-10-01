@@ -15,7 +15,9 @@ src/
 │   ├── Models/                 Project, Frame, Profile, GlassPanel, Dimension, ProfileType, DimensionOrientation
 │   ├── Design/                 FrameEditor, FrameLayout (derived glass), FrameHitTester, DivisionSnapper,
 │   │                           AutoDimensions, FrameSnapshot, DesignRules   (see docs/domain-model.md)
-│   ├── Commands/               IUndoableCommand, CommandHistory, frame commands (create/resize/add/move/delete)
+│   ├── Commands/               IUndoableCommand, ICommandHistory/CommandHistory, frame commands, CompositeCommand
+│   ├── Snapping/               SnapEngine, snap providers, SnapSettings                 (see docs/snapping.md)
+│   ├── Interaction/            SelectionService, drag/create operations, OperationPreview (see docs/interaction.md)
 │   ├── Interfaces/             IDesignService (integration contract), ISnapProvider, IRenderer
 │   ├── Serialization/          ProjectSerializer, ProjectFile, ProjectFormatVersion (+ migrations), JSON converters
 │   └── Utilities/              Units (constants), ValidationHelper
@@ -23,8 +25,9 @@ src/
 │   ├── Controls/               ViewportControl (the 2D drawing surface)
 │   ├── Rendering/              ViewportRenderer, GridRenderer, CoordinateRenderer, ViewportDrawingContext,
 │   │                           IViewportLayer, ProjectLayer, DimensionRenderer, ViewportTheme, DesignTheme
-│   ├── Interaction/            ViewportInteractionController, IViewportTool
-│   ├── Tools/                  SelectTool (select, drag divisions)
+│   ├── Interaction/            ViewportInteractionController, IViewportTool, InteractionMode, InteractionState
+│   ├── Tools/                  SelectTool, PanTool, FrameTool, DivisionTool (DesignerToolBase)
+│   ├── Views/                  EnumToBooleanConverter
 │   └── ViewModels/             MainViewModel, CanvasViewModel (viewport), PropertiesViewModel, ViewModelBase, RelayCommand
 ├── Fenestration.App/           net8.0-windows  — WPF shell (App.xaml, MainWindow.xaml, Resources/Theme.xaml)
 └── Fenestration.Tests/         net8.0-windows  — xUnit tests (Core + Designer view models)
@@ -135,6 +138,7 @@ Or open `Fenestration.sln` in Visual Studio 2022 and set `Fenestration.App` as t
 | 2 | Geometry engine: primitives, tolerance, validation, projection, intersection, transforms, viewport math | ✅ |
 | 3 | 2D viewport: rendering infrastructure, adaptive grid, axes, zoom/pan/fit/reset, cursor readout | ✅ |
 | 4 | Frame designer: frames, mullions/transoms, derived glass, selection, drag/edit, resize, auto dimensions | ✅ |
+| M5 | Interaction engine: tools/modes, multi & box selection, preview → validate → commit drags, resize handles, modular snapping, composite undo/redo | ✅ |
 | 5 | Profile tool | |
 | 6 | Selection | |
 | 7 | Move | |

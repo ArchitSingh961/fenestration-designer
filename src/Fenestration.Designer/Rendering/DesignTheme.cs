@@ -23,6 +23,37 @@ public static class DesignTheme
     public static readonly Pen DimensionPen = Pen(Color.FromRgb(0x55, 0x5D, 0x66), 0.75);
     public static readonly Brush DimensionText = Brush(0x30, 0x36, 0x3C);
 
+    // ── Interaction feedback (overlay) ──────────────────────────────
+
+    /// <summary>Window selection (left → right, "inside"): solid blue.</summary>
+    public static readonly Brush WindowSelectionFill = Brush(Color.FromArgb(0x22, 0x1E, 0x6F, 0xD9));
+    public static readonly Pen WindowSelectionPen = Pen(Color.FromRgb(0x1E, 0x6F, 0xD9), 1.0);
+
+    /// <summary>Crossing selection (right → left, "touching"): dashed green.</summary>
+    public static readonly Brush CrossingSelectionFill = Brush(Color.FromArgb(0x22, 0x2E, 0xA0, 0x4F));
+    public static readonly Pen CrossingSelectionPen = DashedPen(Color.FromRgb(0x2E, 0xA0, 0x4F), 1.0);
+
+    /// <summary>Something valid that doesn't exist yet (e.g. the frame being drawn).</summary>
+    public static readonly Brush GhostFill = Brush(Color.FromArgb(0x30, 0x1E, 0x6F, 0xD9));
+    public static readonly Pen GhostPen = DashedPen(Color.FromRgb(0x1E, 0x6F, 0xD9), 1.5);
+
+    /// <summary>An invalid candidate: shown, never committed.</summary>
+    public static readonly Brush InvalidFill = Brush(Color.FromArgb(0x40, 0xD9, 0x3A, 0x3A));
+    public static readonly Pen InvalidPen = DashedPen(Color.FromRgb(0xC6, 0x28, 0x28), 1.5);
+
+    public static readonly Pen SnapMarkerPen = Pen(Color.FromRgb(0xE0, 0x7B, 0x00), 1.75);
+    public static readonly Pen SnapAlignPen = DashedPen(Color.FromRgb(0xE0, 0x7B, 0x00), 0.75);
+    public static readonly Brush SnapLabel = Brush(0xB0, 0x5E, 0x00);
+
+    public static readonly Brush HandleFill = Brush(0xFF, 0xFF, 0xFF);
+    public static readonly Pen HandlePen = Pen(Color.FromRgb(0x1E, 0x6F, 0xD9), 1.5);
+
+    /// <summary>Half-size (px) of a resize handle square; also its grab radius.</summary>
+    public const double HandleHalfPixels = 5.0;
+
+    /// <summary>Half-size (px) of a snap marker.</summary>
+    public const double SnapMarkerHalfPixels = 6.0;
+
     public const double DimensionFontSize = 11.0;
     public const double GlassLabelFontSize = 10.0;
 
@@ -50,6 +81,13 @@ public static class DesignTheme
     private static Pen Pen(Color color, double thickness)
     {
         var pen = new Pen(Brush(color), thickness);
+        pen.Freeze();
+        return pen;
+    }
+
+    private static Pen DashedPen(Color color, double thickness)
+    {
+        var pen = new Pen(Brush(color), thickness) { DashStyle = DashStyles.Dash };
         pen.Freeze();
         return pen;
     }

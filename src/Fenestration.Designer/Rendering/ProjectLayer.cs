@@ -23,12 +23,18 @@ public sealed class ProjectLayer : IViewportLayer
 
     private readonly Func<Project> _project;
     private readonly Func<Guid, bool> _isSelected;
+    private readonly Func<Guid, Frame?> _previewFor;
     private readonly DimensionRenderer _dimensions = new();
 
-    public ProjectLayer(Func<Project> project, Func<Guid, bool> isSelected)
+    /// <param name="previewFor">
+    /// Optional: returns a candidate (preview) copy of a frame while an interaction is in progress. It is drawn
+    /// in place of the committed frame, so the user sees the result before anything is committed.
+    /// </param>
+    public ProjectLayer(Func<Project> project, Func<Guid, bool> isSelected, Func<Guid, Frame?>? previewFor = null)
     {
         _project = project;
         _isSelected = isSelected;
+        _previewFor = previewFor ?? (_ => null);
     }
 
     public BoundingBox2D Bounds => BoundingBox2D.FromRectangles(_project().Frames.Select(f => f.Bounds));
@@ -36,8 +42,9 @@ public sealed class ProjectLayer : IViewportLayer
     public void Render(ViewportDrawingContext context)
     {
         double cullMarginMm = context.Transform.ScreenToWorldDistance(CullMarginPixels);
-        foreach (var frame in _project().Frames)
+        foreach (var committed in _project().Frames)
         {
+            var frame = _previewFor(committed.Id) ?? committed;
             if (!context.IsVisible(frame.Bounds.Bounds.Expand(cullMarginMm))) continue;
             RenderFrame(context, frame);
         }

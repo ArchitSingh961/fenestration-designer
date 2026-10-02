@@ -77,7 +77,11 @@ Example: 1200 × 1500, 60 mm profiles, mullion at 600 and transom at 750 gives f
 
 `Boundary` is the geometric daylight size: no rebates, clearances or pricing. Those belong to the calculation engine.
 Panel **Ids are kept** when openings move or resize (matched by order), and when an opening splits (matched by the
-opening containing the old centre), so selection and any per-glass data survive edits.
+opening containing the old centre, or else the one overlapping it most, e.g. a transom right through the centre), so
+selection and any per-glass data, including the opening type, survive edits.
+
+Each panel is also an **opening** with an `OpeningType` (fixed, side hung, tilt & turn, sliding, …) and an optional
+mesh shutter; see [openings.md](openings.md).
 
 ## Automatic dimensions
 

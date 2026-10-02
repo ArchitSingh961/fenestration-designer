@@ -37,6 +37,28 @@ public class PropertiesViewModel : ViewModelBase
     /// <summary>Host callback: make the selection from this library profile. Returns an error message, or null.</summary>
     public Func<string, string?>? AssignProfile { get; set; }
 
+    /// <summary>Stores new design information for the selected frame; returns an error message or null.</summary>
+    public Func<DesignInfo, string?>? SetDesignInfo { get; set; }
+
+    /// <summary>Sets the opening type (null = keep) and mesh (null = keep) of panels; returns an error message or null.</summary>
+    public Func<IReadOnlyList<GlassPanel>, OpeningType?, bool?, string?>? SetOpening { get; set; }
+
+    private DesignInfoEditorViewModel? _designEditor;
+    /// <summary>Design reference, quantity, location… of the selected frame, or null.</summary>
+    public DesignInfoEditorViewModel? DesignEditor
+    {
+        get => _designEditor;
+        private set => SetProperty(ref _designEditor, value);
+    }
+
+    private OpeningEditorViewModel? _openingEditor;
+    /// <summary>Opening type and mesh of the openings the selection stands for, or null.</summary>
+    public OpeningEditorViewModel? OpeningEditor
+    {
+        get => _openingEditor;
+        private set => SetProperty(ref _openingEditor, value);
+    }
+
     /// <summary>The product library the pickers offer.</summary>
     public IProductLibrary Library { get; set; } = ProductLibrary.Empty;
 
@@ -196,7 +218,10 @@ public class PropertiesViewModel : ViewModelBase
         if (members.Count > 0)
             ProfilePicker = CreateProfilePicker(members.All(p => p.ProfileType == ProfileType.Frame) ? "Frame profile" : "Profile", members);
         if (panes.Count > 0)
+        {
             GlassPicker = CreateGlassPicker(panes.Count == 1 ? "Glass" : "All glass", panes);
+            OpeningEditor = CreateOpeningEditor(panes);
+        }
 
         // Objects inside a selected frame are already counted in that frame's total.
         var inSelectedFrames = frames.SelectMany(f => f.Profiles.Select(p => p.Id).Concat(f.GlassPanels.Select(g => g.Id)))
@@ -237,6 +262,11 @@ public class PropertiesViewModel : ViewModelBase
         Items.Add(new PropertyItem("Mullions", frame.Profiles.Count(p => p.ProfileType == ProfileType.Mullion).ToString(CultureInfo.InvariantCulture)));
         Items.Add(new PropertyItem("Transoms", frame.Profiles.Count(p => p.ProfileType == ProfileType.Transom).ToString(CultureInfo.InvariantCulture)));
         Items.Add(new PropertyItem("Glass panels", frame.GlassPanels.Count.ToString(CultureInfo.InvariantCulture)));
+
+        DesignEditor = new DesignInfoEditorViewModel(frame.Design,
+            info => SetDesignInfo is { } set ? set(info) : "The design details cannot be changed here.");
+        if (frame.GlassPanels.Count > 0)
+            OpeningEditor = CreateOpeningEditor(frame.GlassPanels);
 
         var outerMembers = frame.Profiles.Where(p => p.ProfileType == ProfileType.Frame).ToList();
         if (outerMembers.Count > 0)
@@ -298,7 +328,11 @@ public class PropertiesViewModel : ViewModelBase
         Items.Add(new PropertyItem("Height", Format(panel.Boundary.Height), "mm"));
         Items.Add(new PropertyItem("Area", (panel.Boundary.Area / 1_000_000.0).ToString("0.###", CultureInfo.InvariantCulture), "m²"));
         Items.Add(new PropertyItem("Thickness", Format(panel.Thickness), "mm"));
+        Items.Add(new PropertyItem("Opening", panel.Opening.DisplayName()));
+        if (panel.HasMesh)
+            Items.Add(new PropertyItem("Mesh", "Insect mesh shutter"));
 
+        OpeningEditor = CreateOpeningEditor(new[] { panel });
         GlassPicker = CreateGlassPicker("Glass", new[] { panel });
         ShowCalculation(new HashSet<Guid> { panel.Id }, result =>
         {
@@ -315,6 +349,10 @@ public class PropertiesViewModel : ViewModelBase
     }
 
     // ── Library pickers ─────────────────────────────────────────────
+
+    private OpeningEditorViewModel CreateOpeningEditor(IReadOnlyList<GlassPanel> panels)
+        => new(panels.Count == 1 ? "Opening" : $"Openings ({panels.Count})", panels,
+            (type, mesh) => SetOpening is { } set ? set(panels, type, mesh) : "The opening cannot be changed here.");
 
     private LibraryPickerViewModel CreateGlassPicker(string label, IReadOnlyList<GlassPanel> panels)
     {
@@ -422,6 +460,8 @@ public class PropertiesViewModel : ViewModelBase
         ErrorMessage = null;
         ProfilePicker = null;
         GlassPicker = null;
+        DesignEditor = null;
+        OpeningEditor = null;
         CalculationItems.Clear();
         HasCalculation = false;
         CalculationMessage = null;

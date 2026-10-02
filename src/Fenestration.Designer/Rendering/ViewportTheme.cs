@@ -9,10 +9,10 @@ namespace Fenestration.Designer.Rendering;
 /// </summary>
 public static class ViewportTheme
 {
-    public static readonly Brush Background = Brush(0xFB, 0xFB, 0xFB);
+    public static readonly Brush Background = Brush(0xF1, 0xF2, 0xF4);
 
-    public static readonly Pen MinorGridPen = Pen(0xEE, 0xEE, 0xEE, 1.0);
-    public static readonly Pen MajorGridPen = Pen(0xDC, 0xDC, 0xDC, 1.0);
+    public static readonly Pen MinorGridPen = Pen(0xE1, 0xE3, 0xE7, 1.0);
+    public static readonly Pen MajorGridPen = Pen(0xCC, 0xD0, 0xD6, 1.0);
 
     /// <summary>World X axis (the line Y = 0). CAD convention: X is red.</summary>
     public static readonly Pen XAxisPen = Pen(0xD9, 0x7A, 0x7A, 1.0);

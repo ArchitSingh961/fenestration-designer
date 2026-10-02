@@ -32,6 +32,9 @@ public sealed class InteractionOverlayLayer : IViewportLayer
     {
         var preview = _state.Preview;
 
+        if (_state.DropTarget is { } drop)
+            context.DrawRectangle(DesignTheme.DropTargetFill, DesignTheme.DropTargetPen, drop);
+
         foreach (var ghost in preview.Ghosts)
             context.DrawRectangle(preview.IsValid ? DesignTheme.GhostFill : DesignTheme.InvalidFill,
                 preview.IsValid ? DesignTheme.GhostPen : DesignTheme.InvalidPen, ghost);

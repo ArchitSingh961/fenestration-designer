@@ -129,6 +129,26 @@ The temporary `DemoRectangleLayer` has been removed.
 - Line widths, dimension offsets and text are in screen pixels, so drawings read the same at any zoom.
 - Only the content visual is redrawn after an edit. Hovering redraws nothing.
 
+## Openings and design library (Milestone 9)
+
+Details: [openings.md](openings.md).
+
+```text
+Core   Models/OpeningType, DesignInfo        what an opening is; what a frame is as a product (W1 × 2)
+       Design/DesignTemplates                the built-in library (template trees)
+       Design/FrameEditor.Openings           TrySetOpening, TryApplyTemplate, TrySetDesignInfo (atomic, validated)
+       Design/OpeningGeometry                sash band, interlocks, handle position/height; Mirror for the Outside view
+       Commands/OpeningCommands              SetOpeningCommand, ApplyTemplateCommand, SetDesignInfoCommand
+Designer Rendering/FrameRenderer             one frame: glass → divisions → sashes/symbols/handles → frame → labels
+       Rendering/DesignThumbnails            library pictures drawn by FrameRenderer (vector, cached)
+       ViewModels/DesignLibraryViewModel     rail categories, sections, tiles (click = apply)
+       ViewModels/MainViewModel.Designs      targets (selection / drop), confirmation, Inside/Outside, editors
+       Interaction/IViewportDropTarget       drag a design onto the drawing (ViewportControl → view model)
+```
+
+`ProjectLayer` now delegates each frame to `FrameRenderer`; in the Outside view it renders a mirrored copy. The
+drop-target highlight is drawn by `InteractionOverlayLayer` from `InteractionState.DropTarget`.
+
 ## Interaction engine (Milestone 5)
 
 Details: [interaction.md](interaction.md), [snapping.md](snapping.md), [commands.md](commands.md).

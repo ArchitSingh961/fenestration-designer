@@ -47,6 +47,7 @@ public sealed class FrameSnapshot
         target.Width = source.Width;
         target.Height = source.Height;
         target.Metadata = new Dictionary<string, string>(source.Metadata);
+        target.Design = source.Design.Copy();
         target.Profiles = source.Profiles.Select(CopyOf).ToList();
         target.GlassPanels = source.GlassPanels.Select(CopyOf).ToList();
         target.Dimensions = source.Dimensions.Select(CopyOf).ToList();
@@ -70,6 +71,8 @@ public sealed class FrameSnapshot
         Boundary = g.Boundary,
         Thickness = g.Thickness,
         GlassDefinitionId = g.GlassDefinitionId,
+        Opening = g.Opening,
+        HasMesh = g.HasMesh,
         Properties = new Dictionary<string, string>(g.Properties)
     };
 

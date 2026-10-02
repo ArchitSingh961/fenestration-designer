@@ -30,6 +30,15 @@ public sealed class DesignRules
     /// <summary>Horizontal gap between a new frame and the right-most existing frame.</summary>
     public double FrameSpacingMm { get; init; } = 500.0;
 
+    /// <summary>
+    /// Smallest opening (face to face, both directions) that can take a sash. An opening that is openable must
+    /// stay at least this big after any edit; smaller ones can only be fixed.
+    /// </summary>
+    public double MinSashOpeningMm { get; init; } = 250.0;
+
+    /// <summary>Visible face width of a sash inside its opening (drawing only; sash bars are priced in a later milestone).</summary>
+    public double SashFaceWidthMm { get; init; } = 55.0;
+
     /// <exception cref="ArgumentOutOfRangeException">A rule is out of range.</exception>
     public void Validate()
     {
@@ -41,5 +50,8 @@ public sealed class DesignRules
             throw new ArgumentOutOfRangeException(nameof(MinGlassSizeMm), MinGlassSizeMm, "Must be positive.");
         if (!double.IsFinite(FrameSpacingMm) || FrameSpacingMm < 0)
             throw new ArgumentOutOfRangeException(nameof(FrameSpacingMm), FrameSpacingMm, "Must be non-negative.");
+        if (!double.IsFinite(MinSashOpeningMm) || MinSashOpeningMm <= 0)
+            throw new ArgumentOutOfRangeException(nameof(MinSashOpeningMm), MinSashOpeningMm, "Must be positive.");
+        ValidationHelper.EnsureValidThickness(SashFaceWidthMm, nameof(SashFaceWidthMm));
     }
 }

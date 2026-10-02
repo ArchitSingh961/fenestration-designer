@@ -149,7 +149,10 @@ public sealed class DeleteDivisionCommand : FrameEditCommand
     protected override void Apply(Frame frame) => FrameEditor.DeleteDivision(frame, _divisionId, _rules);
 }
 
-/// <summary>Adds an already-built (validated) frame to the project.</summary>
+/// <summary>
+/// Adds an already-built (validated) frame to the project. A frame without a design reference gets the next free
+/// one (W1, W2, …).
+/// </summary>
 public sealed class CreateFrameCommand : IUndoableCommand
 {
     private readonly Project _project;
@@ -158,6 +161,8 @@ public sealed class CreateFrameCommand : IUndoableCommand
     {
         _project = project ?? throw new ArgumentNullException(nameof(project));
         Frame = frame ?? throw new ArgumentNullException(nameof(frame));
+        if (string.IsNullOrWhiteSpace(Frame.Design.Reference))
+            Frame.Design.Reference = FrameEditor.NextReference(project);
     }
 
     /// <summary>Builds the frame with <see cref="FrameEditor.CreateFrame"/> (validating it) and wraps it in a command.</summary>

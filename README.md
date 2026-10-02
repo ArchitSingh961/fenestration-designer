@@ -53,12 +53,18 @@ docs/
 ├── calculation.md              product library, references, calculation rules, BOM, changing materials, cutting plan
 ├── persistence.md              SQLite database: schema, versioning, first run, library CRUD, deletion rules, projects
 ├── domain-model.md             frame, profiles, division model, derived glass, validation, commands
+├── openings.md                 opening types (sashes), design library, design details, Inside/Outside view
+├── roadmap.md                  milestones 9-14: from designer to quoting system
 └── geometry.md                 coordinate system, tolerance, primitives, viewport math, grid
 ```
 
 ## Designing a window
 
-1. **Create Frame**: enter width × height in the left panel (default 1200 × 1500 mm).
+0. **Design library** (left rail: Dividers, Openable, Sliding, Mesh): click a design to apply it to the selected
+   opening or frame, or drag it onto an opening. With no frame yet it creates one (W1). Replacing a whole frame's design
+   asks first. Every opening can be fixed, side hung, top/bottom hung, tilt & turn, pivot or sliding, with an optional
+   mesh shutter; change it in the properties panel (OPENING). See [docs/openings.md](docs/openings.md).
+1. **Create Frame** (rail: Frame): enter width × height (default 1200 × 1500 mm), or draw one with the Frame tool.
 2. **Add Mullion / Add Transom**: splits the selected glass, or spans the whole frame.
 3. **Select** by clicking a frame, mullion, transom or glass. The properties panel shows its data.
 4. **Edit**: type a frame width/height or a division position and press Enter (or Apply). You can also **drag** a mullion/transom;
@@ -78,6 +84,10 @@ docs/
 10. **Library Manager** (File menu or toolbar): search and filter profiles, glass and materials (manufacturer,
     series/category, retired), add and edit them, retire/reinstate, delete unused ones, import/export library files.
     Changes are validated against the whole library, saved at once, and the open design is recalculated.
+11. **Design details** (select a frame): reference (W1), quantity, name, location, floor, note and floor distance (sill
+    height). The reference and quantity are drawn above the frame; a floor distance adds a floor line.
+12. **Inside / Outside** (switch under the drawing, or View menu): the Outside view shows the design mirrored with
+    hinges swapped, as seen from outside. It is read-only.
 
 Dependency direction: `App → Designer → Calculation, Data → Core`, `Tests → Designer, Calculation, Data, Core`. Core,
 Calculation and Data never reference WPF; Calculation and Data reference only Core, and neither Core nor Calculation
@@ -180,14 +190,11 @@ Or open `Fenestration.sln` in Visual Studio 2022 and set `Fenestration.App` as t
 | M6 | Calculation engine + product library: library-referenced glass/profiles/materials, glass sizes & area, cut lengths, cut list, BOM, cost, searchable pickers, material change after design (single & multi-selection, undoable) | ✅ |
 | M7 | Cutting optimisation: deterministic Best-Fit Decreasing over library stock lengths (several per profile), kerf, trim, remnants vs waste, utilisation, bar cost, cutting-plan panel | ✅ |
 | M8 | SQLite persistence & Library Manager: local database (schema versioning, first-run import of library.json), saved projects with stable Ids and tracked library references, validated library CRUD, search/filter, retire vs delete, JSON import/export | ✅ |
-| M9 | Local MVP integration | |
-| 5 | Profile tool | |
-| 6 | Selection | |
-| 7 | Move | |
-| 8 | Snapping | |
-| 9 | Dimensions | |
-| 10 | Glass panels | |
-| 11 | Zoom / pan interaction | |
-| 12 | Undoable domain commands | |
-| 13 | Save / Open UI | |
-| 14 | Integration testing | |
+| M9 | Openings and design library: fixed / side hung / top & bottom hung / tilt & turn / pivot / sliding openings with mesh shutters, sash drawing with CAD symbols, handles and labels, design library (click or drag), whole-frame vs single-opening templates, design details (reference, quantity, floor distance), Inside / Outside view | ✅ |
+| M10 | Quotes and designs | |
+| M11 | Pricing structure (cost heads, rates, tax; sash and mesh members in the BOM) | |
+| M12 | Opportunities and dashboard | |
+| M13 | Documents and reports | |
+| M14 | Shell and polish | |
+
+The plan for M10-M14 is in [docs/roadmap.md](docs/roadmap.md).

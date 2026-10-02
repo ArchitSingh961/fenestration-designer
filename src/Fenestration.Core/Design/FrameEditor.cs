@@ -37,7 +37,7 @@ public readonly record struct DivisionMove(Guid DivisionId, double Position);
 /// Either way, a failed edit leaves the frame untouched.
 /// All positions are frame-relative millimetres (0 = the frame's outer left/top edge).
 /// </summary>
-public static class FrameEditor
+public static partial class FrameEditor
 {
     private const double Tol = GeometryTolerance.Default;
 
@@ -352,7 +352,12 @@ public static class FrameEditor
     /// Runs <paramref name="edit"/> on a copy (returning an error or null), validates, re-derives glass,
     /// then writes back. The original frame is only touched on success.
     /// </summary>
-    private static EditResult TryCommit(Frame frame, DesignRules rules, string errorPrefix, Func<Frame, string?> edit)
+    /// <param name="afterGlass">
+    /// Optional second step, run on the copy after the glass was re-derived (e.g. to set the new openings' types).
+    /// Returns an error message, or null.
+    /// </param>
+    private static EditResult TryCommit(Frame frame, DesignRules rules, string errorPrefix, Func<Frame, string?> edit,
+        Func<Frame, string?>? afterGlass = null)
     {
         ArgumentNullException.ThrowIfNull(frame);
         ArgumentNullException.ThrowIfNull(rules);
@@ -366,6 +371,10 @@ public static class FrameEditor
             return EditResult.Fail(errorPrefix + layout.Errors[0]);
 
         RegenerateGlass(scratch, layout, rules);
+        if (afterGlass?.Invoke(scratch) is { } glassError)
+            return EditResult.Fail(errorPrefix + glassError);
+        if (CheckSashSizes(scratch, rules) is { } sashError)
+            return EditResult.Fail(errorPrefix + sashError);
         FrameSnapshot.Capture(scratch).ApplyTo(frame);
         return EditResult.Ok;
     }
@@ -410,7 +419,8 @@ public static class FrameEditor
     /// glass type and properties: matched by order when the number of openings is unchanged (moves, resizes),
     /// otherwise by the opening that now contains the old panel's centre (splits, merges). A new opening made by a
     /// split inherits the glass type and thickness of the old panel it overlaps most, so splitting a toughened
-    /// pane gives two toughened panes.
+    /// pane gives two toughened panes. The opening type (sash) stays with the panel that keeps the Id; new
+    /// openings are fixed.
     /// </summary>
     private static void RegenerateGlass(Frame frame, FrameLayoutResult layout, DesignRules rules)
     {
@@ -418,24 +428,48 @@ public static class FrameEditor
             .OrderBy(g => g.Boundary.Top).ThenBy(g => g.Boundary.Left)
             .ToList();
         var used = new HashSet<Guid>();
-        var result = new List<GlassPanel>(layout.Regions.Count);
+        var matches = new GlassPanel?[layout.Regions.Count];
+        for (int i = 0; i < layout.Regions.Count; i++)
+        {
+            matches[i] = old.Count == layout.Regions.Count
+                ? old[i]
+                : old.FirstOrDefault(g => !used.Contains(g.Id) && layout.Regions[i].GlassBounds.Contains(g.Boundary.Center));
+            if (matches[i] is { } m) used.Add(m.Id);
+        }
 
+        // A panel split right through its centre (e.g. a transom at mid-height) contains its old centre in neither
+        // half: it stays with the free opening it overlaps most, so it keeps its Id and opening type.
+        foreach (var panel in old.Where(g => !used.Contains(g.Id)))
+        {
+            int best = -1;
+            double bestArea = GeometryTolerance.Epsilon;
+            for (int i = 0; i < matches.Length; i++)
+            {
+                double overlap = matches[i] is null ? panel.Boundary.Intersection(layout.Regions[i].GlassBounds)?.Area ?? 0 : 0;
+                if (overlap > bestArea) (best, bestArea) = (i, overlap);
+            }
+            if (best >= 0)
+            {
+                matches[best] = panel;
+                used.Add(panel.Id);
+            }
+        }
+
+        var result = new List<GlassPanel>(layout.Regions.Count);
         for (int i = 0; i < layout.Regions.Count; i++)
         {
             var region = layout.Regions[i];
-            GlassPanel? match = old.Count == layout.Regions.Count
-                ? old[i]
-                : old.FirstOrDefault(g => !used.Contains(g.Id) && region.GlassBounds.Contains(g.Boundary.Center));
-
+            var match = matches[i];
             if (match is not null)
             {
-                used.Add(match.Id);
                 result.Add(new GlassPanel
                 {
                     Id = match.Id,
                     Boundary = region.GlassBounds,
                     Thickness = match.Thickness,
                     GlassDefinitionId = match.GlassDefinitionId,
+                    Opening = match.Opening,
+                    HasMesh = match.HasMesh,
                     Properties = new Dictionary<string, string>(match.Properties)
                 });
             }

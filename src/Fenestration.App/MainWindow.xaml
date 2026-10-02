@@ -14,6 +14,77 @@
 
     <Window.Resources>
         <views:EnumToBooleanConverter x:Key="EnumToBool" />
+        <views:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVisibility" />
+
+        <!-- Design details of the selected frame (reference, quantity, where it goes). -->
+        <DataTemplate DataType="{x:Type vm:DesignInfoEditorViewModel}">
+            <StackPanel Margin="12,0,12,8">
+                <StackPanel.InputBindings>
+                    <KeyBinding Key="Enter" Command="{Binding ApplyCommand}" />
+                </StackPanel.InputBindings>
+                <TextBlock Text="DESIGN" Style="{StaticResource PanelHeader}" Margin="0,2,0,6" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="90" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="Design ref." Style="{StaticResource FieldLabel}" />
+                    <TextBox Grid.Row="0" Grid.Column="1" Margin="0,2" Padding="4,2" Text="{Binding Reference, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="Shown above the drawing and in quotes, e.g. W1" />
+                    <TextBlock Grid.Row="1" Text="Quantity" Style="{StaticResource FieldLabel}" />
+                    <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource NumberBox}" Text="{Binding QuantityText, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Grid.Row="1" Grid.Column="2" Text="pcs" Style="{StaticResource UnitLabel}" />
+                    <TextBlock Grid.Row="2" Text="Name" Style="{StaticResource FieldLabel}" />
+                    <TextBox Grid.Row="2" Grid.Column="1" Margin="0,2" Padding="4,2" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Grid.Row="3" Text="Location" Style="{StaticResource FieldLabel}" />
+                    <TextBox Grid.Row="3" Grid.Column="1" Margin="0,2" Padding="4,2" Text="{Binding Location, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Grid.Row="4" Text="Floor" Style="{StaticResource FieldLabel}" />
+                    <TextBox Grid.Row="4" Grid.Column="1" Margin="0,2" Padding="4,2" Text="{Binding Floor, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Grid.Row="5" Text="Floor distance" Style="{StaticResource FieldLabel}"
+                               ToolTip="Height of the bottom of the frame above the finished floor. Empty = no floor line." />
+                    <TextBox Grid.Row="5" Grid.Column="1" Style="{StaticResource NumberBox}" Text="{Binding FloorDistanceText, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Grid.Row="5" Grid.Column="2" Text="mm" Style="{StaticResource UnitLabel}" />
+                    <TextBlock Grid.Row="6" Text="Note" Style="{StaticResource FieldLabel}" VerticalAlignment="Top" Margin="0,4,0,0" />
+                    <TextBox Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,2" Padding="4,2" TextWrapping="Wrap" MinHeight="38"
+                             Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}" />
+                </Grid>
+                <Button Content="Apply details" Command="{Binding ApplyCommand}" Margin="0,6,0,0" Padding="8,4" HorizontalAlignment="Left" />
+                <Border Margin="0,6,0,0" Padding="8" Background="{StaticResource ErrorBackgroundBrush}"
+                        Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" />
+                </Border>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- How the selected opening(s) open, and the mesh shutter. -->
+        <DataTemplate DataType="{x:Type vm:OpeningEditorViewModel}">
+            <StackPanel Margin="12,4,12,4">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="90" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding Label}" Style="{StaticResource FieldLabel}" />
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding Options}" SelectedItem="{Binding SelectedOption}"
+                              DisplayMemberPath="Name" ToolTip="How the opening opens, seen from inside" />
+                </Grid>
+                <CheckBox Margin="90,6,0,0" Content="Insect mesh shutter" IsChecked="{Binding HasMesh}" Focusable="False" />
+                <Border Margin="0,6,0,0" Padding="8" Background="{StaticResource ErrorBackgroundBrush}"
+                        Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" />
+                </Border>
+            </StackPanel>
+        </DataTemplate>
 
         <!-- A name / value / unit row of the properties panel. -->
         <DataTemplate x:Key="PropertyRow">
@@ -114,6 +185,9 @@
                 <Separator />
                 <MenuItem Header="Show _Grid" InputGestureText="G" IsCheckable="True" IsChecked="{Binding Canvas.ShowGrid}" />
                 <MenuItem Header="Show _Axes" IsCheckable="True" IsChecked="{Binding Canvas.ShowAxes}" />
+                <Separator />
+                <MenuItem Header="_Inside View" IsCheckable="True" IsChecked="{Binding IsInsideView}" />
+                <MenuItem Header="_Outside View" IsCheckable="True" IsChecked="{Binding IsOutsideView}" />
             </MenuItem>
             <MenuItem Header="_Design">
                 <MenuItem Header="Create _Frame (typed size)" Command="{Binding CreateFrameCommand}" />
@@ -203,77 +277,154 @@
         <!-- ── Main area: design | canvas | properties ──────────── -->
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="210" MinWidth="170" />
+                <ColumnDefinition Width="306" MinWidth="250" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="260" MinWidth="220" />
             </Grid.ColumnDefinitions>
 
-            <!-- Design actions -->
+            <!-- Design library: category rail + the chosen category's designs (or the frame tools) -->
             <Border Grid.Column="0" Background="{StaticResource PanelBackgroundBrush}"
                     BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0">
-                <StackPanel>
-                    <TextBlock Style="{StaticResource PanelHeader}" Text="NEW FRAME" />
-                    <Grid Margin="12,0,12,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="56" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <TextBlock Grid.Row="0" Text="Width" Style="{StaticResource FieldLabel}" />
-                        <TextBox Grid.Row="0" Grid.Column="1" Style="{StaticResource NumberBox}"
-                                 Text="{Binding NewFrameWidthText, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock Grid.Row="0" Grid.Column="2" Text="mm" Style="{StaticResource UnitLabel}" />
-                        <TextBlock Grid.Row="1" Text="Height" Style="{StaticResource FieldLabel}" />
-                        <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource NumberBox}"
-                                 Text="{Binding NewFrameHeightText, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock Grid.Row="1" Grid.Column="2" Text="mm" Style="{StaticResource UnitLabel}" />
-                    </Grid>
-                    <Button Style="{StaticResource PanelButton}" Content="Create Frame" Command="{Binding CreateFrameCommand}" />
+                <DockPanel>
+                    <ListBox DockPanel.Dock="Left" Width="64" Style="{StaticResource RailList}"
+                             ItemContainerStyle="{StaticResource RailItem}"
+                             ItemsSource="{Binding DesignLibrary.Categories}" SelectedValuePath="Name"
+                             SelectedValue="{Binding DesignLibrary.SelectedCategory}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel ToolTip="{Binding ToolTip}" Width="50" AutomationProperties.Name="{Binding Name}">
+                                    <TextBlock Text="{Binding Glyph}" FontFamily="Segoe MDL2 Assets" FontSize="18" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding Name}" FontSize="10" HorizontalAlignment="Center" Margin="0,4,0,0" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
 
-                    <TextBlock Style="{StaticResource PanelHeader}" Text="DIVISIONS" Margin="12,20,12,8" />
-                    <Button Style="{StaticResource PanelButton}" Content="Add Mullion  │" Command="{Binding AddMullionCommand}" />
-                    <Button Style="{StaticResource PanelButton}" Content="Add Transom  ─" Command="{Binding AddTransomCommand}" />
-                    <TextBlock Margin="12,6,12,0" TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}"
-                               Text="With a glass panel selected, the division splits only that opening. Otherwise it spans the whole frame." />
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Style="{StaticResource PanelHeader}" Text="{Binding DesignLibrary.Title}" />
 
-                    <Border Margin="12,12,12,0" Padding="8" Background="{StaticResource ErrorBackgroundBrush}"
-                            Visibility="{Binding HasDesignMessage, Converter={StaticResource BoolToVisibility}}">
-                        <TextBlock Text="{Binding DesignMessage}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" />
-                    </Border>
+                        <!-- Frame tools (new frame, divisions, snapping) -->
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False"
+                                      Visibility="{Binding DesignLibrary.IsFramePanel, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource PanelHeader}" Text="NEW FRAME" Margin="12,0,12,8" />
+                            <Grid Margin="12,0,12,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="56" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="Width" Style="{StaticResource FieldLabel}" />
+                                <TextBox Grid.Row="0" Grid.Column="1" Style="{StaticResource NumberBox}"
+                                         Text="{Binding NewFrameWidthText, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Grid.Row="0" Grid.Column="2" Text="mm" Style="{StaticResource UnitLabel}" />
+                                <TextBlock Grid.Row="1" Text="Height" Style="{StaticResource FieldLabel}" />
+                                <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource NumberBox}"
+                                         Text="{Binding NewFrameHeightText, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Grid.Row="1" Grid.Column="2" Text="mm" Style="{StaticResource UnitLabel}" />
+                            </Grid>
+                            <Button Style="{StaticResource PanelButton}" Content="Create Frame" Command="{Binding CreateFrameCommand}" />
 
-                    <TextBlock Style="{StaticResource PanelHeader}" Text="SNAP" Margin="12,20,12,8" />
-                    <CheckBox Margin="12,2" Content="Object snap" IsChecked="{Binding ObjectSnapEnabled}" Focusable="False"
-                              ToolTip="Intersection › endpoint › midpoint › centre › edge" />
-                    <CheckBox Margin="12,2" Content="Grid snap" IsChecked="{Binding Canvas.SnapToGrid}" Focusable="False" />
-                    <Grid Margin="12,4,12,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="72" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <TextBlock Text="Grid step" Style="{StaticResource FieldLabel}" />
-                        <TextBox Grid.Column="1" Style="{StaticResource NumberBox}" Text="{Binding Canvas.GridSpacingMm}" />
-                        <TextBlock Grid.Column="2" Text="mm" Style="{StaticResource UnitLabel}" />
-                        <TextBlock Grid.Row="1" Text="Tolerance" Style="{StaticResource FieldLabel}" />
-                        <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource NumberBox}" Text="{Binding SnapTolerancePixels}" />
-                        <TextBlock Grid.Row="1" Grid.Column="2" Text="px" Style="{StaticResource UnitLabel}" />
-                    </Grid>
+                            <TextBlock Style="{StaticResource PanelHeader}" Text="DIVISIONS" Margin="12,20,12,8" />
+                            <Button Style="{StaticResource PanelButton}" Content="Add Mullion  │" Command="{Binding AddMullionCommand}" />
+                            <Button Style="{StaticResource PanelButton}" Content="Add Transom  ─" Command="{Binding AddTransomCommand}" />
+                            <TextBlock Margin="12,6,12,0" TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}"
+                                       Text="With a glass panel selected, the division splits only that opening. Otherwise it spans the whole frame." />
 
-                    <TextBlock Margin="12,20,12,0" TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}"
-                               Text="Click selects, Shift+click adds, Ctrl+click toggles, drag on empty space box-selects (→ inside, ← touching). Drag frames, mullions, transoms or the frame's handles. Esc cancels, Del deletes, Ctrl+A selects all, Ctrl+Z / Ctrl+Y undo / redo." />
-                </StackPanel>
+                            <Border Margin="12,12,12,0" Padding="8" Background="{StaticResource ErrorBackgroundBrush}"
+                                    Visibility="{Binding HasDesignMessage, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="{Binding DesignMessage}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" />
+                            </Border>
+
+                            <TextBlock Style="{StaticResource PanelHeader}" Text="SNAP" Margin="12,20,12,8" />
+                            <CheckBox Margin="12,2" Content="Object snap" IsChecked="{Binding ObjectSnapEnabled}" Focusable="False"
+                                      ToolTip="Intersection › endpoint › midpoint › centre › edge" />
+                            <CheckBox Margin="12,2" Content="Grid snap" IsChecked="{Binding Canvas.SnapToGrid}" Focusable="False" />
+                            <Grid Margin="12,4,12,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="72" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="Grid step" Style="{StaticResource FieldLabel}" />
+                                <TextBox Grid.Column="1" Style="{StaticResource NumberBox}" Text="{Binding Canvas.GridSpacingMm}" />
+                                <TextBlock Grid.Column="2" Text="mm" Style="{StaticResource UnitLabel}" />
+                                <TextBlock Grid.Row="1" Text="Tolerance" Style="{StaticResource FieldLabel}" />
+                                <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource NumberBox}" Text="{Binding SnapTolerancePixels}" />
+                                <TextBlock Grid.Row="1" Grid.Column="2" Text="px" Style="{StaticResource UnitLabel}" />
+                            </Grid>
+
+                            <TextBlock Margin="12,20,12,0" TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}"
+                                       Text="Click selects, Shift+click adds, Ctrl+click toggles, drag on empty space box-selects (→ inside, ← touching). Drag frames, mullions, transoms or the frame's handles. Esc cancels, Del deletes, Ctrl+A selects all, Ctrl+Z / Ctrl+Y undo / redo." />
+                        </StackPanel>
+                        </ScrollViewer>
+
+                        <!-- Designs of the chosen category -->
+                        <DockPanel Visibility="{Binding DesignLibrary.IsFramePanel, Converter={StaticResource InverseBoolToVisibility}}">
+                            <TextBlock DockPanel.Dock="Top" Margin="12,0,12,4" TextWrapping="Wrap" FontSize="11"
+                                       Foreground="{StaticResource MutedTextBrush}"
+                                       Text="Click a design to apply it to the selected opening or frame, or drag it onto an opening. With no frame yet, it creates one." />
+                            <Border DockPanel.Dock="Top" Margin="12,4,12,4" Padding="8" Background="{StaticResource ErrorBackgroundBrush}"
+                                    Visibility="{Binding DesignLibrary.HasMessage, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="{Binding DesignLibrary.Message}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" />
+                            </Border>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                                <ItemsControl ItemsSource="{Binding DesignLibrary.Sections}" Margin="0,0,0,12">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="0,4,0,4">
+                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Margin="12,6,12,4"
+                                                           Foreground="{StaticResource TextBrush}" />
+                                                <Rectangle Height="1" Fill="{StaticResource BorderBrush}" Margin="12,0,12,4" />
+                                                <ItemsControl ItemsSource="{Binding Items}" Margin="8,0">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <WrapPanel />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Button Style="{StaticResource DesignTile}" Command="{Binding ApplyCommand}"
+                                                                    ToolTip="{Binding Name}" AutomationProperties.Name="{Binding Name}"
+                                                                    views:DesignDragSource.TemplateId="{Binding Template.Id}">
+                                                                <Image Source="{Binding Thumbnail}" Width="56" Height="56" />
+                                                            </Button>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </DockPanel>
+                    </DockPanel>
+                </DockPanel>
             </Border>
 
             <!-- 2D drawing view -->
-            <controls:ViewportControl x:Name="Viewport" Grid.Column="1" Viewport="{Binding Canvas}" Tool="{Binding ActiveTool}" />
+            <Grid Grid.Column="1">
+                <controls:ViewportControl x:Name="Viewport" Viewport="{Binding Canvas}" Tool="{Binding ActiveTool}"
+                                          DropTarget="{Binding}" />
+                <!-- Inside / Outside view -->
+                <Border HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,14" Padding="3"
+                        CornerRadius="16" Background="#EEFFFFFF" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton Style="{StaticResource SegmentRadio}" Content="Inside" IsChecked="{Binding IsInsideView}"
+                                     ToolTip="Seen from inside (editable)" />
+                        <RadioButton Style="{StaticResource SegmentRadio}" Content="Outside" IsChecked="{Binding IsOutsideView}"
+                                     ToolTip="Seen from outside: mirrored, hinges swapped (read-only)" />
+                    </StackPanel>
+                </Border>
+            </Grid>
 
             <!-- Properties -->
             <Border Grid.Column="2" Background="{StaticResource PanelBackgroundBrush}"
@@ -284,6 +435,10 @@
                     <TextBlock Style="{StaticResource PanelHeader}" Text="PROPERTIES" />
                     <TextBlock Margin="12,0,12,8" FontWeight="SemiBold"
                                Foreground="{StaticResource TextBrush}" Text="{Binding Header}" />
+
+                    <!-- Design details (frame) and opening type (glass) -->
+                    <ContentControl Content="{Binding DesignEditor}" Focusable="False" />
+                    <ContentControl Content="{Binding OpeningEditor}" Focusable="False" />
 
                     <!-- Frame size -->
                     <StackPanel Visibility="{Binding IsFrameEditable, Converter={StaticResource BoolToVisibility}}">

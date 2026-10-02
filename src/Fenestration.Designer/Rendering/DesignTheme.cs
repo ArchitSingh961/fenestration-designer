@@ -9,12 +9,43 @@ namespace Fenestration.Designer.Rendering;
 /// </summary>
 public static class DesignTheme
 {
-    public static readonly Brush ProfileFill = Brush(0xD4, 0xD8, 0xDD);
+    public static readonly Brush ProfileFill = Brush(0xB9, 0xBE, 0xC5);
     public static readonly Pen ProfileOutline = Pen(Color.FromRgb(0x4A, 0x52, 0x5C), 1.0);
 
-    public static readonly Brush GlassFill = Brush(Color.FromArgb(0x55, 0xBF, 0xDB, 0xF0));
-    public static readonly Pen GlassOutline = Pen(Color.FromRgb(0x8F, 0xB4, 0xD0), 0.75);
-    public static readonly Brush GlassLabel = Brush(0x5A, 0x7A, 0x96);
+    public static readonly Brush GlassFill = Brush(Color.FromArgb(0x99, 0xA9, 0xD8, 0xEC));
+    public static readonly Pen GlassOutline = Pen(Color.FromRgb(0x7F, 0xA9, 0xC6), 0.75);
+    public static readonly Brush GlassLabel = Brush(0x3F, 0x5F, 0x7A);
+
+    // ── Sashes and opening symbols ──────────────────────────────────
+
+    /// <summary>Sash band: a little lighter than the frame, so the sash reads as a separate part.</summary>
+    public static readonly Brush SashFill = Brush(0xD0, 0xD4, 0xD9);
+    public static readonly Pen SashOutline = Pen(Color.FromRgb(0x4A, 0x52, 0x5C), 1.0);
+
+    /// <summary>Dashed lines of the opening symbol (they meet at the handle side).</summary>
+    public static readonly Pen OpeningSymbolPen = DashedPen(Color.FromRgb(0x52, 0x5A, 0x64), 1.0);
+    public static readonly Pen PivotAxisPen = Pen(Color.FromRgb(0x52, 0x5A, 0x64), 0.75, DashStyles.DashDot);
+    public static readonly Pen SlideArrowPen = Pen(Color.FromRgb(0x3C, 0x43, 0x4B), 1.5);
+    public static readonly Brush HandleBrush = Brush(0x3C, 0x43, 0x4B);
+    public static readonly Pen MeshPen = Pen(Color.FromArgb(0x8C, 0x55, 0x5D, 0x66), 0.75);
+
+    /// <summary>Opening-number circles and S/M/F tags.</summary>
+    public static readonly Brush TagFill = Brush(0xFF, 0xFF, 0xFF);
+    public static readonly Pen TagPen = Pen(Color.FromRgb(0x3C, 0x43, 0x4B), 1.0);
+    public static readonly Brush TagText = Brush(0x26, 0x2C, 0x33);
+    public const double TagFontSize = 11.0;
+
+    /// <summary>Design reference above the frame ("W1 × 2").</summary>
+    public static readonly Brush ReferenceText = Brush(0x1F, 0x3A, 0x5F);
+    public const double ReferenceFontSize = 13.0;
+
+    public static readonly Pen FloorPen = Pen(Color.FromRgb(0x5A, 0x60, 0x68), 3.0);
+    public static readonly Pen FloorHatchPen = Pen(Color.FromRgb(0x8A, 0x90, 0x98), 1.0);
+    public static readonly Brush FloorLabel = Brush(0x30, 0x36, 0x3C);
+
+    /// <summary>The opening a library design is being dragged onto.</summary>
+    public static readonly Brush DropTargetFill = Brush(Color.FromArgb(0x70, 0xF0, 0xD9, 0xB5));
+    public static readonly Pen DropTargetPen = Pen(Color.FromRgb(0xD9, 0x8C, 0x1E), 2.0);
 
     public static readonly Brush SelectedProfileFill = Brush(0xA9, 0xC8, 0xF0);
     public static readonly Brush SelectedGlassFill = Brush(Color.FromArgb(0x80, 0x7F, 0xB3, 0xEE));
@@ -81,6 +112,13 @@ public static class DesignTheme
     private static Pen Pen(Color color, double thickness)
     {
         var pen = new Pen(Brush(color), thickness);
+        pen.Freeze();
+        return pen;
+    }
+
+    private static Pen Pen(Color color, double thickness, DashStyle dashStyle)
+    {
+        var pen = new Pen(Brush(color), thickness) { DashStyle = dashStyle };
         pen.Freeze();
         return pen;
     }

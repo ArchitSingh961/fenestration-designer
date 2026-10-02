@@ -27,6 +27,19 @@ public class GlassPanel
     /// </summary>
     public string? GlassDefinitionId { get; set; }
 
+    /// <summary>
+    /// How this opening opens (seen from inside). <see cref="OpeningType.Fixed"/> glazes the panel straight into
+    /// the frame; any other type puts a sash in the opening. The opening belongs to the panel, so it survives
+    /// moves and resizes, and a split hands it to the half that keeps the panel.
+    /// </summary>
+    public OpeningType Opening { get; set; } = OpeningType.Fixed;
+
+    /// <summary>
+    /// True if the opening also has an insect-mesh shutter ("twin sash": a glass sash plus a mesh sash).
+    /// Only meaningful for openable panels.
+    /// </summary>
+    public bool HasMesh { get; set; }
+
     /// <summary>Extensible metadata for future calculation-engine use.</summary>
     public Dictionary<string, string> Properties { get; set; } = new();
 
@@ -39,6 +52,8 @@ public class GlassPanel
             Boundary = Boundary,
             Thickness = Thickness,
             GlassDefinitionId = GlassDefinitionId,
+            Opening = Opening,
+            HasMesh = HasMesh,
             Properties = new Dictionary<string, string>(Properties)
         };
     }

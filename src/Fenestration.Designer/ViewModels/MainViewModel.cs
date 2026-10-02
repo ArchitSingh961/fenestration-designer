@@ -104,6 +104,7 @@ public partial class MainViewModel : ViewModelBase, IDesignService
             OnDesignChanged();
         };
         CreatePersistenceCommands();
+        CreateDesignFeatures();
 
         Selection.Changed += OnSelectionChanged;
 
@@ -130,7 +131,7 @@ public partial class MainViewModel : ViewModelBase, IDesignService
             }
         };
 
-        Canvas.ContentLayers.Add(new ProjectLayer(() => Project, IsSelected, PreviewFrameFor));
+        Canvas.ContentLayers.Add(new ProjectLayer(() => Project, IsSelected, PreviewFrameFor, () => IsOutsideView, Rules));
         Canvas.OverlayLayers.Add(new InteractionOverlayLayer(Interaction, () => SingleSelectedFrame));
 
         NewProject();
@@ -197,12 +198,12 @@ public partial class MainViewModel : ViewModelBase, IDesignService
         }
     }
 
-    /// <summary>The tool receiving left-button input in the viewport.</summary>
-    public IViewportTool ActiveTool => _tools[_mode];
+    /// <summary>The tool receiving left-button input in the viewport. The read-only Outside view only pans.</summary>
+    public IViewportTool ActiveTool => _isOutsideView ? _tools[InteractionMode.Pan] : _tools[_mode];
 
     public IViewportTool ToolFor(InteractionMode mode) => _tools[mode];
 
-    public string ModeHint => _mode switch
+    public string ModeHint => _isOutsideView ? OutsideViewHint : _mode switch
     {
         InteractionMode.Pan => "Pan: drag to move the view.",
         InteractionMode.CreateFrame => "Frame: drag a rectangle to draw a frame.",

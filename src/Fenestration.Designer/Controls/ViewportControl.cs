@@ -27,6 +27,10 @@ public sealed class ViewportControl : FrameworkElement
     public static readonly DependencyProperty ToolProperty = DependencyProperty.Register(
         nameof(Tool), typeof(IViewportTool), typeof(ViewportControl), new PropertyMetadata(null, OnToolChanged));
 
+    /// <summary>Receives library designs dragged onto the view (optional).</summary>
+    public static readonly DependencyProperty DropTargetProperty = DependencyProperty.Register(
+        nameof(DropTarget), typeof(IViewportDropTarget), typeof(ViewportControl), new PropertyMetadata(null));
+
     private readonly DrawingVisual _backgroundVisual = new();
     private readonly DrawingVisual _contentVisual = new();
     private readonly DrawingVisual _overlayVisual = new();
@@ -48,6 +52,52 @@ public sealed class ViewportControl : FrameworkElement
         ClipToBounds = true;
         Cursor = Cursors.Cross;
         SnapsToDevicePixels = true;
+        AllowDrop = true;
+    }
+
+    public IViewportDropTarget? DropTarget
+    {
+        get => (IViewportDropTarget?)GetValue(DropTargetProperty);
+        set => SetValue(DropTargetProperty, value);
+    }
+
+    // ── Drag and drop (library designs) ─────────────────────────────
+
+    protected override void OnDragOver(DragEventArgs e)
+    {
+        base.OnDragOver(e);
+        e.Effects = DragDropEffects.None;
+        if (DesignDrag(e) is { } drag && DropTarget!.DragOver(drag.World, drag.TemplateId))
+            e.Effects = DragDropEffects.Copy;
+        e.Handled = true;
+    }
+
+    protected override void OnDragLeave(DragEventArgs e)
+    {
+        base.OnDragLeave(e);
+        DropTarget?.DragLeave();
+    }
+
+    protected override void OnDrop(DragEventArgs e)
+    {
+        base.OnDrop(e);
+        if (DesignDrag(e) is { } drag)
+        {
+            DropTarget!.Drop(drag.World, drag.TemplateId);
+            Focus();
+            e.Handled = true;
+        }
+        DropTarget?.DragLeave();
+    }
+
+    /// <summary>The dragged design and the world point under the mouse, or null if it isn't a design drag.</summary>
+    private (Core.Geometry.Point2D World, string TemplateId)? DesignDrag(DragEventArgs e)
+    {
+        if (DropTarget is null || Viewport is not { } vm || !e.Data.GetDataPresent(IViewportDropTarget.DesignFormat)
+            || e.Data.GetData(IViewportDropTarget.DesignFormat) is not string id)
+            return null;
+        var p = e.GetPosition(this);
+        return (vm.Transform.ScreenToWorld(new Core.Geometry.Point2D(p.X, p.Y)), id);
     }
 
     public CanvasViewModel? Viewport

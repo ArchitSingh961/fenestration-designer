@@ -37,6 +37,18 @@ public class Frame
     public Dictionary<string, string> Metadata { get; set; } = new();
 
     /// <summary>
+    /// What this frame is as a product: its design reference (e.g. "W1"), how many are needed, where they go.
+    /// Never null; it is not geometry, so editing it never changes the layout.
+    /// </summary>
+    public DesignInfo Design
+    {
+        get => _design;
+        set => _design = value ?? new DesignInfo();
+    }
+
+    private DesignInfo _design = new();
+
+    /// <summary>
     /// Creates a frame with validated outer dimensions.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">Width or height is outside the valid range.</exception>
@@ -65,7 +77,8 @@ public class Frame
             Y = Y,
             Width = Width,
             Height = Height,
-            Metadata = new Dictionary<string, string>(Metadata)
+            Metadata = new Dictionary<string, string>(Metadata),
+            Design = Design.Copy()
         };
 
         foreach (var p in Profiles)

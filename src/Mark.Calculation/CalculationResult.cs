@@ -38,6 +38,8 @@ public sealed record GlassLine
     public double ThicknessMm { get; init; }
     public double WidthMm { get; init; }
     public double HeightMm { get; init; }
+
+    /// <summary>Panes needed: the design's quantity. Area, weight and cost on this line are for ONE pane.</summary>
     public int Quantity { get; init; } = 1;
     public double AreaM2 { get; init; }
 
@@ -49,11 +51,17 @@ public sealed record GlassLine
     public decimal Cost { get; init; }
 }
 
-/// <summary>One profile piece to cut.</summary>
+/// <summary>
+/// One profile piece to cut: a member of the design, or a bar of a sash or mesh shutter (then <see cref="ProfileId"/> is
+/// empty and <see cref="OpeningId"/> is the glass panel the sash is in).
+/// </summary>
 public sealed record ProfileLine
 {
     public Guid FrameId { get; init; }
     public Guid ProfileId { get; init; }
+
+    /// <summary>For sash and mesh bars: the opening (glass panel) they belong to; null for design members.</summary>
+    public Guid? OpeningId { get; init; }
     public ProfileType Role { get; init; }
     public string? DefinitionId { get; init; }
     public string Name { get; init; } = "";
@@ -66,6 +74,8 @@ public sealed record ProfileLine
     /// <summary>Cut angle at each end in degrees: 90 = square, 45 = mitre.</summary>
     public double StartCutAngle { get; init; } = 90;
     public double EndCutAngle { get; init; } = 90;
+
+    /// <summary>Pieces needed: the design's quantity. Weight and cost on this line are for ONE piece.</summary>
     public int Quantity { get; init; } = 1;
     public double WeightKg { get; init; }
     public decimal CostPerMetre { get; init; }
@@ -83,9 +93,21 @@ public sealed record MaterialLine
     public string Name { get; init; } = "";
     public MaterialCategory Category { get; init; }
     public MaterialUnit Unit { get; init; }
+
+    /// <summary>Amount for ONE window; <see cref="Cost"/> likewise.</summary>
     public double Quantity { get; init; }
     public decimal Cost { get; init; }
+
+    /// <summary>How many windows use it: the design's quantity.</summary>
+    public int Windows { get; init; } = 1;
 }
+
+/// <summary>
+/// An opening of a window as the pricing needs it: its type (hardware), whether it has a sash, and the mesh area.
+/// Values are for ONE window; <see cref="Windows"/> is the design's quantity.
+/// </summary>
+public sealed record OpeningLine(Guid FrameId, Guid GlassPanelId, OpeningType Opening, bool HasSash, bool HasMesh,
+    double MeshAreaM2, int Windows);
 
 /// <summary>Identical pieces of one profile, grouped for the saw (input for cutting optimisation).</summary>
 public sealed record CutListLine(string DefinitionId, string Name, double CutLengthMm, double StartCutAngle,
@@ -118,19 +140,37 @@ public sealed record CostSummary(decimal Profiles, decimal Glass, decimal Materi
     public CostSummary Add(CostSummary other) => new(Profiles + other.Profiles, Glass + other.Glass, Materials + other.Materials);
 }
 
-public sealed record FrameCalculation(Guid FrameId, double WidthMm, double HeightMm, CostSummary Cost, double WeightKg);
+/// <summary>
+/// One design. <see cref="Cost"/> and <see cref="WeightKg"/> are for ONE window; <see cref="Quantity"/> windows are needed.
+/// </summary>
+public sealed record FrameCalculation(Guid FrameId, double WidthMm, double HeightMm, CostSummary Cost, double WeightKg)
+{
+    public int Quantity { get; init; } = 1;
+
+    /// <summary>Total metres of profile in one window (frame, divisions, sash and mesh bars).</summary>
+    public double ProfileMetres { get; init; }
+
+    /// <summary>Glass area of one window in m².</summary>
+    public double GlassAreaM2 { get; init; }
+
+    /// <summary>Outer area of one window in m².</summary>
+    public double AreaM2 => WidthMm * HeightMm / 1_000_000.0;
+}
 
 /// <summary>
 /// Everything the calculation engine derives from one design + library + rules. Immutable; lines are in design
 /// order (frames, then each frame's profiles and glass); BOM and cut list are sorted, so equal inputs give equal results.
-/// Every line carries the Ids of the design objects it came from.
+/// Every line carries the Ids of the design objects it came from. Lines are per window; the BOM, cut list, total
+/// <see cref="Cost"/> and <see cref="WeightKg"/> include every window of every design (its quantity).
 /// </summary>
 public sealed class CalculationResult
 {
     public CalculationResult(string currency, IReadOnlyList<FrameCalculation> frames, IReadOnlyList<ProfileLine> profiles,
         IReadOnlyList<GlassLine> glass, IReadOnlyList<MaterialLine> materials, IReadOnlyList<CutListLine> cutList,
-        IReadOnlyList<BomLine> bom, CostSummary cost, double weightKg, IReadOnlyList<CalculationIssue> issues)
+        IReadOnlyList<BomLine> bom, CostSummary cost, double weightKg, IReadOnlyList<CalculationIssue> issues,
+        IReadOnlyList<OpeningLine>? openings = null)
     {
+        Openings = openings ?? Array.Empty<OpeningLine>();
         Currency = currency;
         Frames = frames;
         Profiles = profiles;
@@ -158,12 +198,18 @@ public sealed class CalculationResult
     public double WeightKg { get; }
     public IReadOnlyList<CalculationIssue> Issues { get; }
 
+    /// <summary>Every opening of every design (for hardware and mesh pricing).</summary>
+    public IReadOnlyList<OpeningLine> Openings { get; }
+
     /// <summary>True when every item was priced from the library (no errors; warnings allowed).</summary>
     public bool IsComplete => Issues.All(i => i.Severity != IssueSeverity.Error);
 
     public GlassLine? FindGlass(Guid glassPanelId) => Glass.FirstOrDefault(g => g.GlassPanelId == glassPanelId);
 
-    public ProfileLine? FindProfile(Guid profileId) => Profiles.FirstOrDefault(p => p.ProfileId == profileId);
+    public ProfileLine? FindProfile(Guid profileId) => Profiles.FirstOrDefault(p => p.OpeningId is null && p.ProfileId == profileId);
+
+    /// <summary>The sash and mesh bars of one opening.</summary>
+    public IEnumerable<ProfileLine> SashBarsOf(Guid glassPanelId) => Profiles.Where(p => p.OpeningId == glassPanelId);
 
     public FrameCalculation? FindFrame(Guid frameId) => Frames.FirstOrDefault(f => f.FrameId == frameId);
 }

@@ -26,7 +26,7 @@ public class DatabaseTests
             while (reader.Read()) tables.Add(reader.GetString(0));
         Assert.Equal(new[]
         {
-            "glass", "glass_material_usages", "library_settings", "materials", "profile_material_usages", "profile_roles",
+            "app_settings", "glass", "glass_material_usages", "library_settings", "materials", "profile_material_usages", "profile_roles",
             "profile_stock_lengths", "profiles", "project_references", "projects"
         }, tables);
     }

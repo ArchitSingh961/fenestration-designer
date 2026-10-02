@@ -235,7 +235,7 @@ public class QuoteTests : IDisposable
 
         var store = _temp.Open();
 
-        Assert.Equal(2, store.Database.ReadSchemaVersion());
+        Assert.Equal(SqliteDatabase.CurrentSchemaVersion, store.Database.ReadSchemaVersion());
         var list = store.Projects.List();
         var summary = list.Single(s => s.Id == older.Id);
         Assert.Equal(("QT-00001", 1, 3), (summary.QuoteNumber, summary.DesignCount, summary.Quantity));
@@ -294,10 +294,12 @@ public class QuoteTests : IDisposable
         var card = Assert.Single(vm.Designs.Cards);
         Assert.Equal("W1", card.Reference);
         Assert.Equal(3, card.Quantity);
-        decimal unit = vm.Calculation.Result.FindFrame(vm.Project.Frames[0].Id)!.Cost.Total;
-        Assert.Equal((unit * 3).ToString("N2", System.Globalization.CultureInfo.InvariantCulture), card.TotalPriceText);
+        // The card shows the design's price from the quote's price structure (material + cost heads), × its quantity.
+        var design = vm.Price.FindDesign(vm.Project.Frames[0].Id)!;
+        Assert.True(design.UnitPrice > vm.Calculation.Result.FindFrame(vm.Project.Frames[0].Id)!.Cost.Total);
+        Assert.Equal((design.UnitPrice * 3).ToString("N2", System.Globalization.CultureInfo.InvariantCulture), card.TotalPriceText);
         Assert.Contains("1 design · 3 pcs", vm.Designs.TotalsText);
-        Assert.Equal(unit * 3, vm.QuoteValueOf().Amount);
+        Assert.Equal(vm.Price.GrandTotal, vm.QuoteValueOf().Amount);
     }
 
     [Fact]
@@ -431,4 +433,33 @@ public class LegacyDatabaseTests : IDisposable
     [Fact]
     public void WithoutAnOldDatabase_NothingHappens()
         => Assert.Null(LocalStore.AdoptLegacyDatabase(_temp.DatabasePath, System.IO.Path.Combine(_temp.Folder, "missing.db")));
+}
+
+/// <summary>Milestone 11: libraries from before sashes were priced get the shipped sash and mesh profiles once.</summary>
+public class SashProfileTopUpTests : IDisposable
+{
+    private readonly TempDatabase _temp = new();
+
+    public void Dispose() => _temp.Dispose();
+
+    [Fact]
+    public void AnOldLibraryWithoutSashProfiles_GetsTheShippedOnes_AndKeepsEverythingElse()
+    {
+        var store = _temp.Open();
+        store.Library.Import(Create());                       // the test library has no sash profiles
+        int before = store.Library.Current.Profiles.Count;
+
+        var reopened = _temp.Open(TempDatabase.ShippedLibraryPath);
+
+        var library = reopened.Library.Current;
+        Assert.Contains(library.Profiles, p => p.Supports(ProfileType.Sash));
+        Assert.Contains(library.Profiles, p => p.Supports(ProfileType.MeshSash));
+        Assert.Equal(before + 2, library.Profiles.Count);
+        Assert.Contains(reopened.StartupMessages, m => m.Contains("sash", StringComparison.OrdinalIgnoreCase));
+
+        // Nothing more is added on the next start.
+        var third = _temp.Open(TempDatabase.ShippedLibraryPath);
+        Assert.Equal(before + 2, third.Library.Current.Profiles.Count);
+        Assert.DoesNotContain(third.StartupMessages, m => m.Contains("sash", StringComparison.OrdinalIgnoreCase));
+    }
 }

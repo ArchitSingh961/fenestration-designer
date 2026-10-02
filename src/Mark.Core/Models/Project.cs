@@ -32,6 +32,15 @@ public class Project
 
     private QuoteInfo _quote = new();
 
+    /// <summary>How this quote is priced (cost heads, rates, discount, tax). Never null; files without one get the default.</summary>
+    public PriceStructure Pricing
+    {
+        get => _pricing;
+        set => _pricing = value ?? PriceStructure.Default();
+    }
+
+    private PriceStructure _pricing = PriceStructure.Default();
+
     /// <summary>Creates a deep copy of this project. New Ids are assigned to all objects; the quote number is cleared.</summary>
     public Project Clone()
     {
@@ -41,7 +50,8 @@ public class Project
             Name = Name,
             Units = Units,
             Metadata = new Dictionary<string, string>(Metadata),
-            Quote = Quote.Copy()
+            Quote = Quote.Copy(),
+            Pricing = Pricing.Copy()
         };
         clone.Quote.Number = "";   // a copy is a new quote: it gets its own number when saved
 

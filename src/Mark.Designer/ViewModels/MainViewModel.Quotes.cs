@@ -11,7 +11,7 @@ namespace Mark.Designer.ViewModels;
 public enum AppPage { Dashboard, Quotes, Quote }
 
 /// <summary>The tabs of the open quote.</summary>
-public enum QuoteSection { Client, Designs, Drawing }
+public enum QuoteSection { Client, Designs, Drawing, Pricing }
 
 /// <summary>
 /// Milestone 10: the open project is a quote. Navigation (Dashboard, Quotes, the open quote with its Client, Designs
@@ -31,7 +31,7 @@ public partial class MainViewModel
     private void CreateQuoteFeatures()
     {
         Details = new QuoteDetailsViewModel(SetQuoteDetails);
-        Designs = new DesignListViewModel(() => Project, () => Calculation.Result, () => Library, Rules,
+        Designs = new DesignListViewModel(() => Project, () => Calculation.Result, () => Price, () => Library, Rules,
             EditDesign, DuplicateDesign, DeleteDesign, NewDesign);
         Quotes = new QuoteListViewModel(() => Store?.Projects, () => Project.Id, () => Dialogs, OpenQuote, NewQuote);
         Dashboard = new DashboardViewModel(() => Store?.Projects, OpenQuote, NewQuote);
@@ -85,6 +85,7 @@ public partial class MainViewModel
             OnPropertyChanged();
             Designs.IsVisible = _page == AppPage.Quote && value == QuoteSection.Designs;
             if (value == QuoteSection.Client) Details.SyncFromModel();
+            if (value == QuoteSection.Pricing) Pricing.SyncFromModel();
         }
     }
 
@@ -116,7 +117,9 @@ public partial class MainViewModel
 
     private void RefreshQuoteViews()
     {
+        InvalidatePrice();
         Designs.Invalidate();
+        if (_section == QuoteSection.Pricing) Pricing.SyncFromModel();
         Details.SyncFromModel();
         OnPropertyChanged(nameof(QuoteHeader));
         OnPropertyChanged(nameof(Title));
@@ -124,13 +127,8 @@ public partial class MainViewModel
         OnPropertyChanged(nameof(QuoteTotalText));
     }
 
-    /// <summary>The quote's priced value: each design's calculated price × its quantity (designs that could not be priced count 0).</summary>
-    public QuoteValue QuoteValueOf()
-    {
-        var result = Calculation.Result;
-        decimal total = Project.Frames.Sum(f => (result.FindFrame(f.Id)?.Cost.Total ?? 0) * Math.Max(1, f.Design.Quantity));
-        return new QuoteValue(total, result.Currency);
-    }
+    /// <summary>The quote's value: the grand total of its price (designs, discount, charges and tax).</summary>
+    public QuoteValue QuoteValueOf() => new(Price.GrandTotal, Calculation.Result.Currency);
 
     // ── Quotes ──────────────────────────────────────────────────────
 
@@ -138,7 +136,7 @@ public partial class MainViewModel
     public void NewQuote()
     {
         if (!ConfirmDiscardChanges()) return;
-        ShowProject(new Project { Name = "New quote" });
+        ShowProject(new Project { Name = "New quote", Pricing = DefaultPricing() });
         Page = AppPage.Quote;
         Section = QuoteSection.Client;
     }

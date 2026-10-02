@@ -51,6 +51,23 @@
       ]
     },
     {
+      "id": "PRF-SASH-55", "name": "55mm Casement Sash", "code": "AL-5520", "manufacturer": "Sample Extrusions", "series": "Series 60",
+      "roles": [ "sash" ], "faceWidthMm": 55, "depthMm": 60, "weightKgPerMetre": 1.05, "costPerMetre": 460.00,
+      "stockLengthMm": 6000, "glazingBiteMm": 10,
+      "materials": [
+        { "materialId": "MAT-GSK-FRM", "basis": "perMetre", "quantity": 1 },
+        { "materialId": "MAT-CLEAT", "basis": "perPiece", "quantity": 1 }
+      ]
+    },
+    {
+      "id": "PRF-MESH-30", "name": "30mm Mesh Shutter", "code": "AL-3030", "manufacturer": "Sample Extrusions", "series": "Series 60",
+      "roles": [ "meshSash" ], "faceWidthMm": 30, "depthMm": 20, "weightKgPerMetre": 0.45, "costPerMetre": 210.00,
+      "stockLengthMm": 6000,
+      "materials": [
+        { "materialId": "MAT-SCREW", "basis": "perPiece", "quantity": 2 }
+      ]
+    },
+    {
       "id": "PRF-MUL-80", "name": "80mm Heavy Mullion", "code": "AL-8010", "manufacturer": "Sample Extrusions", "series": "Series 60",
       "roles": [ "mullion", "transom" ], "faceWidthMm": 80, "depthMm": 60, "weightKgPerMetre": 1.65, "costPerMetre": 690.00,
       "stockLengthMm": 6000, "cutAllowancePerEndMm": 5, "glazingBiteMm": 12,

@@ -57,3 +57,33 @@ public static class DuplicateFrameCommand
         return new CreateFrameCommand(project, copy);
     }
 }
+
+/// <summary>Replaces the quote's price structure (see <see cref="PricingEditor.TrySetPricing"/>). One undo step.</summary>
+public sealed class SetPricingCommand : IUndoableCommand
+{
+    private readonly Project _project;
+    private readonly PriceStructure _pricing;
+    private PriceStructure? _old;
+
+    public SetPricingCommand(Project project, PriceStructure pricing)
+    {
+        _project = project ?? throw new ArgumentNullException(nameof(project));
+        _pricing = pricing?.Copy() ?? throw new ArgumentNullException(nameof(pricing));
+    }
+
+    public string Description => "Change the price structure";
+
+    public void Execute()
+    {
+        var old = _project.Pricing.Copy();
+        PricingEditor.SetPricing(_project, _pricing);
+        _old = old;
+    }
+
+    public void Undo()
+    {
+        if (_old is null)
+            throw new InvalidOperationException("Cannot undo a command that has not been executed.");
+        _project.Pricing = _old.Copy();
+    }
+}

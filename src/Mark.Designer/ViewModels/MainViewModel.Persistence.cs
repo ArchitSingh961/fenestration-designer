@@ -25,6 +25,10 @@ public partial class MainViewModel
         Store = store;
         Dialogs = dialogs;
         store.Library.Changed += ReplaceLibrary;
+        // The first new quote was created before the store was known: give it the company's default pricing.
+        Project.Pricing = DefaultPricing();
+        Pricing.Load(Project.Pricing);
+        RefreshQuoteViews();
         RaisePersistenceCanExecute();
     }
 
@@ -280,9 +284,10 @@ public partial class MainViewModel
         OnPropertyChanged(nameof(Library));
         RefreshProperties();
         RefreshCalculation();
+        RefreshQuoteViews();
     }
 
-    private void OpenLibraryManager()
+    internal void OpenLibraryManager()
     {
         if (Store is null || Dialogs is null)
             return;

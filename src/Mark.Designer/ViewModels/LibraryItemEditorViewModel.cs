@@ -52,6 +52,8 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase
     public bool RoleFrame { get; set; }
     public bool RoleMullion { get; set; }
     public bool RoleTransom { get; set; }
+    public bool RoleSash { get; set; }
+    public bool RoleMeshSash { get; set; }
     public string FaceWidth { get; set; } = "";
     public string Depth { get; set; } = "";
     public string WeightPerMetre { get; set; } = "";
@@ -90,6 +92,7 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase
         Id = p.Id, Name = p.Name, Code = p.Code ?? "", Manufacturer = p.Manufacturer ?? "", Group = p.Series ?? "",
         IsActive = p.IsActive,
         RoleFrame = p.Supports(ProfileType.Frame), RoleMullion = p.Supports(ProfileType.Mullion), RoleTransom = p.Supports(ProfileType.Transom),
+        RoleSash = p.Supports(ProfileType.Sash), RoleMeshSash = p.Supports(ProfileType.MeshSash),
         FaceWidth = Text(p.FaceWidthMm, isNew), Depth = Text(p.DepthMm, isNew), WeightPerMetre = Text(p.WeightKgPerMetre, isNew),
         CostPerMetre = Text(p.CostPerMetre, isNew), StockLength = Text(p.StockLengthMm, isNew),
         OtherStockLengths = string.Join(", ", p.StockLengthsMm.Select(l => Text(l))),
@@ -136,6 +139,8 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase
         if (RoleFrame) roles.Add(ProfileType.Frame);
         if (RoleMullion) roles.Add(ProfileType.Mullion);
         if (RoleTransom) roles.Add(ProfileType.Transom);
+        if (RoleSash) roles.Add(ProfileType.Sash);
+        if (RoleMeshSash) roles.Add(ProfileType.MeshSash);
         return (ProfileDefinition)_original with
         {
             Id = Id.Trim(), Name = Name.Trim(), Code = Optional(Code), Manufacturer = Optional(Manufacturer), Series = Optional(Group),

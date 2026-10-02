@@ -53,6 +53,7 @@ docs/
 ├── calculation.md              product library, references, calculation rules, BOM, changing materials, cutting plan
 ├── persistence.md              SQLite database: schema, versioning, first run, library CRUD, deletion rules, projects
 ├── domain-model.md             frame, profiles, division model, derived glass, validation, commands
+├── pricing.md                  price structure (cost lines, rates, discount, charges, tax), sash pricing, quantities
 ├── quotes.md                   quotes, clients, design cards, quote list, dashboard, quote numbers
 ├── openings.md                 opening types (sashes), design library, design details, Inside/Outside view
 ├── roadmap.md                  milestones 9-14: from designer to quoting system
@@ -65,6 +66,11 @@ MARK opens on the **Dashboard**. **Create quote** opens the quote's **Client** t
 site address, requirements); **Designs** shows a card per window type with picture, quantity and price; **Drawing**
 is the designer below. **Save** (Ctrl+S) gives a new quote its number (QT-00001…). The **Quotes** page lists them
 (Active / Won / Lost / All, search). See [docs/quotes.md](docs/quotes.md).
+
+**Your own pricing**: product prices are in the Library Manager (per metre of profile, per m² of glass, per piece of
+hardware). Each quote's **Pricing** tab adds your cost lines (wastage, coating, labour, margin…), hardware rates per
+sash type, mesh and reinforcement rates, discount, charges (transport, loading) and tax, with a live price summary.
+**Save as my default** makes it the start of every new quote. See [docs/pricing.md](docs/pricing.md).
 
 ## Designing a window
 
@@ -200,7 +206,7 @@ Or open `Mark.sln` in Visual Studio 2022 and set `Mark.App` as the startup proje
 | M8 | SQLite persistence & Library Manager: local database (schema versioning, first-run import of library.json), saved projects with stable Ids and tracked library references, validated library CRUD, search/filter, retire vs delete, JSON import/export | ✅ |
 | M9 | Openings and design library: fixed / side hung / top & bottom hung / tilt & turn / pivot / sliding openings with mesh shutters, sash drawing with CAD symbols, handles and labels, design library (click or drag), whole-frame vs single-opening templates, design details (reference, quantity, floor distance), Inside / Outside view | ✅ |
 | M10 | Quotes, clients and designs: client/site/notes form, quote status and numbers, design cards with price × quantity, duplicate/delete/edit, quote list (Active/Won/Lost/All, search), dashboard (tiles, value by status, win rate, recent quotes), database schema 2 | ✅ |
-| M11 | Pricing structure (cost heads, rates, tax; sash and mesh members in the BOM) | |
+| M11 | Pricing: your price structure per quote (cost lines, hardware/mesh/reinforcement rates, discount, charges, tax) with live summary and saved default; sash and mesh bars priced from the library; quantities in BOM, cut list and totals; database schema 3 | ✅ |
 | M12 | Opportunities and dashboard charts (basic dashboard done in M10) | |
 | M13 | Documents and reports | |
 | M14 | Shell and polish | |

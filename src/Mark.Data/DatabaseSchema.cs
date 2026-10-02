@@ -13,13 +13,22 @@ internal static class DatabaseSchema
     public const int ApplicationId = 0x46454E31;
 
     /// <summary>The schema version written by this build.</summary>
-    public const int CurrentVersion = 2;
+    public const int CurrentVersion = 3;
 
     /// <summary>Upgrade scripts keyed by the version they upgrade FROM.</summary>
     public static readonly IReadOnlyDictionary<int, string> Upgrades = new Dictionary<int, string>
     {
-        [1] = Version2
+        [1] = Version2,
+        [2] = Version3
     };
+
+    /// <summary>Version 3 (Milestone 11, pricing): company settings such as the default price structure, as JSON by key.</summary>
+    public const string Version3 = """
+        CREATE TABLE app_settings (
+            key         TEXT PRIMARY KEY NOT NULL,
+            value_json  TEXT NOT NULL
+        );
+        """;
 
     /// <summary>
     /// Version 2 (Milestone 10, quotes): the quote list reads number, client, status and totals without loading every

@@ -14,8 +14,11 @@ public enum ProfileType
     /// <summary>Horizontal divider between openings.</summary>
     Transom,
 
-    /// <summary>Openable sash member.</summary>
+    /// <summary>Openable sash member (the glass sash of an opening).</summary>
     Sash,
+
+    /// <summary>Member of an insect-mesh shutter.</summary>
+    MeshSash,
 
     /// <summary>Application-specific or unclassified profile.</summary>
     Generic

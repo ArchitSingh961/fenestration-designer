@@ -57,6 +57,10 @@
                         <CheckBox Content="Frame" IsChecked="{Binding RoleFrame}" />
                         <CheckBox Content="Mullion" Margin="12,0,0,0" IsChecked="{Binding RoleMullion}" />
                         <CheckBox Content="Transom" Margin="12,0,0,0" IsChecked="{Binding RoleTransom}" />
+                        <CheckBox Content="Sash" Margin="12,0,0,0" IsChecked="{Binding RoleSash}"
+                                  ToolTip="Bars of opening sashes (casement, tilt &amp; turn, sliding...)" />
+                        <CheckBox Content="Mesh sash" Margin="12,0,0,0" IsChecked="{Binding RoleMeshSash}"
+                                  ToolTip="Bars of insect-mesh shutters" />
                     </StackPanel>
                     <TextBlock Grid.Row="2" Text="Face width (mm)" Style="{StaticResource FormLabel}" />
                     <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding FaceWidth}" />

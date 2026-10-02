@@ -61,6 +61,11 @@ public sealed class CalculationEngine : ICalculationEngine
         private readonly List<GlassLine> _glass = new();
         private readonly List<MaterialLine> _materials = new();
         private readonly List<CalculationIssue> _issues = new();
+        private readonly List<OpeningLine> _openings = new();
+        private readonly DesignRules _designRules = new();
+
+        /// <summary>Quantity of the design being added (lines are per window; this is how many windows).</summary>
+        private int _windows = 1;
 
         public Run(IProductLibrary library, CalculationRules rules)
         {
@@ -73,7 +78,8 @@ public sealed class CalculationEngine : ICalculationEngine
             var outer = FrameMembers.Find(frame);
             var definitions = new Dictionary<Guid, ProfileDefinition?>();
             decimal profileCost = 0, glassCost = 0, materialCost = 0;
-            double weight = 0;
+            double weight = 0, metres = 0, glassArea = 0;
+            _windows = Math.Max(1, frame.Design.Quantity);
 
             foreach (var profile in frame.Profiles)
             {
@@ -82,22 +88,115 @@ public sealed class CalculationEngine : ICalculationEngine
                 _profiles.Add(line);
                 profileCost += line.Cost;
                 weight += line.WeightKg;
+                metres += line.CutLengthMm / 1000.0;
                 if (definition is not null)
                     materialCost += AddMaterials(frame.Id, profile.Id, definition.Materials, line.CutLengthMm / 1000.0, 0);
             }
 
             foreach (var panel in frame.GlassPanels)
             {
-                var line = CalculateGlass(frame, panel, definitions, out var definition);
+                // The sash band is as wide as the sash profile's face, so the glass inside it is sized correctly.
+                var sashDefinition = panel.Opening.IsOpenable() ? SashProfile(ProfileType.Sash, panel.Id) : null;
+                var sashRules = sashDefinition is null ? _designRules : new DesignRules { SashFaceWidthMm = sashDefinition.FaceWidthMm };
+                var sash = OpeningGeometry.SashOf(frame, panel, sashRules);
+                if (sash is { } s)
+                {
+                    foreach (var bar in SashBars(frame, panel, s.Outer, ProfileType.Sash, sashDefinition))
+                    {
+                        profileCost += bar.Cost;
+                        weight += bar.WeightKg;
+                        metres += bar.CutLengthMm / 1000.0;
+                        if (sashDefinition is not null)
+                            materialCost += AddMaterials(frame.Id, panel.Id, sashDefinition.Materials, bar.CutLengthMm / 1000.0, 0);
+                    }
+                }
+
+                double meshArea = 0;
+                if (panel.HasMesh)
+                {
+                    var meshOuter = sash?.Outer ?? panel.Boundary;
+                    var meshDefinition = SashProfile(ProfileType.MeshSash, panel.Id);
+                    double face = meshDefinition?.FaceWidthMm ?? 0;
+                    meshArea = Round(Math.Max(0, meshOuter.Width - 2 * face) * Math.Max(0, meshOuter.Height - 2 * face) / 1_000_000.0,
+                        _rules.AreaDecimals);
+                    foreach (var bar in SashBars(frame, panel, meshOuter, ProfileType.MeshSash, meshDefinition))
+                    {
+                        profileCost += bar.Cost;
+                        weight += bar.WeightKg;
+                        metres += bar.CutLengthMm / 1000.0;
+                        if (meshDefinition is not null)
+                            materialCost += AddMaterials(frame.Id, panel.Id, meshDefinition.Materials, bar.CutLengthMm / 1000.0, 0);
+                    }
+                }
+                _openings.Add(new OpeningLine(frame.Id, panel.Id, panel.Opening, sash is not null, panel.HasMesh, meshArea, _windows));
+
+                var line = CalculateGlass(frame, panel, definitions, sash, sashDefinition, out var definition);
                 _glass.Add(line);
                 glassCost += line.Cost;
+                glassArea += line.AreaM2;
                 weight += line.WeightKg ?? 0;
                 if (definition is not null)
                     materialCost += AddMaterials(frame.Id, panel.Id, definition.Materials, line.PerimeterM, line.AreaM2);
             }
 
             _frames.Add(new FrameCalculation(frame.Id, frame.Width, frame.Height,
-                new CostSummary(profileCost, glassCost, materialCost), Round(weight, _rules.QuantityDecimals)));
+                new CostSummary(profileCost, glassCost, materialCost), Round(weight, _rules.QuantityDecimals))
+            {
+                Quantity = _windows,
+                ProfileMetres = Round(metres, _rules.QuantityDecimals),
+                GlassAreaM2 = Round(glassArea, _rules.AreaDecimals)
+            });
+        }
+
+        // ── Sashes and mesh shutters ────────────────────────────────
+
+        /// <summary>
+        /// The library profile sash (or mesh-shutter) bars are made from: the first active profile with that role, else any
+        /// with it. An opening that needs one when the library has none is an error (the bars are listed but not priced).
+        /// </summary>
+        private ProfileDefinition? SashProfile(ProfileType role, Guid panelId)
+        {
+            var definition = _library.Profiles.FirstOrDefault(p => p.IsActive && p.Supports(role))
+                             ?? _library.Profiles.FirstOrDefault(p => p.Supports(role));
+            if (definition is null)
+                Error(role == ProfileType.Sash
+                    ? "The library has no sash profile, so sash bars cannot be priced. Add a profile with the Sash role in the Library Manager."
+                    : "The library has no mesh-shutter profile, so mesh bars cannot be priced. Add a profile with the Mesh sash role in the Library Manager.",
+                    panelId);
+            return definition;
+        }
+
+        /// <summary>Four mitred bars around <paramref name="outer"/> (frame-relative mm): two widths, two heights.</summary>
+        private IEnumerable<ProfileLine> SashBars(Frame frame, GlassPanel panel, Rectangle2D outer, ProfileType role,
+            ProfileDefinition? definition)
+        {
+            var bars = new List<ProfileLine>();
+            foreach (double raw in new[] { outer.Width, outer.Width, outer.Height, outer.Height })
+            {
+                double length = Round(raw, _rules.LengthDecimals);
+                double metres = length / 1000.0;
+                var line = new ProfileLine
+                {
+                    FrameId = frame.Id,
+                    ProfileId = Guid.Empty,
+                    OpeningId = panel.Id,
+                    Role = role,
+                    DefinitionId = definition?.Id,
+                    Name = definition?.Name ?? (role == ProfileType.Sash ? "(no sash profile)" : "(no mesh profile)"),
+                    IsResolved = definition is not null,
+                    IsDefault = true,
+                    CutLengthMm = length,
+                    StartCutAngle = 45,
+                    EndCutAngle = 45,
+                    Quantity = _windows,
+                    WeightKg = definition is null ? 0 : Round(metres * definition.WeightKgPerMetre, _rules.QuantityDecimals),
+                    CostPerMetre = definition?.CostPerMetre ?? 0,
+                    Cost = definition is null ? 0 : Money(ToDecimal(metres) * definition.CostPerMetre)
+                };
+                _profiles.Add(line);
+                bars.Add(line);
+            }
+            return bars;
         }
 
         // ── Profiles ────────────────────────────────────────────────
@@ -144,6 +243,7 @@ public sealed class CalculationEngine : ICalculationEngine
                 CutLengthMm = length,
                 StartCutAngle = startAngle,
                 EndCutAngle = endAngle,
+                Quantity = _windows,
                 WeightKg = definition is null ? 0 : Round(metres * definition.WeightKgPerMetre, _rules.QuantityDecimals),
                 CostPerMetre = definition?.CostPerMetre ?? 0,
                 Cost = definition is null ? 0 : Money(ToDecimal(metres) * definition.CostPerMetre)
@@ -176,8 +276,10 @@ public sealed class CalculationEngine : ICalculationEngine
 
         // ── Glass ───────────────────────────────────────────────────
 
+        /// <param name="sash">The opening's sash, if it has one: its glass sits in the sash, so the size comes from the
+        /// sash's glass plus the sash profile's bite instead of from the frame members.</param>
         private GlassLine CalculateGlass(Frame frame, GlassPanel panel, IReadOnlyDictionary<Guid, ProfileDefinition?> profiles,
-            out GlassDefinition? definition)
+            SashLayout? sash, ProfileDefinition? sashDefinition, out GlassDefinition? definition)
         {
             bool isDefault = panel.GlassDefinitionId is null;
             string? id = panel.GlassDefinitionId ?? _library.Defaults.GlassId;
@@ -199,10 +301,20 @@ public sealed class CalculationEngine : ICalculationEngine
 
             var b = panel.Boundary;
             double clearance = _rules.GlassEdgeClearanceMm;
-            double width = b.Width + Bite(frame, profiles, MemberAxis.Vertical, b.Left, +1, b.Top, b.Bottom)
-                                   + Bite(frame, profiles, MemberAxis.Vertical, b.Right, -1, b.Top, b.Bottom) - 2 * clearance;
-            double height = b.Height + Bite(frame, profiles, MemberAxis.Horizontal, b.Top, +1, b.Left, b.Right)
-                                     + Bite(frame, profiles, MemberAxis.Horizontal, b.Bottom, -1, b.Left, b.Right) - 2 * clearance;
+            double width, height;
+            if (sash is { } s)
+            {
+                double bite = sashDefinition?.GlazingBiteMm ?? 0;
+                width = s.Glass.Width + 2 * bite - 2 * clearance;
+                height = s.Glass.Height + 2 * bite - 2 * clearance;
+            }
+            else
+            {
+                width = b.Width + Bite(frame, profiles, MemberAxis.Vertical, b.Left, +1, b.Top, b.Bottom)
+                                + Bite(frame, profiles, MemberAxis.Vertical, b.Right, -1, b.Top, b.Bottom) - 2 * clearance;
+                height = b.Height + Bite(frame, profiles, MemberAxis.Horizontal, b.Top, +1, b.Left, b.Right)
+                                  + Bite(frame, profiles, MemberAxis.Horizontal, b.Bottom, -1, b.Left, b.Right) - 2 * clearance;
+            }
             width = Round(width, _rules.LengthDecimals);
             height = Round(height, _rules.LengthDecimals);
             if (width <= 0 || height <= 0)
@@ -226,6 +338,7 @@ public sealed class CalculationEngine : ICalculationEngine
                 ThicknessMm = definition?.ThicknessMm ?? panel.Thickness,
                 WidthMm = width,
                 HeightMm = height,
+                Quantity = _windows,
                 AreaM2 = area,
                 ChargeableAreaM2 = chargeable,
                 PerimeterM = Round(2 * (width + height) / 1000.0, _rules.QuantityDecimals),
@@ -285,7 +398,8 @@ public sealed class CalculationEngine : ICalculationEngine
                     Category = material.Category,
                     Unit = material.Unit,
                     Quantity = quantity,
-                    Cost = cost
+                    Cost = cost,
+                    Windows = _windows
                 });
             }
             return total;
@@ -299,10 +413,11 @@ public sealed class CalculationEngine : ICalculationEngine
 
             foreach (var group in _profiles.Where(p => p.IsResolved).GroupBy(p => p.DefinitionId!).OrderBy(g => g.Key, StringComparer.Ordinal))
             {
-                double length = Round(group.Sum(p => p.CutLengthMm), _rules.LengthDecimals);
+                int pieces = group.Sum(p => p.Quantity);
+                double length = Round(group.Sum(p => p.CutLengthMm * p.Quantity), _rules.LengthDecimals);
                 bom.Add(new BomLine(BomCategory.Profile, group.Key, group.First().Name,
-                    $"{group.Count()} pcs, {Format(length / 1000.0, "0.###")} m", group.Count(), "pcs", length, null,
-                    Round(group.Sum(p => p.WeightKg), _rules.QuantityDecimals), group.Sum(p => p.Cost)));
+                    $"{pieces} pcs, {Format(length / 1000.0, "0.###")} m", pieces, "pcs", length, null,
+                    Round(group.Sum(p => p.WeightKg * p.Quantity), _rules.QuantityDecimals), group.Sum(p => p.Cost * p.Quantity)));
             }
 
             foreach (var group in _glass.Where(g => g.IsResolved)
@@ -310,12 +425,12 @@ public sealed class CalculationEngine : ICalculationEngine
                          .OrderBy(g => g.Key.Id, StringComparer.Ordinal)
                          .ThenByDescending(g => g.Key.WidthMm).ThenByDescending(g => g.Key.HeightMm))
             {
-                var weights = group.Select(g => g.WeightKg).ToList();
+                var weights = group.Select(g => g.WeightKg is { } w ? w * g.Quantity : (double?)null).ToList();
                 bom.Add(new BomLine(BomCategory.Glass, group.Key.Id, group.First().Name,
-                    $"{Format(group.Key.WidthMm)} × {Format(group.Key.HeightMm)} mm", group.Count(), "pcs", null,
-                    Round(group.Sum(g => g.AreaM2), _rules.AreaDecimals),
+                    $"{Format(group.Key.WidthMm)} × {Format(group.Key.HeightMm)} mm", group.Sum(g => g.Quantity), "pcs", null,
+                    Round(group.Sum(g => g.AreaM2 * g.Quantity), _rules.AreaDecimals),
                     weights.All(w => w is null) ? null : Round(weights.Sum(w => w ?? 0), _rules.QuantityDecimals),
-                    group.Sum(g => g.Cost)));
+                    group.Sum(g => g.Cost * g.Quantity)));
             }
 
             foreach (var group in _materials.GroupBy(m => m.MaterialId)
@@ -323,8 +438,8 @@ public sealed class CalculationEngine : ICalculationEngine
             {
                 var first = group.First();
                 bom.Add(new BomLine(CategoryOf(first.Category), group.Key, first.Name, "",
-                    Round(group.Sum(m => m.Quantity), _rules.QuantityDecimals), UnitText(first.Unit), null, null, null,
-                    group.Sum(m => m.Cost)));
+                    Round(group.Sum(m => m.Quantity * m.Windows), _rules.QuantityDecimals), UnitText(first.Unit), null, null, null,
+                    group.Sum(m => m.Cost * m.Windows)));
             }
 
             var cutList = _profiles.Where(p => p.IsResolved && p.CutLengthMm > 0)
@@ -332,13 +447,15 @@ public sealed class CalculationEngine : ICalculationEngine
                 .OrderBy(g => g.Key.Id, StringComparer.Ordinal)
                 .ThenByDescending(g => g.Key.CutLengthMm).ThenBy(g => g.Key.StartCutAngle).ThenBy(g => g.Key.EndCutAngle)
                 .Select(g => new CutListLine(g.Key.Id, g.First().Name, g.Key.CutLengthMm, g.Key.StartCutAngle, g.Key.EndCutAngle,
-                    g.Count(), _library.FindProfile(g.Key.Id)?.StockLengthMm ?? 0))
+                    g.Sum(p => p.Quantity), _library.FindProfile(g.Key.Id)?.StockLengthMm ?? 0))
                 .ToList();
 
-            var cost = _frames.Aggregate(CostSummary.Zero, (sum, f) => sum.Add(f.Cost));
-            double weight = Round(_frames.Sum(f => f.WeightKg), _rules.QuantityDecimals);
+            var cost = _frames.Aggregate(CostSummary.Zero, (sum, f) => sum.Add(new CostSummary(
+                f.Cost.Profiles * f.Quantity, f.Cost.Glass * f.Quantity, f.Cost.Materials * f.Quantity)));
+            double weight = Round(_frames.Sum(f => f.WeightKg * f.Quantity), _rules.QuantityDecimals);
             return new CalculationResult(_library.Currency, _frames.AsReadOnly(), _profiles.AsReadOnly(), _glass.AsReadOnly(),
-                _materials.AsReadOnly(), cutList.AsReadOnly(), bom.AsReadOnly(), cost, weight, _issues.AsReadOnly());
+                _materials.AsReadOnly(), cutList.AsReadOnly(), bom.AsReadOnly(), cost, weight, _issues.AsReadOnly(),
+                _openings.AsReadOnly());
         }
 
         // ── Helpers ─────────────────────────────────────────────────

@@ -106,6 +106,7 @@ public partial class MainViewModel : ViewModelBase, IDesignService
         CreatePersistenceCommands();
         CreateDesignFeatures();
         CreateQuoteFeatures();
+        CreatePricingFeatures();
 
         Selection.Changed += OnSelectionChanged;
 
@@ -166,7 +167,10 @@ public partial class MainViewModel : ViewModelBase, IDesignService
             FrameThicknessMm = library.DefaultProfileFor(ProfileType.Frame)?.FaceWidthMm ?? generic.FrameThicknessMm,
             MullionThicknessMm = library.DefaultProfileFor(ProfileType.Mullion)?.FaceWidthMm ?? generic.MullionThicknessMm,
             TransomThicknessMm = library.DefaultProfileFor(ProfileType.Transom)?.FaceWidthMm ?? generic.TransomThicknessMm,
-            DefaultGlassThicknessMm = library.DefaultGlass?.ThicknessMm ?? generic.DefaultGlassThicknessMm
+            DefaultGlassThicknessMm = library.DefaultGlass?.ThicknessMm ?? generic.DefaultGlassThicknessMm,
+            SashFaceWidthMm = (library.Profiles.FirstOrDefault(p => p.IsActive && p.Supports(ProfileType.Sash))
+                               ?? library.Profiles.FirstOrDefault(p => p.Supports(ProfileType.Sash)))?.FaceWidthMm
+                              ?? generic.SashFaceWidthMm
         };
     }
 
@@ -393,7 +397,7 @@ public partial class MainViewModel : ViewModelBase, IDesignService
     {
         if (!ConfirmDiscardChanges())
             return;
-        ShowProject(new Project { Name = "New quote" });
+        ShowProject(new Project { Name = "New quote", Pricing = DefaultPricing() });
     }
 
     /// <summary>
@@ -411,6 +415,7 @@ public partial class MainViewModel : ViewModelBase, IDesignService
         DesignMessage = null;
         IsDirty = false;
         Details.Load(project);
+        Pricing.Load(project.Pricing);
         RefreshQuoteViews();
         Canvas.InvalidateContent();
         Canvas.FitToContent();

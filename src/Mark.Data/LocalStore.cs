@@ -1,4 +1,5 @@
 using Mark.Core.Library;
+using Mark.Core.Models;
 
 namespace Mark.Data;
 
@@ -12,13 +13,18 @@ namespace Mark.Data;
 /// </summary>
 public sealed class LocalStore
 {
-    private LocalStore(SqliteDatabase database, LibraryService library, IProjectRepository projects, IReadOnlyList<string> messages)
+    private LocalStore(SqliteDatabase database, LibraryService library, IProjectRepository projects, SettingsRepository settings,
+        IReadOnlyList<string> messages)
     {
         Database = database;
         Library = library;
         Projects = projects;
+        Settings = settings;
         StartupMessages = messages;
     }
+
+    /// <summary>Company settings (the default price structure).</summary>
+    public SettingsRepository Settings { get; }
 
     /// <summary><c>%LOCALAPPDATA%\MARK\mark.db</c>.</summary>
     public static string DefaultPath { get; } = Path.Combine(
@@ -99,6 +105,45 @@ public sealed class LocalStore
             }
         }
 
-        return new LocalStore(database, library, projects, messages);
+        else if (seedLibraryPath is not null && File.Exists(seedLibraryPath))
+        {
+            if (AddMissingSashProfiles(library, seedLibraryPath) is { } added)
+                messages.Add(added);
+        }
+
+        return new LocalStore(database, library, projects, new SettingsRepository(database), messages);
+    }
+
+    /// <summary>
+    /// Libraries created before sashes were priced have no sash or mesh-shutter profile. Adds the seed file's profiles for
+    /// a role the library has none of (with the materials they use), so openings can be priced. Nothing is overwritten.
+    /// Returns a message for the user when something was added.
+    /// </summary>
+    private static string? AddMissingSashProfiles(LibraryService library, string seedLibraryPath)
+    {
+        try
+        {
+            var current = library.Current;
+            var missingRoles = new[] { ProfileType.Sash, ProfileType.MeshSash }
+                .Where(role => !current.Profiles.Any(p => p.Supports(role)))
+                .ToList();
+            if (missingRoles.Count == 0) return null;
+
+            var seed = LibrarySerializer.Load(seedLibraryPath);
+            var profiles = seed.Profiles.Where(p => missingRoles.Any(p.Supports) && current.FindProfile(p.Id) is null).ToList();
+            if (profiles.Count == 0) return null;
+            // Every material the profiles use goes into the import, so it is a valid library on its own; materials the
+            // library already has are skipped by the import (never overwritten).
+            var materialIds = profiles.SelectMany(p => p.Materials).Select(u => u.MaterialId).ToHashSet();
+            var materials = seed.Materials.Where(m => materialIds.Contains(m.Id)).ToList();
+
+            var result = library.Import(new ProductLibrary(profiles, null, materials));
+            return !result.Added.Any(id => profiles.Any(p => p.Id == id)) ? null
+                : $"Added {string.Join(", ", profiles.Select(p => p.Name))} to the library so sashes and mesh shutters can be priced.";
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException or DataStoreException)
+        {
+            return $"Sash profiles could not be added to the library: {ex.Message}";
+        }
     }
 }

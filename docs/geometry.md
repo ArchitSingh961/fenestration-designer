@@ -1,6 +1,6 @@
 # Geometry Engine
 
-`Fenestration.Core.Geometry` — pure C# (no WPF), usable from a console app, the calculation engine or a server.
+`Mark.Core.Geometry` — pure C# (no WPF), usable from a console app, the calculation engine or a server.
 An automated test (`ArchitectureTests`) fails if Core ever references WPF or the UI projects.
 
 ## 1. Coordinate system

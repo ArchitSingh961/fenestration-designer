@@ -3,18 +3,18 @@
 ## Projects and dependency direction
 
 ```text
-Fenestration.App        (WPF shell: App.xaml, MainWindow.xaml)            net8.0-windows
+Mark.App        (WPF shell: App.xaml, MainWindow.xaml)            net8.0-windows
       ↓
-Fenestration.Designer   (view models, viewport control, rendering, input)  net8.0-windows
+Mark.Designer   (view models, viewport control, rendering, input)  net8.0-windows
       ↓                                   ↓
-Fenestration.Calculation (calculation engine,     Fenestration.Data (SQLite: library, saved   net8.0 — NO WPF,
+Mark.Calculation (calculation engine,     Mark.Data (SQLite: library, saved   net8.0 — NO WPF,
       BOM, cost, cutting plan)                         projects; see persistence.md)         reference Core only
       ↓                                   ↓
-Fenestration.Core       (models, geometry, viewport math, commands, JSON,  net8.0 — NO WPF, NO SQLite
+Mark.Core       (models, geometry, viewport math, commands, JSON,  net8.0 — NO WPF, NO SQLite
                          product library)
 ```
 
-`Fenestration.Tests` (net8.0-windows) references Core, Calculation, Data and Designer. `ArchitectureTests` fail if
+`Mark.Tests` (net8.0-windows) references Core, Calculation, Data and Designer. `ArchitectureTests` fail if
 Core ever references WPF, Designer, App, Calculation or Data; if Calculation or Data references anything but Core; if
 Core or Calculation references SQLite; if any command holds a WPF object; or if Core, Calculation or Data turns on WPF
 or a Windows-only target.

@@ -1,6 +1,6 @@
 # Snapping
 
-`Fenestration.Core.Snapping`: pure C#, world millimetres, modular.
+`Mark.Core.Snapping`: pure C#, world millimetres, modular.
 
 ## Architecture
 

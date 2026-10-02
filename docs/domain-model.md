@@ -1,6 +1,6 @@
 # Domain Model (Frame Designer)
 
-All values are **millimetres**. The model is plain C# in `Fenestration.Core` with no WPF, so the calculation
+All values are **millimetres**. The model is plain C# in `Mark.Core` with no WPF, so the calculation
 engine, persistence and export layers can use it directly.
 
 ```text
@@ -91,7 +91,7 @@ every draw; they can't be typed in or stored inconsistently.
 
 ## Editing and undo
 
-| Action | Command (`Fenestration.Core.Commands`) |
+| Action | Command (`Mark.Core.Commands`) |
 |---|---|
 | Create frame | `CreateFrameCommand` |
 | Delete frame | `DeleteFrameCommand` |

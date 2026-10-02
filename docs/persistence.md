@@ -1,15 +1,15 @@
 # Local Persistence (Milestone 8)
 
-`Fenestration.Data` (plain `net8.0`, references **Core only**, `Microsoft.Data.Sqlite`) stores the product library and
+`Mark.Data` (plain `net8.0`, references **Core only**, `Microsoft.Data.Sqlite`) stores the product library and
 saved projects in one SQLite file. Core and Calculation never reference it or SQLite (`ArchitectureTests`). The view
-models call its services; there is no SQL outside `Fenestration.Data`.
+models call its services; there is no SQL outside `Mark.Data`.
 
 ```text
 App (composition: LocalStore.Open, WpfDialogService)
  ↓
 Designer view models ── MainViewModel (save/open/import/export), LibraryManagerViewModel, ProjectListViewModel
  ↓
-Fenestration.Data ──── LocalStore → LibraryService (in-memory snapshot, validated CRUD) → ILibraryRepository
+Mark.Data ──── LocalStore → LibraryService (in-memory snapshot, validated CRUD) → ILibraryRepository
                                   → IProjectRepository
  ↓                      SqliteDatabase (create, check, upgrade) → SQLite file
 Core (ProductLibrary, Project, ProjectSerializer)          Calculation (unchanged: reads IProductLibrary + Project)
@@ -17,7 +17,7 @@ Core (ProductLibrary, Project, ProjectSerializer)          Calculation (unchange
 
 ## Database file and first run
 
-- Location: `%LOCALAPPDATA%\Fenestration\fenestration.db` (`LocalStore.DefaultPath`).
+- Location: `%LOCALAPPDATA%\MARK\mark.db` (`LocalStore.DefaultPath`).
 - `SqliteDatabase.Open`: creates the folder and file if missing, runs `PRAGMA quick_check`, then:
   - new file → creates schema version 1 in one transaction, sets `PRAGMA application_id` (`FEN1`) and `user_version`;
   - our file, older schema → applies the upgrade scripts in order, each in its own transaction;

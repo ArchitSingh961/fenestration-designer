@@ -1,4 +1,4 @@
-# eVA Fenestration Designer — Part 1: 2D Design Engine
+# MARK
 
 WPF / .NET 8 CAD-style editor for aluminium & uPVC windows and doors, with a library-driven calculation engine
 (glass and profile sizes, cut list, bill of materials and cost).
@@ -6,9 +6,9 @@ WPF / .NET 8 CAD-style editor for aluminium & uPVC windows and doors, with a lib
 ## Solution layout
 
 ```text
-Fenestration.sln
+Mark.sln
 src/
-├── Fenestration.Core/          net8.0          — pure domain + geometry. NO WPF. Consumed by future modules.
+├── Mark.Core/          net8.0          — pure domain + geometry. NO WPF. Consumed by future modules.
 │   ├── Geometry/               Point2D, Vector2D, LineSegment2D, Rectangle2D, BoundingBox2D, Transform2D,
 │   │                           ViewportTransform, Projection2D, Intersection2D, AngleMath,
 │   │                           GeometryTolerance, GeometryValidation   (see docs/geometry.md)
@@ -24,16 +24,16 @@ src/
 │   │                           LibrarySerializer (JSON), LibraryQuery (search)          (see docs/calculation.md)
 │   ├── Serialization/          ProjectSerializer, ProjectFile, ProjectFormatVersion (+ migrations), JSON converters
 │   └── Utilities/              Units (constants), ValidationHelper
-├── Fenestration.Calculation/   net8.0          — calculation engine. References Core only. NO WPF.
+├── Mark.Calculation/   net8.0          — calculation engine. References Core only. NO WPF.
 │                               CalculationEngine, CalculationRules, CalculationResult (lines, cut list, BOM, cost),
 │                               CuttingOptimizer → CuttingPlan (stock bars, kerf, trim, remnants, waste, utilisation),
 │                               CuttingRules, CalculationRulesSerializer,
 │                               CalculationService (invalidate on change, recalculate/re-plan on read)
-├── Fenestration.Data/          net8.0          — local SQLite persistence. References Core only. NO WPF.
+├── Mark.Data/          net8.0          — local SQLite persistence. References Core only. NO WPF.
 │                               SqliteDatabase (create, version, upgrade), SqliteLibraryRepository, SqliteProjectRepository,
 │                               LibraryService (validated CRUD, retire, delete rules, import/export), LocalStore
 │                                                                                       (see docs/persistence.md)
-├── Fenestration.Designer/      net8.0-windows  — view models, viewport control, rendering, interaction
+├── Mark.Designer/      net8.0-windows  — view models, viewport control, rendering, interaction
 │   ├── Controls/               ViewportControl (the 2D drawing surface)
 │   ├── Rendering/              ViewportRenderer, GridRenderer, CoordinateRenderer, ViewportDrawingContext,
 │   │                           IViewportLayer, ProjectLayer, DimensionRenderer, ViewportTheme, DesignTheme
@@ -43,20 +43,28 @@ src/
 │   └── ViewModels/             MainViewModel, CanvasViewModel (viewport), PropertiesViewModel, LibraryPickerViewModel,
 │                               CuttingPlanViewModel, LibraryManagerViewModel, LibraryItemEditorViewModel,
 │                               ProjectListViewModel, IDialogService, ViewModelBase, RelayCommand
-├── Fenestration.App/           net8.0-windows  — WPF shell (App.xaml, MainWindow.xaml, Resources/Theme.xaml,
+├── Mark.App/           net8.0-windows  — WPF shell (App.xaml, MainWindow.xaml, Resources/Theme.xaml,
 │                                                 Dialogs/ — Library Manager, Open Project, name prompt, WpfDialogService,
 │                                                 Library/library.json — the sample library, imported on first run,
 │                                                 Settings/calculation-rules.json — kerf, trim, minimum offcut)
-└── Fenestration.Tests/         net8.0-windows  — xUnit tests (Core, Calculation, Data, Designer view models)
+└── Mark.Tests/         net8.0-windows  — xUnit tests (Core, Calculation, Data, Designer view models)
 docs/
 ├── architecture.md             layers, viewport/rendering design, frame-designer data flow
 ├── calculation.md              product library, references, calculation rules, BOM, changing materials, cutting plan
 ├── persistence.md              SQLite database: schema, versioning, first run, library CRUD, deletion rules, projects
 ├── domain-model.md             frame, profiles, division model, derived glass, validation, commands
+├── quotes.md                   quotes, clients, design cards, quote list, dashboard, quote numbers
 ├── openings.md                 opening types (sashes), design library, design details, Inside/Outside view
 ├── roadmap.md                  milestones 9-14: from designer to quoting system
 └── geometry.md                 coordinate system, tolerance, primitives, viewport math, grid
 ```
+
+## Quotes
+
+MARK opens on the **Dashboard**. **Create quote** opens the quote's **Client** tab (project name, status, client,
+site address, requirements); **Designs** shows a card per window type with picture, quantity and price; **Drawing**
+is the designer below. **Save** (Ctrl+S) gives a new quote its number (QT-00001…). The **Quotes** page lists them
+(Active / Won / Lost / All, search). See [docs/quotes.md](docs/quotes.md).
 
 ## Designing a window
 
@@ -78,7 +86,7 @@ docs/
 8. The **Cutting plan** shows the stock bars to cut per profile, with pieces, remnant and waste per bar, utilisation and
    bar cost. Kerf, trim and minimum offcut come from `Settings\calculation-rules.json`; stock lengths from the library.
 9. **Save / Open** (Ctrl+S / Ctrl+O): projects are saved in the local database
-   (`%LOCALAPPDATA%\Fenestration\fenestration.db`). The first save asks for a name; **Save a Copy As** saves a copy with
+   (`%LOCALAPPDATA%\MARK\mark.db`). The first save asks for a name; **Save a Copy As** saves a copy with
    new Ids. **Import / Export Project File** read and write the same JSON as a project file. Closing, New and Open ask
    before discarding unsaved changes (the title shows `*`).
 10. **Library Manager** (File menu or toolbar): search and filter profiles, glass and materials (manufacturer,
@@ -142,7 +150,7 @@ file are interchangeable (see [docs/persistence.md](docs/persistence.md)).
 
 ## Integration contract (Calculation Engine)
 
-`Fenestration.Core.Interfaces.IDesignService` (implemented by `MainViewModel`):
+`Mark.Core.Interfaces.IDesignService` (implemented by `MainViewModel`):
 
 ```csharp
 Project GetCurrentProject();              // live model (read; mutate only via commands)
@@ -153,7 +161,7 @@ IReadOnlyList<Profile> GetAllProfiles();
 IReadOnlyList<GlassPanel> GetAllGlassPanels();
 ```
 
-`Fenestration.Calculation` references **only** `Fenestration.Core`:
+`Mark.Calculation` references **only** `Mark.Core`:
 
 ```csharp
 Project snapshot = designService.GetProjectSnapshot();
@@ -171,12 +179,12 @@ allowances, accessories) lives in the library, generic fabrication rules (joint 
 Requires the **.NET 8 SDK** (or newer) on Windows.
 
 ```bash
-dotnet build Fenestration.sln
-dotnet test src/Fenestration.Tests
-dotnet run --project src/Fenestration.App
+dotnet build Mark.sln
+dotnet test src/Mark.Tests
+dotnet run --project src/Mark.App
 ```
 
-Or open `Fenestration.sln` in Visual Studio 2022 and set `Fenestration.App` as the startup project.
+Or open `Mark.sln` in Visual Studio 2022 and set `Mark.App` as the startup project.
 
 ## Milestones
 
@@ -191,9 +199,9 @@ Or open `Fenestration.sln` in Visual Studio 2022 and set `Fenestration.App` as t
 | M7 | Cutting optimisation: deterministic Best-Fit Decreasing over library stock lengths (several per profile), kerf, trim, remnants vs waste, utilisation, bar cost, cutting-plan panel | ✅ |
 | M8 | SQLite persistence & Library Manager: local database (schema versioning, first-run import of library.json), saved projects with stable Ids and tracked library references, validated library CRUD, search/filter, retire vs delete, JSON import/export | ✅ |
 | M9 | Openings and design library: fixed / side hung / top & bottom hung / tilt & turn / pivot / sliding openings with mesh shutters, sash drawing with CAD symbols, handles and labels, design library (click or drag), whole-frame vs single-opening templates, design details (reference, quantity, floor distance), Inside / Outside view | ✅ |
-| M10 | Quotes and designs | |
+| M10 | Quotes, clients and designs: client/site/notes form, quote status and numbers, design cards with price × quantity, duplicate/delete/edit, quote list (Active/Won/Lost/All, search), dashboard (tiles, value by status, win rate, recent quotes), database schema 2 | ✅ |
 | M11 | Pricing structure (cost heads, rates, tax; sash and mesh members in the BOM) | |
-| M12 | Opportunities and dashboard | |
+| M12 | Opportunities and dashboard charts (basic dashboard done in M10) | |
 | M13 | Documents and reports | |
 | M14 | Shell and polish | |
 

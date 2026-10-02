@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Mark.App</RootNamespace>
+    <!-- The program the user starts: MARK.exe. -->
+    <AssemblyName>MARK</AssemblyName>
+  </PropertyGroup>
+
+  <!-- Data shipped next to the executable: the product library and the workshop's calculation rules. -->
+  <ItemGroup>
+    <None Update="Library\library.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Settings\calculation-rules.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mark.Core\Mark.Core.csproj" />
+    <ProjectReference Include="..\Mark.Designer\Mark.Designer.csproj" />
+    <ProjectReference Include="..\Mark.Data\Mark.Data.csproj" />
+  </ItemGroup>
+
+</Project>

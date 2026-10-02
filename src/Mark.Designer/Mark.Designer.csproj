@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Mark.Designer</RootNamespace>
+    <AssemblyName>Mark.Designer</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mark.Core\Mark.Core.csproj" />
+    <ProjectReference Include="..\Mark.Calculation\Mark.Calculation.csproj" />
+    <ProjectReference Include="..\Mark.Data\Mark.Data.csproj" />
+  </ItemGroup>
+
+</Project>

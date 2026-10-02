@@ -1,0 +1,204 @@
+using System.Globalization;
+using System.Windows.Input;
+using Mark.Core.Commands;
+using Mark.Core.Models;
+using Mark.Core.Quotes;
+using Mark.Data;
+
+namespace Mark.Designer.ViewModels;
+
+/// <summary>The application's main pages.</summary>
+public enum AppPage { Dashboard, Quotes, Quote }
+
+/// <summary>The tabs of the open quote.</summary>
+public enum QuoteSection { Client, Designs, Drawing }
+
+/// <summary>
+/// Milestone 10: the open project is a quote. Navigation (Dashboard, Quotes, the open quote with its Client, Designs
+/// and Drawing tabs), client details, design cards, the quote list and the dashboard. Every change to the quote goes
+/// through the command history like design edits; Save stores the quote with its number and value.
+/// </summary>
+public partial class MainViewModel
+{
+    public QuoteDetailsViewModel Details { get; private set; } = null!;
+    public DesignListViewModel Designs { get; private set; } = null!;
+    public QuoteListViewModel Quotes { get; private set; } = null!;
+    public DashboardViewModel Dashboard { get; private set; } = null!;
+
+    public ICommand ShowPageCommand { get; private set; } = null!;
+    public ICommand ShowSectionCommand { get; private set; } = null!;
+
+    private void CreateQuoteFeatures()
+    {
+        Details = new QuoteDetailsViewModel(SetQuoteDetails);
+        Designs = new DesignListViewModel(() => Project, () => Calculation.Result, () => Library, Rules,
+            EditDesign, DuplicateDesign, DeleteDesign, NewDesign);
+        Quotes = new QuoteListViewModel(() => Store?.Projects, () => Project.Id, () => Dialogs, OpenQuote, NewQuote);
+        Dashboard = new DashboardViewModel(() => Store?.Projects, OpenQuote, NewQuote);
+        ShowPageCommand = new RelayCommand(p =>
+        {
+            if (p is AppPage page) Page = page;
+            else if (p is string name && Enum.TryParse(name, out AppPage parsed)) Page = parsed;
+        });
+        ShowSectionCommand = new RelayCommand(p =>
+        {
+            if (p is QuoteSection section) Section = section;
+            else if (p is string name && Enum.TryParse(name, out QuoteSection parsed)) Section = parsed;
+        });
+    }
+
+    // ── Navigation ──────────────────────────────────────────────────
+
+    private AppPage _page = AppPage.Quote;
+
+    /// <summary>The page shown. Showing the dashboard or the quote list reads the saved quotes again.</summary>
+    public AppPage Page
+    {
+        get => _page;
+        set
+        {
+            if (_page != value)
+            {
+                ActiveTool.Cancel();
+                Interaction.Clear();
+            }
+            _page = value;
+            OnPropertyChanged();
+            if (value == AppPage.Dashboard) Dashboard.Reload();
+            if (value == AppPage.Quotes) Quotes.Reload();
+            Designs.IsVisible = value == AppPage.Quote && _section == QuoteSection.Designs;
+        }
+    }
+
+    private QuoteSection _section = QuoteSection.Drawing;
+
+    /// <summary>The tab of the open quote that is shown.</summary>
+    public QuoteSection Section
+    {
+        get => _section;
+        set
+        {
+            if (_section == value) return;
+            ActiveTool.Cancel();
+            Interaction.Clear();
+            _section = value;
+            OnPropertyChanged();
+            Designs.IsVisible = _page == AppPage.Quote && value == QuoteSection.Designs;
+            if (value == QuoteSection.Client) Details.SyncFromModel();
+        }
+    }
+
+    /// <summary>"QT-00012 · Sharma residence" for the quote header (just the name until the quote is saved and numbered).</summary>
+    public string QuoteHeader
+        => string.IsNullOrEmpty(Project.Quote.Number) ? Project.Name : $"{Project.Quote.Number} · {Project.Name}";
+
+    /// <summary>"Mr. Archit Singh · Active", or just the status without a client.</summary>
+    public string QuoteSubHeader
+    {
+        get
+        {
+            string client = Project.Quote.Client.DisplayName;
+            return client.Length == 0 ? Project.Quote.Status.ToString() : $"{client} · {Project.Quote.Status}";
+        }
+    }
+
+    /// <summary>"Qty 4 · 2,45,000.00 INR" for the quote header.</summary>
+    public string QuoteTotalText
+    {
+        get
+        {
+            var totals = QuoteTotals.Of(Project);
+            if (totals.Designs == 0) return "No designs";
+            var value = QuoteValueOf();
+            return $"Qty {totals.Quantity} · {value.Amount.ToString("N2", CultureInfo.InvariantCulture)} {value.Currency}".TrimEnd();
+        }
+    }
+
+    private void RefreshQuoteViews()
+    {
+        Designs.Invalidate();
+        Details.SyncFromModel();
+        OnPropertyChanged(nameof(QuoteHeader));
+        OnPropertyChanged(nameof(Title));
+        OnPropertyChanged(nameof(QuoteSubHeader));
+        OnPropertyChanged(nameof(QuoteTotalText));
+    }
+
+    /// <summary>The quote's priced value: each design's calculated price × its quantity (designs that could not be priced count 0).</summary>
+    public QuoteValue QuoteValueOf()
+    {
+        var result = Calculation.Result;
+        decimal total = Project.Frames.Sum(f => (result.FindFrame(f.Id)?.Cost.Total ?? 0) * Math.Max(1, f.Design.Quantity));
+        return new QuoteValue(total, result.Currency);
+    }
+
+    // ── Quotes ──────────────────────────────────────────────────────
+
+    /// <summary>Starts a new, empty quote (asking first about unsaved changes) and shows its Client tab.</summary>
+    public void NewQuote()
+    {
+        if (!ConfirmDiscardChanges()) return;
+        ShowProject(new Project { Name = "New quote" });
+        Page = AppPage.Quote;
+        Section = QuoteSection.Client;
+    }
+
+    /// <summary>Opens a saved quote (asking first about unsaved changes) on its Designs tab. Returns an error or null.</summary>
+    public string? OpenQuote(Guid id)
+    {
+        if (id == Project.Id && Store?.Projects.Exists(id) == true && !IsDirty)
+        {
+            Page = AppPage.Quote;
+            return null;
+        }
+        if (!ConfirmDiscardChanges()) return null;
+        string? error = OpenProject(id);
+        if (error is not null) return error;
+        Page = AppPage.Quote;
+        Section = QuoteSection.Designs;
+        return null;
+    }
+
+    private string? SetQuoteDetails(string name, QuoteInfo quote)
+        => RunForMessage(() => new SetQuoteInfoCommand(Project, name, quote));
+
+    // ── Designs ─────────────────────────────────────────────────────
+
+    /// <summary>Shows a design in the Drawing tab, selected and fitted.</summary>
+    public void EditDesign(Guid frameId)
+    {
+        if (Project.Frames.FirstOrDefault(f => f.Id == frameId) is not { } frame) return;
+        IsOutsideView = false;
+        Page = AppPage.Quote;
+        Section = QuoteSection.Drawing;
+        Select(frame.Id);
+        Canvas.FitToBounds(Rendering.FrameRenderer.DrawnBounds(frame).Bounds);
+    }
+
+    /// <summary>A copy of the design to the right of the others, with the next reference. One undo step.</summary>
+    public string? DuplicateDesign(Guid frameId)
+    {
+        if (Project.Frames.FirstOrDefault(f => f.Id == frameId) is not { } frame) return "The design no longer exists.";
+        return RunForMessage(() => DuplicateFrameCommand.Create(Project, frame, Rules));
+    }
+
+    /// <summary>Deletes a design after confirmation. One undo step.</summary>
+    public string? DeleteDesign(Guid frameId)
+    {
+        if (Project.Frames.FirstOrDefault(f => f.Id == frameId) is not { } frame) return "The design no longer exists.";
+        string name = string.IsNullOrWhiteSpace(frame.Design.Reference) ? "this design" : frame.Design.Reference;
+        if (Dialogs is not null && !Dialogs.Confirm("Delete design", $"Delete {name} from the quote?"))
+            return null;
+        return RunForMessage(() => new DeleteFrameCommand(Project, frame));
+    }
+
+    /// <summary>A new plain frame (the New Frame size) next to the others, opened in the Drawing tab with the design library.</summary>
+    public void NewDesign()
+    {
+        ClearSelection();
+        CreateFrame();
+        Page = AppPage.Quote;
+        Section = QuoteSection.Drawing;
+        DesignLibrary.SelectedCategory = Core.Design.DesignTemplates.Openable;
+    }
+}

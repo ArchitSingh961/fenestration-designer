@@ -9,7 +9,7 @@ Project (design, mm)  +  IProductLibrary (products)  +  CalculationRules (fabric
         profiles · glass · materials · cut list · BOM · cost · weight · issues
 ```
 
-`Fenestration.Calculation` is plain `net8.0` and references **Core only**: no WPF, no Designer, no view models
+`Mark.Calculation` is plain `net8.0` and references **Core only**: no WPF, no Designer, no view models
 (`ArchitectureTests` enforce this). The view models only format its results.
 
 ## Product library (`Core/Library`)
@@ -121,7 +121,7 @@ CalculationResult.Profiles (one ProfileLine per piece: library id, cut length, a
 CuttingPlan → ProfileCuttingPlan per library profile → StockBar per bar → its ProfileLine cuts
 ```
 
-`CuttingOptimizer` lives in `Fenestration.Calculation` (no WPF). `CalculationService.CuttingPlan` gives the plan
+`CuttingOptimizer` lives in `Mark.Calculation` (no WPF). `CalculationService.CuttingPlan` gives the plan
 for the current design, computed on first read after a change and cached; the designer only formats it
 (`CuttingPlanViewModel`).
 

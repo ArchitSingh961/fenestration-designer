@@ -16,6 +16,9 @@
         <views:EnumToBooleanConverter x:Key="EnumToBool" />
         <views:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVisibility" />
         <views:EnumToVisibilityConverter x:Key="EnumToVisibility" />
+        <views:FractionToWidthConverter x:Key="FractionToWidth" />
+        <views:CountToVisibilityConverter x:Key="CountToVisibility" />
+        <views:CountToVisibilityConverter x:Key="CountToCollapsed" Invert="True" />
 
         <!-- Design details of the selected frame (reference, quantity, where it goes). -->
         <DataTemplate DataType="{x:Type vm:DesignInfoEditorViewModel}">
@@ -1287,30 +1290,108 @@
                                 </StackPanel>
 
                                     <!-- Bill of materials for the whole project -->
-                                    <TextBlock Style="{StaticResource PanelHeader}" Text="BILL OF MATERIALS" Margin="12,20,12,4" />
-                                    <TextBlock Margin="12,0,12,6" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" Text="{Binding CostText}" />
-                                    <Border Margin="12,0,12,6" Padding="8" Background="{StaticResource ErrorBackgroundBrush}"
-                                            Visibility="{Binding HasCalculationStatus, Converter={StaticResource BoolToVisibility}}">
-                                        <TextBlock Text="{Binding CalculationStatus}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" />
+                                    <!-- Bill of materials: total with a cost bar, then colour-coded groups -->
+                                    <Border Margin="10,18,10,6" Padding="14,12" CornerRadius="8" Background="White"
+                                            BorderBrush="#DDE1E6" BorderThickness="1"
+                                            Visibility="{Binding BomGroups.Count, Converter={StaticResource CountToVisibility}}">
+                                        <StackPanel>
+                                            <TextBlock Text="BILL OF MATERIALS" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource HeaderTextBrush}" />
+                                            <TextBlock Text="{Binding CostText}" FontSize="18" FontWeight="SemiBold" Margin="0,4,0,0"
+                                                       Foreground="#1F2A37" />
+                                            <TextBlock Text="{Binding BomSummaryText}" FontSize="10" TextWrapping="Wrap"
+                                                       Foreground="{StaticResource MutedTextBrush}" />
+                                            <!-- Share of each group in the cost -->
+                                            <Border x:Name="BomBar" Margin="0,10,0,4" Height="8" CornerRadius="4" Background="#EEF0F3" ClipToBounds="True">
+                                                <ItemsControl ItemsSource="{Binding BomGroups}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <StackPanel Orientation="Horizontal" />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Rectangle Height="8" Fill="{Binding Accent}" ToolTip="{Binding Title}">
+                                                                <Rectangle.Width>
+                                                                    <MultiBinding Converter="{StaticResource FractionToWidth}">
+                                                                        <Binding Path="Share" />
+                                                                        <Binding Path="ActualWidth" ElementName="BomBar" />
+                                                                    </MultiBinding>
+                                                                </Rectangle.Width>
+                                                            </Rectangle>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </Border>
+                                            <!-- Legend -->
+                                            <ItemsControl ItemsSource="{Binding BomGroups}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <WrapPanel />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,2,10,0">
+                                                            <Ellipse Width="7" Height="7" Fill="{Binding Accent}" VerticalAlignment="Center" />
+                                                            <TextBlock Margin="4,0,0,0" FontSize="10" Foreground="{StaticResource MutedTextBrush}">
+                                                                <Run Text="{Binding Title, Mode=OneWay}" /><Run Text=" " /><Run Text="{Binding ShareText, Mode=OneWay}" />
+                                                            </TextBlock>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
                                     </Border>
-                                    <ItemsControl ItemsSource="{Binding BomRows}" Margin="12,0,12,12">
+                                    <TextBlock Margin="12,18,12,4" Style="{StaticResource PanelHeader}" Text="BILL OF MATERIALS"
+                                               Visibility="{Binding BomGroups.Count, Converter={StaticResource CountToCollapsed}}" />
+                                    <Border Margin="10,0,10,6" Padding="8" CornerRadius="6" Background="{StaticResource ErrorBackgroundBrush}"
+                                            Visibility="{Binding HasCalculationStatus, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock Text="{Binding CalculationStatus}" TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource ErrorBrush}" />
+                                    </Border>
+
+                                    <ItemsControl ItemsSource="{Binding BomGroups}" Margin="10,0,10,10">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Grid Margin="0,3">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="Auto" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <Grid.RowDefinitions>
-                                                        <RowDefinition Height="Auto" />
-                                                        <RowDefinition Height="Auto" />
-                                                    </Grid.RowDefinitions>
-                                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" Foreground="{StaticResource TextBrush}"
-                                                               ToolTip="{Binding Category}" />
-                                                    <TextBlock Grid.Column="1" Text="{Binding Cost}" Margin="8,0,0,0" Foreground="{StaticResource TextBrush}" />
-                                                    <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Detail}" FontSize="10"
-                                                               TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" />
-                                                </Grid>
+                                                <Border Margin="0,0,0,8" CornerRadius="8" Background="White" BorderBrush="#E3E6EA" BorderThickness="1"
+                                                        ClipToBounds="True">
+                                                    <StackPanel>
+                                                        <ToggleButton IsChecked="{Binding IsExpanded}" Style="{StaticResource BomGroupHeader}" />
+                                                        <ItemsControl ItemsSource="{Binding Items}"
+                                                                      Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVisibility}}">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <Border BorderBrush="#F0F2F5" BorderThickness="0,1,0,0" Padding="12,7,12,7">
+                                                                        <StackPanel>
+                                                                            <DockPanel>
+                                                                                <TextBlock DockPanel.Dock="Right" Text="{Binding Cost}" FontWeight="SemiBold"
+                                                                                           Foreground="#1F2A37" Margin="8,0,0,0" />
+                                                                                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                                                                                           Foreground="#1F2A37" ToolTip="{Binding Name}" />
+                                                                            </DockPanel>
+                                                                            <TextBlock Text="{Binding Detail}" FontSize="10" Foreground="{StaticResource MutedTextBrush}"
+                                                                                       Margin="0,1,0,0" />
+                                                                            <ItemsControl ItemsSource="{Binding SubLines}" Margin="2,4,0,0"
+                                                                                          Visibility="{Binding HasSubLines, Converter={StaticResource BoolToVisibility}}">
+                                                                                <ItemsControl.ItemTemplate>
+                                                                                    <DataTemplate>
+                                                                                        <Border BorderBrush="#BFE7EC" BorderThickness="2,0,0,0" Padding="7,1,0,1">
+                                                                                            <DockPanel>
+                                                                                                <TextBlock DockPanel.Dock="Right" Text="{Binding Cost}" FontSize="10"
+                                                                                                           Foreground="#4B5563" />
+                                                                                                <TextBlock Text="{Binding Text}" FontSize="10" Foreground="#4B5563"
+                                                                                                           TextTrimming="CharacterEllipsis" />
+                                                                                            </DockPanel>
+                                                                                        </Border>
+                                                                                    </DataTemplate>
+                                                                                </ItemsControl.ItemTemplate>
+                                                                            </ItemsControl>
+                                                                        </StackPanel>
+                                                                    </Border>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </StackPanel>
+                                                </Border>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>

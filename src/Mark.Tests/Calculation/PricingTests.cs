@@ -370,3 +370,43 @@ public class PricingTests : IDisposable
         Assert.Contains(vm.Price.GrandTotal.ToString("N2", System.Globalization.CultureInfo.InvariantCulture), vm.QuoteTotalText);
     }
 }
+
+/// <summary>The grouped, colour-coded bill of materials in the side panel.</summary>
+public class BomGroupTests
+{
+    [Fact]
+    public void Groups_FollowAFixedOrder_WithSubtotalsAndShares_AndGlassListsItsSizes()
+    {
+        var bom = new[]
+        {
+            new BomLine(BomCategory.Hardware, "CLEAT", "Corner cleat", "", 4, "pcs", null, null, null, 100m),
+            new BomLine(BomCategory.Glass, "TGH", "Toughened", "500 × 600 mm", 2, "pcs", null, 0.6, null, 200m),
+            new BomLine(BomCategory.Glass, "TGH", "Toughened", "400 × 600 mm", 1, "pcs", null, 0.24, null, 100m),
+            new BomLine(BomCategory.Profile, "FRM", "Frame", "", 4, "pcs", 5000, null, 6, 600m)
+        };
+        var collapsed = new HashSet<string> { "Hardware" };
+
+        var groups = BomGroupBuilder.Build(bom, title => !collapsed.Contains(title), (_, _) => { });
+
+        Assert.Equal(new[] { "Profiles", "Glass", "Hardware" }, groups.Select(g => g.Title));
+        Assert.Equal(new[] { 0.6, 0.3, 0.1 }, groups.Select(g => Math.Round(g.Share, 6)));
+        Assert.False(groups[2].IsExpanded);
+        Assert.Equal("4 pcs · 5 m · 6 kg", groups[0].Items.Single().Detail);
+        var glass = groups[1].Items.Single();
+        Assert.Equal(("Toughened", "3 panes · 0.84 m²", "300.00"), (glass.Name, glass.Detail, glass.Cost));
+        Assert.Equal(new[] { "2 × 500 × 600 mm", "1 × 400 × 600 mm" }, glass.SubLines.Select(l => l.Text));
+    }
+
+    [Fact]
+    public void CollapsingAGroup_IsRemembered()
+    {
+        string? remembered = null;
+        var bom = new[] { new BomLine(BomCategory.Gasket, "G", "Gasket", "", 5, "m", null, null, null, 50m) };
+        var group = BomGroupBuilder.Build(bom, _ => true, (title, expanded) => remembered = $"{title}:{expanded}").Single();
+
+        group.IsExpanded = false;
+
+        Assert.Equal("Gaskets:False", remembered);
+        Assert.Equal("1 item", group.CountText);
+    }
+}

@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:views="clr-namespace:Mark.Designer.Views;assembly=Mark.Designer">
 
     <!-- Neutral, low-contrast palette suited to long working sessions. -->
     <SolidColorBrush x:Key="ChromeBackgroundBrush" Color="#F3F3F3" />
@@ -14,6 +15,11 @@
     <SolidColorBrush x:Key="ErrorBackgroundBrush" Color="#FBECEC" />
 
     <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
+    <!-- Every drop-down: the mouse wheel scrolls the page instead of silently changing the choice. -->
+    <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+        <Setter Property="views:ComboBoxWheel.ScrollsPage" Value="True" />
+    </Style>
 
     <Style x:Key="FieldLabel" TargetType="TextBlock">
         <Setter Property="VerticalAlignment" Value="Center" />
@@ -342,6 +348,46 @@
                             <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
                             <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
                             <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Header of a bill-of-materials group: colour strip, icon, name and count, subtotal, chevron. -->
+    <Style x:Key="BomGroupHeader" TargetType="ToggleButton">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Grid>
+                        <Border Background="{Binding Accent}" Opacity="0.07" />
+                        <Border x:Name="Hover" Background="#000000" Opacity="0" />
+                        <DockPanel Margin="0,0,10,0">
+                            <Rectangle DockPanel.Dock="Left" Width="4" Fill="{Binding Accent}" />
+                            <TextBlock x:Name="Chevron" DockPanel.Dock="Right" Text="&#xE70E;" FontFamily="Segoe MDL2 Assets" FontSize="9"
+                                       VerticalAlignment="Center" Margin="8,0,0,0" Foreground="#6B7280" />
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding Subtotal}" FontWeight="SemiBold" VerticalAlignment="Center"
+                                       Foreground="#1F2A37" />
+                            <TextBlock DockPanel.Dock="Left" Text="{Binding Glyph}" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{Binding Accent}" VerticalAlignment="Center" Margin="10,9,8,9" />
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Foreground="#1F2A37" />
+                                <TextBlock FontSize="10" Foreground="#6B7280">
+                                    <Run Text="{Binding CountText, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding ShareText, Mode=OneWay}" />
+                                </TextBlock>
+                            </StackPanel>
+                        </DockPanel>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="False">
+                            <Setter TargetName="Chevron" Property="Text" Value="&#xE70D;" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Hover" Property="Opacity" Value="0.03" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

@@ -14,3 +14,6 @@ TestResults/
 # Local .NET SDK installed for this workspace (not source)
 .dotnet/
 dotnet-install.ps1
+
+# Local app builds
+out/

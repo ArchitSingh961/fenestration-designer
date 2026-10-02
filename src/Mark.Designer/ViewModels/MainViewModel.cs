@@ -659,6 +659,21 @@ public partial class MainViewModel : ViewModelBase, IDesignService
     /// <summary>The bill of materials of the whole project, formatted for the panel.</summary>
     public ObservableCollection<BomRow> BomRows { get; } = new();
 
+    /// <summary>The bill of materials as colour-coded groups (Profiles, Glass, Hardware…) for the panel.</summary>
+    public ObservableCollection<BomGroup> BomGroups { get; } = new();
+
+    /// <summary>Which BOM groups the user collapsed (kept while the design changes).</summary>
+    private readonly HashSet<string> _collapsedBomGroups = new();
+
+    /// <summary>"6 kinds of item · 142.5 kg" under the BOM total.</summary>
+    public string BomSummaryText
+    {
+        get => _bomSummaryText;
+        private set => SetProperty(ref _bomSummaryText, value);
+    }
+
+    private string _bomSummaryText = "";
+
     /// <summary>The cutting plan of the whole project (stock bars, remnants, waste), formatted for the panel.</summary>
     public CuttingPlanViewModel Cutting { get; } = new();
 
@@ -696,6 +711,13 @@ public partial class MainViewModel : ViewModelBase, IDesignService
                 : line.Category is BomCategory.Glass ? $"{quantity} × {line.Description}" : line.Description;
             BomRows.Add(new BomRow(line.Category.ToString(), line.Name, detail, FormatMoney(line.Cost)));
         }
+
+        BomGroups.Clear();
+        foreach (var group in BomGroupBuilder.Build(result.Bom, title => !_collapsedBomGroups.Contains(title),
+                     (title, expanded) => { if (expanded) _collapsedBomGroups.Remove(title); else _collapsedBomGroups.Add(title); }))
+            BomGroups.Add(group);
+        BomSummaryText = result.Bom.Count == 0 ? ""
+            : $"{result.Bom.Count} items · {result.WeightKg.ToString("0.#", CultureInfo.InvariantCulture)} kg · material cost before your pricing";
 
         CostText = Project.Frames.Count == 0 ? "" : $"Total {FormatMoney(result.Cost.Total)} {result.Currency}".TrimEnd();
         var errors = result.Issues.Where(i => i.Severity == IssueSeverity.Error).ToList();

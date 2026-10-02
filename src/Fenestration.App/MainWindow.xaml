@@ -3,8 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:Fenestration.Designer.Controls;assembly=Fenestration.Designer"
         xmlns:views="clr-namespace:Fenestration.Designer.Views;assembly=Fenestration.Designer"
+        xmlns:vm="clr-namespace:Fenestration.Designer.ViewModels;assembly=Fenestration.Designer"
         Title="{Binding Title}"
         Loaded="Window_Loaded"
+        Closing="Window_Closing"
         Width="1280" Height="800"
         MinWidth="900" MinHeight="600"
         WindowStartupLocation="CenterScreen"
@@ -12,10 +14,70 @@
 
     <Window.Resources>
         <views:EnumToBooleanConverter x:Key="EnumToBool" />
+
+        <!-- A name / value / unit row of the properties panel. -->
+        <DataTemplate x:Key="PropertyRow">
+            <Grid Margin="0,3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="90" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding Name}"
+                           Foreground="{StaticResource MutedTextBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding Value}" TextAlignment="Right"
+                           Foreground="{StaticResource TextBrush}" />
+                <TextBlock Grid.Column="2" Text="{Binding Unit}" Margin="4,0,0,0"
+                           Foreground="{StaticResource MutedTextBrush}" />
+            </Grid>
+        </DataTemplate>
+
+        <!-- Searchable library selection (glass type / profile) in the properties panel. -->
+        <DataTemplate DataType="{x:Type vm:LibraryPickerViewModel}">
+            <StackPanel Margin="12,10,12,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="90" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding Label}" Style="{StaticResource FieldLabel}" VerticalAlignment="Top" />
+                    <TextBlock Grid.Column="1" Text="{Binding CurrentText}" TextWrapping="Wrap" TextAlignment="Right"
+                               FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" />
+                </Grid>
+                <Grid Margin="0,4,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="90" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Search" Style="{StaticResource FieldLabel}" />
+                    <TextBox Grid.Column="1" Padding="4,2" ToolTip="Filter the library by name, code, type or series"
+                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
+                </Grid>
+                <ComboBox Margin="0,4,0,0" ItemsSource="{Binding Options}" SelectedItem="{Binding SelectedOption}"
+                          ToolTip="Choose a library item to assign it">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="0,1">
+                                <TextBlock Text="{Binding Name}" />
+                                <TextBlock Text="{Binding Detail}" FontSize="10" Foreground="{StaticResource MutedTextBrush}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Text="{Binding ResultSummary}" FontSize="10" HorizontalAlignment="Right" Margin="0,2,0,0"
+                           Foreground="{StaticResource MutedTextBrush}" />
+                <Border Margin="0,4,0,0" Padding="8" Background="{StaticResource ErrorBackgroundBrush}"
+                        Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" />
+                </Border>
+            </StackPanel>
+        </DataTemplate>
     </Window.Resources>
 
     <Window.InputBindings>
         <KeyBinding Modifiers="Ctrl" Key="N" Command="{Binding NewProjectCommand}" />
+        <KeyBinding Modifiers="Ctrl" Key="O" Command="{Binding OpenProjectCommand}" />
+        <KeyBinding Modifiers="Ctrl" Key="S" Command="{Binding SaveProjectCommand}" />
         <KeyBinding Modifiers="Ctrl" Key="Z" Command="{Binding UndoCommand}" />
         <KeyBinding Modifiers="Ctrl" Key="Y" Command="{Binding RedoCommand}" />
     </Window.InputBindings>
@@ -26,9 +88,14 @@
         <Menu DockPanel.Dock="Top" Background="{StaticResource ChromeBackgroundBrush}" Padding="4,2">
             <MenuItem Header="_File">
                 <MenuItem Header="_New" InputGestureText="Ctrl+N" Command="{Binding NewProjectCommand}" />
-                <MenuItem Header="_Open..." IsEnabled="False" />
-                <MenuItem Header="_Save" IsEnabled="False" />
-                <MenuItem Header="Save _As..." IsEnabled="False" />
+                <MenuItem Header="_Open..." InputGestureText="Ctrl+O" Command="{Binding OpenProjectCommand}" />
+                <MenuItem Header="_Save" InputGestureText="Ctrl+S" Command="{Binding SaveProjectCommand}" />
+                <MenuItem Header="Save a _Copy As..." Command="{Binding SaveProjectAsCommand}" />
+                <Separator />
+                <MenuItem Header="_Import Project File..." Command="{Binding ImportProjectFileCommand}" />
+                <MenuItem Header="_Export Project File..." Command="{Binding ExportProjectFileCommand}" />
+                <Separator />
+                <MenuItem Header="_Library Manager..." Command="{Binding OpenLibraryManagerCommand}" />
                 <Separator />
                 <MenuItem Header="E_xit" Click="Exit_Click" />
             </MenuItem>
@@ -70,8 +137,12 @@
                 Background="{StaticResource PanelBackgroundBrush}" Padding="6,4">
             <StackPanel Orientation="Horizontal">
                 <Button Style="{StaticResource ToolbarButton}" Content="New" Command="{Binding NewProjectCommand}" />
-                <Button Style="{StaticResource ToolbarButton}" Content="Open" IsEnabled="False" />
-                <Button Style="{StaticResource ToolbarButton}" Content="Save" IsEnabled="False" />
+                <Button Style="{StaticResource ToolbarButton}" Content="Open" ToolTip="Open a saved project (Ctrl+O)"
+                        Command="{Binding OpenProjectCommand}" />
+                <Button Style="{StaticResource ToolbarButton}" Content="Save" ToolTip="Save the project (Ctrl+S)"
+                        Command="{Binding SaveProjectCommand}" />
+                <Button Style="{StaticResource ToolbarButton}" Content="Library" ToolTip="Library manager: products, prices, stock lengths"
+                        Command="{Binding OpenLibraryManagerCommand}" />
                 <Rectangle Width="1" Margin="6,2" Fill="{StaticResource BorderBrush}" />
                 <Button Style="{StaticResource ToolbarButton}" Content="Undo" Command="{Binding UndoCommand}" />
                 <Button Style="{StaticResource ToolbarButton}" Content="Redo" Command="{Binding RedoCommand}" />
@@ -207,6 +278,8 @@
             <!-- Properties -->
             <Border Grid.Column="2" Background="{StaticResource PanelBackgroundBrush}"
                     BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,0,0,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+                <StackPanel>
                 <StackPanel DataContext="{Binding Properties}">
                     <TextBlock Style="{StaticResource PanelHeader}" Text="PROPERTIES" />
                     <TextBlock Margin="12,0,12,8" FontWeight="SemiBold"
@@ -269,26 +342,88 @@
                         <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" />
                     </Border>
 
-                    <ItemsControl ItemsSource="{Binding Items}" Margin="12,8,12,0">
+                    <ItemsControl ItemsSource="{Binding Items}" Margin="12,8,12,0" ItemTemplate="{StaticResource PropertyRow}" />
+
+                    <!-- Library assignments: change glass / profile after design -->
+                    <ContentControl Content="{Binding ProfilePicker}" Focusable="False" />
+                    <ContentControl Content="{Binding GlassPicker}" Focusable="False" />
+
+                    <!-- Calculated values for the selection -->
+                    <StackPanel Visibility="{Binding HasCalculation, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Style="{StaticResource PanelHeader}" Text="CALCULATION" Margin="12,16,12,4" />
+                        <ItemsControl ItemsSource="{Binding CalculationItems}" Margin="12,0,12,0" ItemTemplate="{StaticResource PropertyRow}" />
+                    </StackPanel>
+                    <Border Margin="12,8,12,4" Padding="8" Background="{StaticResource ErrorBackgroundBrush}"
+                            Visibility="{Binding HasCalculationMessage, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="{Binding CalculationMessage}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" />
+                    </Border>
+                </StackPanel>
+
+                    <!-- Bill of materials for the whole project -->
+                    <TextBlock Style="{StaticResource PanelHeader}" Text="BILL OF MATERIALS" Margin="12,20,12,4" />
+                    <TextBlock Margin="12,0,12,6" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" Text="{Binding CostText}" />
+                    <Border Margin="12,0,12,6" Padding="8" Background="{StaticResource ErrorBackgroundBrush}"
+                            Visibility="{Binding HasCalculationStatus, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="{Binding CalculationStatus}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" />
+                    </Border>
+                    <ItemsControl ItemsSource="{Binding BomRows}" Margin="12,0,12,12">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Grid Margin="0,3">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="90" />
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="{Binding Name}"
-                                               Foreground="{StaticResource MutedTextBrush}" />
-                                    <TextBlock Grid.Column="1" Text="{Binding Value}" TextAlignment="Right"
-                                               Foreground="{StaticResource TextBrush}" />
-                                    <TextBlock Grid.Column="2" Text="{Binding Unit}" Margin="4,0,0,0"
-                                               Foreground="{StaticResource MutedTextBrush}" />
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" Foreground="{StaticResource TextBrush}"
+                                               ToolTip="{Binding Category}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Cost}" Margin="8,0,0,0" Foreground="{StaticResource TextBrush}" />
+                                    <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Detail}" FontSize="10"
+                                               TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" />
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+
+                    <!-- Cutting plan (stock bars, remnants, waste) for the whole project -->
+                    <StackPanel DataContext="{Binding Cutting}">
+                        <TextBlock Style="{StaticResource PanelHeader}" Text="CUTTING PLAN" Margin="12,8,12,4" />
+                        <TextBlock Margin="12,0,12,2" FontWeight="SemiBold" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}"
+                                   Text="{Binding SummaryText}" />
+                        <TextBlock Margin="12,0,12,2" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" Text="{Binding CostText}" />
+                        <TextBlock Margin="12,0,12,6" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding RulesText}" />
+                        <Border Margin="12,0,12,6" Padding="8" Background="{StaticResource ErrorBackgroundBrush}"
+                                Visibility="{Binding HasStatus, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" />
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding Profiles}" Margin="12,0,12,12">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,4">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" />
+                                        <TextBlock Text="{Binding Summary}" FontSize="10" TextWrapping="Wrap"
+                                                   Foreground="{StaticResource MutedTextBrush}" />
+                                        <ItemsControl ItemsSource="{Binding Bars}" Margin="8,2,0,0">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Margin="0,2">
+                                                        <!-- Runs on one line: XAML whitespace between them would show as a space. -->
+                                                        <TextBlock Foreground="{StaticResource TextBrush}" TextWrapping="Wrap"><Run Text="{Binding Stock, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=": " /><Run Text="{Binding Cuts, Mode=OneWay}" /></TextBlock>
+                                                        <TextBlock Text="{Binding Leftover}" FontSize="10" Foreground="{StaticResource MutedTextBrush}" />
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
                 </StackPanel>
+                </ScrollViewer>
             </Border>
         </Grid>
     </DockPanel>

@@ -6,24 +6,29 @@
 Fenestration.App        (WPF shell: App.xaml, MainWindow.xaml)            net8.0-windows
       ↓
 Fenestration.Designer   (view models, viewport control, rendering, input)  net8.0-windows
-      ↓
-Fenestration.Core       (models, geometry, viewport math, commands, JSON)  net8.0 — NO WPF
+      ↓                                   ↓
+Fenestration.Calculation (calculation engine,     Fenestration.Data (SQLite: library, saved   net8.0 — NO WPF,
+      BOM, cost, cutting plan)                         projects; see persistence.md)         reference Core only
+      ↓                                   ↓
+Fenestration.Core       (models, geometry, viewport math, commands, JSON,  net8.0 — NO WPF, NO SQLite
+                         product library)
 ```
 
-`Fenestration.Tests` (net8.0-windows) references Core and Designer. `ArchitectureTests` fail if Core
-ever references WPF, Designer or App; if any command holds a WPF object; or if Core or a future Calculation/Data
-project turns on WPF or a Windows-only target.
+`Fenestration.Tests` (net8.0-windows) references Core, Calculation, Data and Designer. `ArchitectureTests` fail if
+Core ever references WPF, Designer, App, Calculation or Data; if Calculation or Data references anything but Core; if
+Core or Calculation references SQLite; if any command holds a WPF object; or if Core, Calculation or Data turns on WPF
+or a Windows-only target.
 
 ```text
-                      Core  (models, geometry, design rules, snapping, interaction ops, commands)
+                      Core  (models, geometry, design rules, snapping, interaction ops, commands, library model)
                         │
           ┌─────────────┼──────────────┐
           ↓             ↓              ↓
-      Designer     Calculation*      Data*          * future; consume Core only
+      Designer     Calculation       Data   (SQLite; only the application layer uses it)
           │             │              │
           └─────────────┼──────────────┘
                         ↓
-                        UI (App)
+                        UI (App: composition root — opens the LocalStore, provides WpfDialogService)
 ```
 
 ## Core

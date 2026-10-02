@@ -49,6 +49,16 @@ public static class ValidationHelper
     }
 
     /// <summary>
+    /// A library reference is either absent (null = the library default) or a non-blank id. Whether the id exists
+    /// is checked by the calculation engine, since a project may be opened with a different library.
+    /// </summary>
+    public static void EnsureValidReference(string? id, string paramName)
+    {
+        if (id is not null && string.IsNullOrWhiteSpace(id))
+            throw new ArgumentException("A library reference must not be blank.", paramName);
+    }
+
+    /// <summary>
     /// Clamps a value to the valid dimension range.
     /// </summary>
     public static double ClampDimension(double valueMm)
@@ -76,10 +86,14 @@ public static class ValidationHelper
                 GeometryValidation.EnsureNonDegenerate(profile.Segment, paramName: $"Profile {profile.Id}");
                 EnsureValidThickness(profile.Thickness, $"Profile {profile.Id} Thickness");
                 GeometryValidation.EnsureFinite(profile.Rotation, $"Profile {profile.Id} Rotation");
+                EnsureValidReference(profile.ProfileDefinitionId, $"Profile {profile.Id} ProfileDefinitionId");
             }
 
             foreach (var glass in frame.GlassPanels)
+            {
                 EnsureValidThickness(glass.Thickness, $"Glass {glass.Id} Thickness");
+                EnsureValidReference(glass.GlassDefinitionId, $"Glass {glass.Id} GlassDefinitionId");
+            }
 
             foreach (var dimension in frame.Dimensions)
             {

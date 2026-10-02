@@ -1,4 +1,5 @@
 using Fenestration.Core.Geometry;
+using Fenestration.Core.Library;
 using Fenestration.Core.Models;
 using Fenestration.Core.Utilities;
 
@@ -254,6 +255,97 @@ public static class FrameEditor
         });
     }
 
+    // ── Library assignments (material change after design) ──────────
+
+    /// <summary>Fits a library glass type to some of the frame's panels (keeping their Ids and geometry).</summary>
+    public static void AssignGlass(Frame frame, IReadOnlyCollection<Guid> glassIds, string definitionId,
+        IProductLibrary library, DesignRules rules)
+        => TryAssignGlass(frame, glassIds, definitionId, library, rules).ThrowIfFailed();
+
+    /// <summary>
+    /// Sets <see cref="GlassPanel.GlassDefinitionId"/> and mirrors the definition's thickness onto the panels.
+    /// Rejected (nothing changes) if the id is not in the library or a panel is not part of the frame.
+    /// </summary>
+    public static EditResult TryAssignGlass(Frame frame, IReadOnlyCollection<Guid> glassIds, string definitionId,
+        IProductLibrary library, DesignRules rules)
+    {
+        ArgumentNullException.ThrowIfNull(glassIds);
+        ArgumentNullException.ThrowIfNull(library);
+        if (library.FindGlass(definitionId) is not { } glass)
+            return EditResult.Fail($"The glass type '{definitionId}' is not in the library.");
+        if (glassIds.Count == 0)
+            return EditResult.Fail("Select a glass panel first.");
+        var ids = glassIds.ToHashSet();
+        if (ids.Any(id => frame.GlassPanels.All(g => g.Id != id)))
+            return EditResult.Fail("The selected glass panel is not part of this frame.");
+
+        return TryCommit(frame, rules, "Cannot change the glass: ", scratch =>
+        {
+            foreach (var panel in scratch.GlassPanels.Where(g => ids.Contains(g.Id)))
+            {
+                panel.GlassDefinitionId = glass.Id;
+                panel.Thickness = glass.ThicknessMm;
+            }
+            return null;
+        });
+    }
+
+    /// <summary>Makes some of the frame's members from a different library profile.</summary>
+    public static void AssignProfile(Frame frame, IReadOnlyCollection<Guid> profileIds, string definitionId,
+        IProductLibrary library, DesignRules rules)
+        => TryAssignProfile(frame, profileIds, definitionId, library, rules).ThrowIfFailed();
+
+    /// <summary>
+    /// Sets <see cref="Profile.ProfileDefinitionId"/> and the member's face width (thickness) from the definition.
+    /// The outer size of the frame never changes: an outer member keeps its outside face where it is, so its
+    /// centreline moves and the divisions ending on it follow. Divisions keep their centreline. The glass is
+    /// then re-derived, so e.g. a wider frame profile gives smaller glass. Rejected (nothing changes) if the id is
+    /// unknown, the section cannot be used in a member's role, or the result would be invalid (glass too small).
+    /// </summary>
+    public static EditResult TryAssignProfile(Frame frame, IReadOnlyCollection<Guid> profileIds, string definitionId,
+        IProductLibrary library, DesignRules rules)
+    {
+        ArgumentNullException.ThrowIfNull(profileIds);
+        ArgumentNullException.ThrowIfNull(library);
+        if (library.FindProfile(definitionId) is not { } definition)
+            return EditResult.Fail($"The profile '{definitionId}' is not in the library.");
+        if (profileIds.Count == 0)
+            return EditResult.Fail("Select a frame, mullion or transom first.");
+        var ids = profileIds.ToHashSet();
+        foreach (var id in ids)
+        {
+            var profile = frame.Profiles.FirstOrDefault(p => p.Id == id);
+            if (profile is null)
+                return EditResult.Fail("The selected profile is not part of this frame.");
+            if (!definition.Supports(profile.ProfileType))
+                return EditResult.Fail($"'{definition.Name}' cannot be used as a {profile.ProfileType.ToString().ToLowerInvariant()}.");
+        }
+
+        return TryCommit(frame, rules, "Cannot change the profile: ", scratch =>
+        {
+            double t = definition.FaceWidthMm;
+            if (FrameMembers.Find(scratch) is { } outer)
+            {
+                // Keep the outside faces fixed: each outer centreline sits half the new face width inside them.
+                var sides = new (Profile Member, double Position)[]
+                {
+                    (outer.Left, t / 2.0), (outer.Top, t / 2.0),
+                    (outer.Right, scratch.Width - t / 2.0), (outer.Bottom, scratch.Height - t / 2.0)
+                };
+                foreach (var (member, position) in sides.Where(s => ids.Contains(s.Member.Id)))
+                    if (MoveMember(scratch, member, position) is { } error)
+                        return error;
+            }
+
+            foreach (var profile in scratch.Profiles.Where(p => ids.Contains(p.Id)))
+            {
+                profile.ProfileDefinitionId = definition.Id;
+                profile.Thickness = t;
+            }
+            return null;
+        });
+    }
+
     // ── Internals ───────────────────────────────────────────────────
 
     /// <summary>
@@ -314,9 +406,11 @@ public static class FrameEditor
     }
 
     /// <summary>
-    /// Replaces the frame's glass with one panel per layout region. Existing panels keep their Id, thickness and
-    /// properties: matched by order when the number of openings is unchanged (moves, resizes), otherwise by the
-    /// opening that now contains the old panel's centre (splits, merges).
+    /// Replaces the frame's glass with one panel per layout region. Existing panels keep their Id, thickness,
+    /// glass type and properties: matched by order when the number of openings is unchanged (moves, resizes),
+    /// otherwise by the opening that now contains the old panel's centre (splits, merges). A new opening made by a
+    /// split inherits the glass type and thickness of the old panel it overlaps most, so splitting a toughened
+    /// pane gives two toughened panes.
     /// </summary>
     private static void RegenerateGlass(Frame frame, FrameLayoutResult layout, DesignRules rules)
     {
@@ -341,16 +435,36 @@ public static class FrameEditor
                     Id = match.Id,
                     Boundary = region.GlassBounds,
                     Thickness = match.Thickness,
+                    GlassDefinitionId = match.GlassDefinitionId,
                     Properties = new Dictionary<string, string>(match.Properties)
                 });
             }
             else
             {
-                result.Add(new GlassPanel { Boundary = region.GlassBounds, Thickness = rules.DefaultGlassThicknessMm });
+                var parent = LargestOverlap(old, region.GlassBounds);
+                result.Add(new GlassPanel
+                {
+                    Boundary = region.GlassBounds,
+                    Thickness = parent?.Thickness ?? rules.DefaultGlassThicknessMm,
+                    GlassDefinitionId = parent?.GlassDefinitionId
+                });
             }
         }
 
         frame.GlassPanels = result;
+    }
+
+    private static GlassPanel? LargestOverlap(IEnumerable<GlassPanel> panels, Rectangle2D area)
+    {
+        GlassPanel? best = null;
+        double bestArea = 0;
+        foreach (var panel in panels)
+        {
+            double overlap = panel.Boundary.Intersection(area)?.Area ?? 0;
+            if (overlap > bestArea + GeometryTolerance.Epsilon)
+                (best, bestArea) = (panel, overlap);
+        }
+        return best;
     }
 
     /// <summary>Middle of the widest gap between existing parallel members across <paramref name="area"/>.</summary>

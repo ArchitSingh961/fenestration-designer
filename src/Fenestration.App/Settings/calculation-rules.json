@@ -1,0 +1,11 @@
+{
+  // Workshop fabrication rules. These describe the saw and the workshop, not products (products live in
+  // Library\library.json). Edit to match your saw; missing values keep their defaults.
+  "frameJoint": "mitre",          // "mitre" (45° corners) or "butt" (verticals run through)
+  "glassEdgeClearanceMm": 0,      // gap around the glass edge, deducted per side from the glass size
+  "cutting": {
+    "kerfMm": 3,                  // material removed by each saw cut
+    "trimAllowanceMm": 5,         // squared off the start of every stock bar
+    "minUsableOffcutMm": 300      // shorter leftovers are waste, longer ones are kept as remnants
+  }
+}

@@ -20,6 +20,13 @@ public class GlassPanel
     /// <summary>Glass thickness in mm (e.g. 4, 6, 8, 24 for IGU).</summary>
     public double Thickness { get; set; } = Units.DefaultGlassThicknessMm;
 
+    /// <summary>
+    /// Stable Id of the <see cref="Library.GlassDefinition"/> fitted in this opening (type, thickness, cost).
+    /// Null means "the library's default glass". <see cref="Thickness"/> mirrors the definition's thickness
+    /// when one is assigned; the library stays the source of truth for calculations.
+    /// </summary>
+    public string? GlassDefinitionId { get; set; }
+
     /// <summary>Extensible metadata for future calculation-engine use.</summary>
     public Dictionary<string, string> Properties { get; set; } = new();
 
@@ -31,6 +38,7 @@ public class GlassPanel
             Id = Guid.NewGuid(),
             Boundary = Boundary,
             Thickness = Thickness,
+            GlassDefinitionId = GlassDefinitionId,
             Properties = new Dictionary<string, string>(Properties)
         };
     }

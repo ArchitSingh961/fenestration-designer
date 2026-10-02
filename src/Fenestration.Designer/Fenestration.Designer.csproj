@@ -11,6 +11,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Fenestration.Core\Fenestration.Core.csproj" />
+    <ProjectReference Include="..\Fenestration.Calculation\Fenestration.Calculation.csproj" />
+    <ProjectReference Include="..\Fenestration.Data\Fenestration.Data.csproj" />
   </ItemGroup>
 
 </Project>

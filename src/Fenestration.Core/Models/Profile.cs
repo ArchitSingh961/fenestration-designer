@@ -27,6 +27,13 @@ public class Profile
     public double Rotation { get; set; }
 
     /// <summary>
+    /// Stable Id of the <see cref="Library.ProfileDefinition"/> this member is made from (the product: system,
+    /// weight, cost, cutting data). Null means "the library's default for this role". The design never copies
+    /// product data; it only references it, so a profile can be swapped after design without recreating it.
+    /// </summary>
+    public string? ProfileDefinitionId { get; set; }
+
+    /// <summary>
     /// Extensible key-value metadata.
     /// The calculation engine or user may store additional data here.
     /// </summary>
@@ -80,6 +87,7 @@ public class Profile
             EndPoint = EndPoint,
             Thickness = Thickness,
             Rotation = Rotation,
+            ProfileDefinitionId = ProfileDefinitionId,
             Properties = new Dictionary<string, string>(Properties)
         };
     }

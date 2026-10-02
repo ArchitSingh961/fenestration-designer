@@ -1,8 +1,12 @@
+using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Windows.Input;
+using Fenestration.Calculation;
 using Fenestration.Core.Commands;
 using Fenestration.Core.Design;
 using Fenestration.Core.Interaction;
 using Fenestration.Core.Interfaces;
+using Fenestration.Core.Library;
 using Fenestration.Core.Models;
 using Fenestration.Core.Serialization;
 using Fenestration.Core.Snapping;
@@ -13,6 +17,9 @@ using Fenestration.Designer.Tools;
 
 namespace Fenestration.Designer.ViewModels;
 
+/// <summary>A bill-of-materials row as shown in the panel.</summary>
+public sealed record BomRow(string Category, string Name, string Detail, string Cost);
+
 /// <summary>
 /// Top-level view model (application layer for the designer). Owns the current project, selection,
 /// command history, snapping, interaction mode/tools and the frame-designer actions.
@@ -21,7 +28,7 @@ namespace Fenestration.Designer.ViewModels;
 /// (validates, updates the domain model, re-derives glass) → history change → the renderer redraws from the
 /// model. During a drag only a preview (<see cref="Interaction"/>) changes; the model changes once, on release.
 /// </summary>
-public class MainViewModel : ViewModelBase, IDesignService
+public partial class MainViewModel : ViewModelBase, IDesignService
 {
     /// <summary>
     /// Fit to Screen leaves this fraction of the viewport as margin: room for the dimensions,
@@ -32,10 +39,19 @@ public class MainViewModel : ViewModelBase, IDesignService
     private readonly Dictionary<InteractionMode, IViewportTool> _tools;
     private bool _refreshingProperties;
 
-    public MainViewModel()
+    /// <summary>A designer with an empty product library (geometry only; calculations report unassigned items).</summary>
+    public MainViewModel() : this(ProductLibrary.Empty)
     {
-        Rules = new DesignRules();
+    }
+
+    /// <param name="library">The product library: glass, profiles and materials offered and priced.</param>
+    /// <param name="calculationRules">Fabrication rules for the calculation (defaults if null).</param>
+    public MainViewModel(IProductLibrary library, CalculationRules? calculationRules = null)
+    {
+        Library = library ?? throw new ArgumentNullException(nameof(library));
+        Rules = RulesFor(library);
         Rules.Validate();
+        Calculation = new CalculationService(() => Project, library, calculationRules);
         SnapSettings = new SnapSettings();
         SnapEngine = new SnapEngine(SnapSettings, Rules);
         Selection = new SelectionService();
@@ -48,7 +64,11 @@ public class MainViewModel : ViewModelBase, IDesignService
         Properties = new PropertiesViewModel
         {
             ResizeFrame = ResizeSelectedFrame,
-            MoveDivision = MoveSelectedDivision
+            MoveDivision = MoveSelectedDivision,
+            AssignGlass = AssignGlass,
+            AssignProfile = AssignProfile,
+            Library = library,
+            CalculationSource = () => Calculation.Result
         };
         CommandHistory = new CommandHistory();
 
@@ -80,8 +100,10 @@ public class MainViewModel : ViewModelBase, IDesignService
         {
             ((RelayCommand)UndoCommand).RaiseCanExecuteChanged();
             ((RelayCommand)RedoCommand).RaiseCanExecuteChanged();
+            IsDirty = true;
             OnDesignChanged();
         };
+        CreatePersistenceCommands();
 
         Selection.Changed += OnSelectionChanged;
 
@@ -123,6 +145,28 @@ public class MainViewModel : ViewModelBase, IDesignService
     public ISelectionService Selection { get; }
     public SnapSettings SnapSettings { get; }
     public SnapEngine SnapEngine { get; }
+
+    /// <summary>The product library (glass, profiles, materials) the design references by Id.</summary>
+    public IProductLibrary Library { get; private set; }
+
+    /// <summary>Keeps the calculation of the current design up to date (invalidated on every design change).</summary>
+    public CalculationService Calculation { get; }
+
+    /// <summary>
+    /// Drawing defaults for new objects follow the library's default products, so a new frame is drawn with the
+    /// face width of the profile it will be priced as. Without defaults the generic M4 values are kept.
+    /// </summary>
+    private static DesignRules RulesFor(IProductLibrary library)
+    {
+        var generic = new DesignRules();
+        return new DesignRules
+        {
+            FrameThicknessMm = library.DefaultProfileFor(ProfileType.Frame)?.FaceWidthMm ?? generic.FrameThicknessMm,
+            MullionThicknessMm = library.DefaultProfileFor(ProfileType.Mullion)?.FaceWidthMm ?? generic.MullionThicknessMm,
+            TransomThicknessMm = library.DefaultProfileFor(ProfileType.Transom)?.FaceWidthMm ?? generic.TransomThicknessMm,
+            DefaultGlassThicknessMm = library.DefaultGlass?.ThicknessMm ?? generic.DefaultGlassThicknessMm
+        };
+    }
 
     /// <summary>Preview/selection-box state of the interaction in progress (never domain data).</summary>
     public InteractionState Interaction { get; }
@@ -222,9 +266,9 @@ public class MainViewModel : ViewModelBase, IDesignService
         }
     }
 
-    public string Title => _projectFilePath != null
+    public string Title => (_projectFilePath != null
         ? $"eVA Fenestration Designer — {System.IO.Path.GetFileName(_projectFilePath)}"
-        : $"eVA Fenestration Designer — {Project.Name}";
+        : $"eVA Fenestration Designer — {Project.Name}") + (IsDirty ? " *" : "");
 
     /// <summary>
     /// Call after the committed design changed: redraws the content and refreshes the properties panel and
@@ -233,9 +277,11 @@ public class MainViewModel : ViewModelBase, IDesignService
     public void OnDesignChanged()
     {
         DesignVersion++;
+        Calculation.Invalidate();
         Canvas.InvalidateContent();
         Canvas.InvalidateOverlay();
         RefreshProperties();
+        RefreshCalculation();
         OnPropertyChanged(nameof(StatusText));
     }
 
@@ -287,7 +333,7 @@ public class MainViewModel : ViewModelBase, IDesignService
             if (Selection.Count == 0)
                 Properties.ShowNothing();
             else if (Selection.Count > 1)
-                Properties.ShowMultiple(Selection.Count);
+                Properties.ShowMultiple(Selection.Count, SelectedObjectsInOrder());
             else
             {
                 switch (FindObject(Selection.SelectedIds.First()))
@@ -342,13 +388,25 @@ public class MainViewModel : ViewModelBase, IDesignService
 
     private void NewProject()
     {
+        if (!ConfirmDiscardChanges())
+            return;
+        ShowProject(new Project { Name = "New Project" });
+    }
+
+    /// <summary>
+    /// Makes <paramref name="project"/> the open design (new, opened or imported): any drag is abandoned, the undo
+    /// history and selection are cleared (they belong to the previous design) and the view is fitted.
+    /// </summary>
+    private void ShowProject(Project project)
+    {
         ActiveTool.Cancel();
         Interaction.Clear();
-        Project = new Project { Name = "New Project" };
+        Project = project;
         CommandHistory.Clear();
         ClearSelection();
         ProjectFilePath = null;
         DesignMessage = null;
+        IsDirty = false;
         Canvas.InvalidateContent();
         Canvas.FitToContent();
     }
@@ -516,6 +574,131 @@ public class MainViewModel : ViewModelBase, IDesignService
             return "Select a mullion or transom first.";
         return RunForMessage(() => new MoveDivisionCommand(frame, profile.Id, position, Rules));
     }
+
+    // ── Library assignments (material change after design) ──────────
+
+    /// <summary>
+    /// Gives a library glass type to every glass panel the selection stands for: a selected panel itself, a
+    /// selected frame all of its panels. Works for any selection (one pane, a box selection, Ctrl+A) and runs as
+    /// ONE undoable step even across frames; if any frame rejects the change, nothing changes. The calculation,
+    /// BOM and properties then update from the model. Returns an error message, or null on success.
+    /// </summary>
+    public string? AssignGlass(string definitionId)
+    {
+        static IEnumerable<Guid> Panels(Frame f) => f.GlassPanels.Select(g => g.Id);
+        var targets = AssignmentTargets(Panels, Panels);
+        if (targets.Count == 0)
+            return "Select a glass panel or a frame first.";
+        string name = Library.FindGlass(definitionId)?.Name ?? definitionId;
+        return RunForMessage(() => CompositeCommand.Combine($"Change glass to {name}", targets
+            .Select(t => (IUndoableCommand)new AssignGlassCommand(t.Frame, t.Ids, definitionId, Library, Rules)).ToList())!);
+    }
+
+    /// <summary>
+    /// Makes every member the selection stands for from a library profile: a selected mullion/transom itself, a
+    /// selected frame its four outer members. The face width comes from the library, so the glass is re-derived.
+    /// One undoable step; all-or-nothing (e.g. a frame profile cannot be given to a mullion). Returns an error
+    /// message, or null on success.
+    /// </summary>
+    public string? AssignProfile(string definitionId)
+    {
+        var targets = AssignmentTargets(f => f.Profiles.Select(p => p.Id),
+            f => f.Profiles.Where(p => p.ProfileType == ProfileType.Frame).Select(p => p.Id));
+        if (targets.Count == 0)
+            return "Select a frame, mullion or transom first.";
+        string name = Library.FindProfile(definitionId)?.Name ?? definitionId;
+        return RunForMessage(() => CompositeCommand.Combine($"Change profile to {name}", targets
+            .Select(t => (IUndoableCommand)new AssignProfileCommand(t.Frame, t.Ids, definitionId, Library, Rules)).ToList())!);
+    }
+
+    /// <summary>
+    /// The objects the selection stands for, grouped by frame in project order: the selected ones among
+    /// <paramref name="candidates"/>, plus <paramref name="ofSelectedFrame"/> of each selected frame.
+    /// </summary>
+    private List<(Frame Frame, IReadOnlyList<Guid> Ids)> AssignmentTargets(
+        Func<Frame, IEnumerable<Guid>> candidates, Func<Frame, IEnumerable<Guid>> ofSelectedFrame)
+    {
+        var targets = new List<(Frame, IReadOnlyList<Guid>)>();
+        foreach (var frame in Project.Frames)
+        {
+            var ids = candidates(frame).Where(Selection.Contains)
+                .Concat(Selection.Contains(frame.Id) ? ofSelectedFrame(frame) : Enumerable.Empty<Guid>())
+                .Distinct()
+                .ToList();
+            if (ids.Count > 0)
+                targets.Add((frame, ids));
+        }
+        return targets;
+    }
+
+    /// <summary>The selected frames, profiles and glass panels, in project order (deterministic).</summary>
+    private List<object> SelectedObjectsInOrder()
+    {
+        var objects = new List<object>();
+        foreach (var frame in Project.Frames)
+        {
+            if (Selection.Contains(frame.Id)) objects.Add(frame);
+            objects.AddRange(frame.Profiles.Where(p => Selection.Contains(p.Id)));
+            objects.AddRange(frame.GlassPanels.Where(g => Selection.Contains(g.Id)));
+        }
+        return objects;
+    }
+
+    // ── Calculation summary (BOM and cost) ──────────────────────────
+
+    /// <summary>The bill of materials of the whole project, formatted for the panel.</summary>
+    public ObservableCollection<BomRow> BomRows { get; } = new();
+
+    /// <summary>The cutting plan of the whole project (stock bars, remnants, waste), formatted for the panel.</summary>
+    public CuttingPlanViewModel Cutting { get; } = new();
+
+    private string _costText = "";
+    /// <summary>Project total, e.g. "Total 24,310.50 INR".</summary>
+    public string CostText
+    {
+        get => _costText;
+        private set => SetProperty(ref _costText, value);
+    }
+
+    private string? _calculationStatus;
+    /// <summary>Why the calculation is incomplete (e.g. "2 items could not be priced: …"), or null.</summary>
+    public string? CalculationStatus
+    {
+        get => _calculationStatus;
+        private set
+        {
+            if (SetProperty(ref _calculationStatus, value))
+                OnPropertyChanged(nameof(HasCalculationStatus));
+        }
+    }
+
+    public bool HasCalculationStatus => !string.IsNullOrEmpty(_calculationStatus);
+
+    /// <summary>Reads the (re)calculated result and cutting plan, and refreshes the BOM rows, totals and plan.</summary>
+    private void RefreshCalculation()
+    {
+        var result = Calculation.Result;
+        BomRows.Clear();
+        foreach (var line in result.Bom)
+        {
+            string quantity = $"{line.Quantity.ToString("0.###", CultureInfo.InvariantCulture)} {line.Unit}";
+            string detail = string.IsNullOrEmpty(line.Description) ? quantity
+                : line.Category is BomCategory.Glass ? $"{quantity} × {line.Description}" : line.Description;
+            BomRows.Add(new BomRow(line.Category.ToString(), line.Name, detail, FormatMoney(line.Cost)));
+        }
+
+        CostText = Project.Frames.Count == 0 ? "" : $"Total {FormatMoney(result.Cost.Total)} {result.Currency}".TrimEnd();
+        var errors = result.Issues.Where(i => i.Severity == IssueSeverity.Error).ToList();
+        CalculationStatus = errors.Count switch
+        {
+            0 => null,
+            1 => errors[0].Message,
+            _ => $"{errors.Count} items could not be priced. {errors[0].Message}"
+        };
+        Cutting.Show(Project.Frames.Count == 0 ? CuttingPlan.Empty : Calculation.CuttingPlan);
+    }
+
+    private static string FormatMoney(decimal value) => value.ToString("N2", CultureInfo.InvariantCulture);
 
     /// <summary>Executes a command through the history; on a validation failure shows the reason and returns null.</summary>
     private T? Run<T>(Func<T> createCommand) where T : class, IUndoableCommand

@@ -36,6 +36,8 @@ type has a field holding a WPF type.
 | `MoveDivisionsCommand` | several divisions of one frame together | frame snapshot |
 | `DeleteDivisionCommand` / `DeleteDivisionsCommand` | removes division(s) | frame snapshot |
 | `FrameEditCommand.FromCompletedEdit` | wraps an edit that already happened | before/after snapshots |
+| `AssignGlassCommand` | gives panes of one frame a library glass type (M6) | frame snapshot |
+| `AssignProfileCommand` (`.ForOuterFrame`) | makes members of one frame from a library profile (M6) | frame snapshot |
 | `CompositeCommand` | several commands as ONE step | children undone in reverse |
 
 The spec's names map as follows: `DeleteElementCommand` is `DeleteFrameCommand` / `DeleteDivisionsCommand`,
@@ -61,6 +63,7 @@ are data mementos, not screenshots.
 
 ## Calculation-engine compatibility
 
-Commands run on mouse release, never per mouse move. A future calculation engine subscribes to
-`ICommandHistory.HistoryChanged` (or `MainViewModel.OnDesignChanged`) and recalculates from
-`IDesignService.GetProjectSnapshot()`. It never sees previews and needs no WPF.
+Commands run on mouse release, never per mouse move. `MainViewModel.OnDesignChanged` (raised by
+`ICommandHistory.HistoryChanged`) calls `CalculationService.Invalidate()`, so every committed edit, material change,
+undo and redo invalidates the calculation, which recalculates on the next read. It never sees previews and needs no
+WPF. A material change for several frames is one `CompositeCommand`; see [calculation.md](calculation.md).

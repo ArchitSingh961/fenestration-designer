@@ -1,6 +1,7 @@
 using System.IO;
 using System.Reflection;
 using System.Xml.Linq;
+using Fenestration.Calculation;
 using Fenestration.Core.Commands;
 using Fenestration.Core.Geometry;
 using Fenestration.Designer.ViewModels;
@@ -69,7 +70,7 @@ public class ArchitectureTests
     [Fact]
     public void HeadlessProjects_DoNotUseWpf()
     {
-        var src = Path.Combine(FindRepositoryRoot(), "src");
+        var src = Path.Combine(TestPaths.RepositoryRoot, "src");
         var headless = Directory.GetFiles(src, "*.csproj", SearchOption.AllDirectories)
             .Where(p =>
             {
@@ -78,6 +79,8 @@ public class ArchitectureTests
             })
             .ToList();
         Assert.Contains(headless, p => p.EndsWith("Fenestration.Core.csproj"));
+        Assert.Contains(headless, p => p.EndsWith("Fenestration.Calculation.csproj"));
+        Assert.Contains(headless, p => p.EndsWith("Fenestration.Data.csproj"));
 
         foreach (var project in headless)
         {
@@ -89,11 +92,41 @@ public class ArchitectureTests
         }
     }
 
-    private static string FindRepositoryRoot()
+    /// <summary>The calculation engine depends on Core only: never on WPF, the designer or the app.</summary>
+    [Fact]
+    public void Calculation_ReferencesOnlyCore()
     {
-        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
-            if (File.Exists(Path.Combine(dir.FullName, "Fenestration.sln")))
-                return dir.FullName;
-        throw new InvalidOperationException("Fenestration.sln not found above the test output directory.");
+        var references = typeof(CalculationEngine).Assembly.GetReferencedAssemblies().Select(a => a.Name).ToList();
+        Assert.Equal(new[] { "Fenestration.Core" }, references.Where(r => r!.StartsWith("Fenestration.")));
+        Assert.Empty(references.Intersect(ForbiddenInCore));
+    }
+
+    [Fact]
+    public void Core_DoesNotReferenceCalculation()
+    {
+        var references = typeof(Point2D).Assembly.GetReferencedAssemblies().Select(a => a.Name);
+        Assert.DoesNotContain("Fenestration.Calculation", references);
+    }
+
+    /// <summary>Database code stays in Fenestration.Data: Core and Calculation never see SQLite or the data layer.</summary>
+    [Fact]
+    public void CoreAndCalculation_DoNotReferenceTheDatabase()
+    {
+        foreach (var assembly in new[] { typeof(Point2D).Assembly, typeof(CalculationEngine).Assembly })
+        {
+            var references = assembly.GetReferencedAssemblies().Select(a => a.Name!).ToList();
+            Assert.DoesNotContain("Fenestration.Data", references);
+            Assert.DoesNotContain(references, r => r.Contains("Sqlite", StringComparison.OrdinalIgnoreCase)
+                                                   || r.StartsWith("SQLitePCL", StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    /// <summary>The data layer depends on Core only (plus SQLite): never on WPF, the designer, the app or Calculation.</summary>
+    [Fact]
+    public void Data_ReferencesOnlyCore()
+    {
+        var references = typeof(Fenestration.Data.LocalStore).Assembly.GetReferencedAssemblies().Select(a => a.Name).ToList();
+        Assert.Equal(new[] { "Fenestration.Core" }, references.Where(r => r!.StartsWith("Fenestration.")));
+        Assert.Empty(references.Intersect(ForbiddenInCore));
     }
 }

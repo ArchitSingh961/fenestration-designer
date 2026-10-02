@@ -116,5 +116,9 @@ FrameLayoutResult layout = FrameLayout.Compute(frame, rules);   // openings with
 Rectangle2D body = FrameLayout.GetMemberBody(frame, mullion);   // face-to-face member extent
 ```
 
-None of this references WPF. The engine should work on `IDesignService.GetProjectSnapshot()` (a deep copy
-with Ids preserved) and map results back by `Profile.Id` / `GlassPanel.Id`.
+None of this references WPF. The engine works on the project (or `IDesignService.GetProjectSnapshot()`, a deep copy
+with Ids preserved) and maps results back by `Profile.Id` / `GlassPanel.Id`.
+
+Since Milestone 6 a `Profile` references its product with `ProfileDefinitionId` and a `GlassPanel` with
+`GlassDefinitionId`. Both are stable library Ids, and null means the library default. The design never copies product
+data; `Profile.Thickness` and `GlassPanel.Thickness` mirror the definition for drawing. See [calculation.md](calculation.md).

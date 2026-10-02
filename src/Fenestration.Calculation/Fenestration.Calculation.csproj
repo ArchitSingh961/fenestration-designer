@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Calculation engine: headless (no WPF, plain net8.0) so it can run in a server or cloud process.
+       References Core only; ArchitectureTests enforce both. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Fenestration.Calculation</RootNamespace>
+    <AssemblyName>Fenestration.Calculation</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Fenestration.Core\Fenestration.Core.csproj" />
+  </ItemGroup>
+
+</Project>

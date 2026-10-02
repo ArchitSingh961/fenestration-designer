@@ -1,0 +1,129 @@
+{
+  // Sample product library. Products, prices and fabrication data live here, never in code:
+  // edit this file (or replace it with a supplier's library) to change what the designer offers and prices.
+  // Ids are stable references stored in project files; never reuse an id for a different product.
+  // A profile is bought in "stockLengthMm" plus any further "stockLengthsMm"; the cutting plan picks among them.
+  "version": 1,
+  "currency": "INR",
+  "defaults": {
+    "frameProfileId": "PRF-FRM-60",
+    "mullionProfileId": "PRF-MUL-60",
+    "transomProfileId": "PRF-MUL-60",
+    "glassId": "GLS-CLR-6"
+  },
+  "profiles": [
+    {
+      "id": "PRF-FRM-50", "name": "50mm Frame", "code": "AL-5001", "manufacturer": "Sample Extrusions", "series": "Series 50",
+      "roles": [ "frame" ], "faceWidthMm": 50, "depthMm": 50, "weightKgPerMetre": 0.95, "costPerMetre": 420.00,
+      "stockLengthMm": 6000, "stockLengthsMm": [ 6500, 7000 ], "glazingBiteMm": 10,
+      "materials": [
+        { "materialId": "MAT-GSK-FRM", "basis": "perMetre", "quantity": 1 },
+        { "materialId": "MAT-CLEAT", "basis": "perPiece", "quantity": 1 },
+        { "materialId": "MAT-SCREW", "basis": "perPiece", "quantity": 4 }
+      ]
+    },
+    {
+      "id": "PRF-FRM-60", "name": "60mm Frame", "code": "AL-6001", "manufacturer": "Sample Extrusions", "series": "Series 60",
+      "roles": [ "frame" ], "faceWidthMm": 60, "depthMm": 60, "weightKgPerMetre": 1.25, "costPerMetre": 540.00,
+      "stockLengthMm": 6000, "stockLengthsMm": [ 6500, 7000 ], "glazingBiteMm": 12,
+      "materials": [
+        { "materialId": "MAT-GSK-FRM", "basis": "perMetre", "quantity": 1 },
+        { "materialId": "MAT-CLEAT", "basis": "perPiece", "quantity": 1 },
+        { "materialId": "MAT-SCREW", "basis": "perPiece", "quantity": 4 }
+      ]
+    },
+    {
+      "id": "PRF-UPVC-FRM-70", "name": "70mm uPVC Frame", "code": "PV-7001", "manufacturer": "Sample Polymers", "series": "uPVC 70",
+      "roles": [ "frame" ], "faceWidthMm": 70, "depthMm": 70, "weightKgPerMetre": 1.40, "costPerMetre": 380.00,
+      "stockLengthMm": 5800, "glazingBiteMm": 14,
+      "materials": [
+        { "materialId": "MAT-GSK-FRM", "basis": "perMetre", "quantity": 1 },
+        { "materialId": "MAT-SCREW", "basis": "perPiece", "quantity": 6 }
+      ]
+    },
+    {
+      "id": "PRF-MUL-60", "name": "60mm Mullion/Transom", "code": "AL-6010", "manufacturer": "Sample Extrusions", "series": "Series 60",
+      "roles": [ "mullion", "transom" ], "faceWidthMm": 60, "depthMm": 60, "weightKgPerMetre": 1.10, "costPerMetre": 480.00,
+      "stockLengthMm": 6000, "cutAllowancePerEndMm": 5, "glazingBiteMm": 12,
+      "materials": [
+        { "materialId": "MAT-TCON", "basis": "perPiece", "quantity": 2 },
+        { "materialId": "MAT-SCREW", "basis": "perPiece", "quantity": 8 }
+      ]
+    },
+    {
+      "id": "PRF-MUL-80", "name": "80mm Heavy Mullion", "code": "AL-8010", "manufacturer": "Sample Extrusions", "series": "Series 60",
+      "roles": [ "mullion", "transom" ], "faceWidthMm": 80, "depthMm": 60, "weightKgPerMetre": 1.65, "costPerMetre": 690.00,
+      "stockLengthMm": 6000, "cutAllowancePerEndMm": 5, "glazingBiteMm": 12,
+      "materials": [
+        { "materialId": "MAT-TCON", "basis": "perPiece", "quantity": 2 },
+        { "materialId": "MAT-SCREW", "basis": "perPiece", "quantity": 8 }
+      ]
+    }
+  ],
+  "glass": [
+    {
+      "id": "GLS-CLR-5", "name": "5mm Clear Float", "category": "Float", "thicknessMm": 5,
+      "costPerSquareMetre": 650.00, "weightKgPerSquareMetre": 12.5, "minChargeableAreaM2": 0.25,
+      "materials": [
+        { "materialId": "MAT-GSK-GLZ", "basis": "perMetre", "quantity": 1 },
+        { "materialId": "MAT-SET-BLK", "basis": "perPiece", "quantity": 4 }
+      ]
+    },
+    {
+      "id": "GLS-CLR-6", "name": "6mm Clear", "category": "Float", "thicknessMm": 6,
+      "costPerSquareMetre": 780.00, "weightKgPerSquareMetre": 15.0, "minChargeableAreaM2": 0.25,
+      "materials": [
+        { "materialId": "MAT-GSK-GLZ", "basis": "perMetre", "quantity": 1 },
+        { "materialId": "MAT-SET-BLK", "basis": "perPiece", "quantity": 4 }
+      ]
+    },
+    {
+      "id": "GLS-TGH-6", "name": "6mm Toughened Clear", "category": "Toughened", "thicknessMm": 6,
+      "costPerSquareMetre": 1250.00, "weightKgPerSquareMetre": 15.0, "minChargeableAreaM2": 0.3,
+      "materials": [
+        { "materialId": "MAT-GSK-GLZ", "basis": "perMetre", "quantity": 1 },
+        { "materialId": "MAT-SET-BLK", "basis": "perPiece", "quantity": 4 }
+      ]
+    },
+    {
+      "id": "GLS-TGH-8", "name": "8mm Toughened", "category": "Toughened", "thicknessMm": 8,
+      "costPerSquareMetre": 1550.00, "weightKgPerSquareMetre": 20.0, "minChargeableAreaM2": 0.3,
+      "materials": [
+        { "materialId": "MAT-GSK-GLZ", "basis": "perMetre", "quantity": 1 },
+        { "materialId": "MAT-SET-BLK", "basis": "perPiece", "quantity": 4 }
+      ]
+    },
+    {
+      "id": "GLS-TGH-10", "name": "10mm Toughened", "category": "Toughened", "thicknessMm": 10,
+      "costPerSquareMetre": 1900.00, "weightKgPerSquareMetre": 25.0, "minChargeableAreaM2": 0.3,
+      "materials": [
+        { "materialId": "MAT-GSK-GLZ", "basis": "perMetre", "quantity": 1 },
+        { "materialId": "MAT-SET-BLK", "basis": "perPiece", "quantity": 4 }
+      ]
+    },
+    {
+      "id": "GLS-LAM-638", "name": "6.38mm Laminated Clear", "category": "Laminated", "thicknessMm": 6.38,
+      "costPerSquareMetre": 1850.00, "weightKgPerSquareMetre": 15.9, "minChargeableAreaM2": 0.3,
+      "materials": [
+        { "materialId": "MAT-GSK-GLZ", "basis": "perMetre", "quantity": 1 },
+        { "materialId": "MAT-SET-BLK", "basis": "perPiece", "quantity": 4 }
+      ]
+    },
+    {
+      "id": "GLS-DGU-24", "name": "24mm DGU (6-12-6)", "category": "Insulated", "thicknessMm": 24,
+      "costPerSquareMetre": 3400.00, "weightKgPerSquareMetre": 30.0, "minChargeableAreaM2": 0.5,
+      "materials": [
+        { "materialId": "MAT-GSK-GLZ", "basis": "perMetre", "quantity": 1 },
+        { "materialId": "MAT-SET-BLK", "basis": "perPiece", "quantity": 6 }
+      ]
+    }
+  ],
+  "materials": [
+    { "id": "MAT-GSK-GLZ", "name": "EPDM glazing gasket", "category": "gasket", "unit": "metre", "costPerUnit": 45.00 },
+    { "id": "MAT-GSK-FRM", "name": "EPDM frame gasket", "category": "gasket", "unit": "metre", "costPerUnit": 38.00 },
+    { "id": "MAT-SET-BLK", "name": "Glass setting block", "category": "accessory", "unit": "piece", "costPerUnit": 6.00 },
+    { "id": "MAT-CLEAT", "name": "Corner cleat", "category": "hardware", "unit": "piece", "costPerUnit": 85.00 },
+    { "id": "MAT-TCON", "name": "Mullion/transom T-connector", "category": "hardware", "unit": "piece", "costPerUnit": 120.00 },
+    { "id": "MAT-SCREW", "name": "Self-drilling screw 4.2 × 19", "category": "consumable", "unit": "piece", "costPerUnit": 1.50 }
+  ]
+}

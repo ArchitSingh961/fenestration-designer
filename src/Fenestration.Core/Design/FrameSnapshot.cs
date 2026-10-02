@@ -60,6 +60,7 @@ public sealed class FrameSnapshot
         EndPoint = p.EndPoint,
         Thickness = p.Thickness,
         Rotation = p.Rotation,
+        ProfileDefinitionId = p.ProfileDefinitionId,
         Properties = new Dictionary<string, string>(p.Properties)
     };
 
@@ -68,6 +69,7 @@ public sealed class FrameSnapshot
         Id = g.Id,
         Boundary = g.Boundary,
         Thickness = g.Thickness,
+        GlassDefinitionId = g.GlassDefinitionId,
         Properties = new Dictionary<string, string>(g.Properties)
     };
 

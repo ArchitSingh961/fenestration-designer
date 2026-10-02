@@ -87,9 +87,10 @@
         <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
     </Style>
 
+    <!-- Must stay focusable: a ListBoxItem only becomes selected on click if it can take focus. -->
     <Style x:Key="RailItem" TargetType="ListBoxItem">
         <Setter Property="Foreground" Value="White" />
-        <Setter Property="Focusable" Value="False" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">
             <Setter.Value>

@@ -164,9 +164,17 @@ public sealed class QuoteListViewModel : ViewModelBase
         Message = _open(row.Id);
     }
 
+    /// <summary>Why quotes cannot be deleted now (MARK is read-only), or null. Set by the main view model.</summary>
+    public Func<string?>? Blocked { get; set; }
+
     private void Delete()
     {
         if (SelectedQuote is not { } row || _projects() is not { } repository) return;
+        if (Blocked?.Invoke() is { } blocked)
+        {
+            Message = blocked;
+            return;
+        }
         if (row.Id == _openProjectId())
         {
             Message = "This quote is open. Start a new quote or open another one first to delete it.";

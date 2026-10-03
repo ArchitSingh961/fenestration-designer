@@ -18,6 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mark.Licensing\Mark.Licensing.csproj" />
     <ProjectReference Include="..\Mark.Core\Mark.Core.csproj" />
     <ProjectReference Include="..\Mark.Designer\Mark.Designer.csproj" />
     <ProjectReference Include="..\Mark.Data\Mark.Data.csproj" />

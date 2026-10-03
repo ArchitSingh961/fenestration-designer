@@ -1,11 +1,16 @@
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using Mark.App.Dialogs;
+using Mark.App.Licensing;
 using Mark.Calculation;
 using Mark.Core.Library;
 using Mark.Data;
 using Mark.Designer.ViewModels;
+using Mark.Licensing;
+using Mark.Licensing.Api;
+using Mark.Licensing.Client;
 
 namespace Mark.App;
 
@@ -21,10 +26,29 @@ public partial class App : Application
     /// <summary>Workshop fabrication and saw rules (kerf, trim, minimum offcut) shipped next to the executable.</summary>
     private static readonly string RulesPath = Path.Combine(AppContext.BaseDirectory, "Settings", "calculation-rules.json");
 
+    /// <summary>How often MARK asks the licence server for the current licence while it runs.</summary>
+    private static readonly TimeSpan CheckInInterval = TimeSpan.FromHours(6);
+
+    /// <summary>How often the licence is re-evaluated (end of validity, offline grace) while MARK runs.</summary>
+    private static readonly TimeSpan RefreshInterval = TimeSpan.FromMinutes(15);
+
+    private LicenceManager? _licence;
+    private string[] _args = Array.Empty<string>();
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
         DispatcherUnhandledException += OnUnhandledException;
+        _args = e.Args;
+
+        // Nothing opens until the user is signed in: the sign-in page is the only window until then.
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        _licence = CreateLicenceManager(e.Args);
+        if (!_licence.TryResume() && new SignInWindow(new SignInViewModel(_licence)).ShowDialog() != true)
+        {
+            Shutdown();
+            return;
+        }
 
         var rules = LoadRules(out string? rulesError);
         var messages = new List<string?> { rulesError };
@@ -52,9 +76,74 @@ public partial class App : Application
         mainViewModel.DesignMessage = message.Length > 0 ? message : null;
         // With saved quotes available, start where the work is: the dashboard. Without a database, start drawing.
         mainViewModel.Page = mainViewModel.HasStore ? AppPage.Dashboard : AppPage.Quote;
+
+        var licence = _licence;
+        mainViewModel.Access.Apply(licence.Status);
+        licence.StatusChanged += () =>
+        {
+            if (Dispatcher.CheckAccess()) mainViewModel.Access.Apply(licence.Status);
+            else Dispatcher.BeginInvoke(() => mainViewModel.Access.Apply(licence.Status));
+        };
+        mainViewModel.Account = new AccountViewModel(licence, () => SignOutAsync(licence, mainViewModel));
+
         var window = new MainWindow { DataContext = mainViewModel };
+        MainWindow = window;
+        ShutdownMode = ShutdownMode.OnMainWindowClose;
         window.Show();
+        StartLicenceChecks(licence);
     }
+
+    /// <summary>
+    /// The licence of this computer, kept encrypted in <c>%LOCALAPPDATA%\MARK\licence.dat</c>
+    /// (<c>--licence-state &lt;file&gt;</c> uses another file, e.g. for testing).
+    /// </summary>
+    private static LicenceManager CreateLicenceManager(string[] args)
+    {
+        int index = Array.IndexOf(args, "--licence-state");
+        string path = index >= 0 && index + 1 < args.Length ? args[index + 1] : FileLicenceStateStore.DefaultPath;
+        var clients = new Dictionary<string, LicenceApiClient>();
+        LicenceApiClient ClientFor(string url)
+        {
+            if (!clients.TryGetValue(url, out var client))
+                clients[url] = client = new LicenceApiClient(url);
+            return client;
+        }
+        return new LicenceManager(new FileLicenceStateStore(path, new DpapiProtector()), LicenceVerifier.ForMark(),
+            MachineIdentity.Id(), MachineIdentity.Name, ClientFor)
+        {
+            AppVersion = typeof(App).Assembly.GetName().Version?.ToString()
+        };
+    }
+
+    /// <summary>Checks in now and every few hours, and re-evaluates the licence regularly (validity, offline grace).</summary>
+    private void StartLicenceChecks(LicenceManager licence)
+    {
+        _ = licence.CheckInAsync();
+        var checkIn = new DispatcherTimer { Interval = CheckInInterval };
+        checkIn.Tick += async (_, _) => await licence.CheckInAsync();
+        checkIn.Start();
+        var refresh = new DispatcherTimer { Interval = RefreshInterval };
+        refresh.Tick += (_, _) => licence.Refresh();
+        refresh.Start();
+    }
+
+    /// <summary>Signs out of this computer after asking, then restarts MARK at the sign-in page.</summary>
+    private async Task SignOutAsync(LicenceManager licence, MainViewModel mainViewModel)
+    {
+        if (MessageBox.Show(MainWindow!, "Sign out of MARK on this computer?\n\nYour saved quotes stay on this computer. " +
+                                         "You will need your User ID and password to sign in again.",
+                "Sign out", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            return;
+        if (!mainViewModel.ConfirmDiscardChanges())
+            return;
+        await licence.SignOutAsync();
+        mainViewModel.ForgetChanges();
+        if (Environment.ProcessPath is { } exe)
+            Process.Start(new ProcessStartInfo(exe) { Arguments = string.Join(" ", _args.Select(QuoteArgument)), UseShellExecute = false });
+        Shutdown();
+    }
+
+    private static string QuoteArgument(string argument) => argument.Contains(' ') ? $"\"{argument}\"" : argument;
 
     /// <summary>
     /// Last resort for an error no view model handled: show it instead of closing the application, so the open design is

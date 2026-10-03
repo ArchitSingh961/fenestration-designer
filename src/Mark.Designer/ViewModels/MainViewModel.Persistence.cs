@@ -60,17 +60,24 @@ public partial class MainViewModel
 
     private void CreatePersistenceCommands()
     {
-        SaveProjectCommand = new RelayCommand(() => Report(SaveProject()), () => HasStore);
-        SaveProjectAsCommand = new RelayCommand(SaveProjectAsInteractive, () => HasStore);
+        SaveProjectCommand = new RelayCommand(() => Report(SaveProject()), () => HasStore && !Access.IsReadOnly);
+        SaveProjectAsCommand = new RelayCommand(SaveProjectAsInteractive, () => HasStore && !Access.IsReadOnly);
         OpenProjectCommand = new RelayCommand(OpenProjectInteractive, () => HasStore);
-        ImportProjectFileCommand = new RelayCommand(ImportProjectFileInteractive);
-        ExportProjectFileCommand = new RelayCommand(ExportProjectFileInteractive);
-        OpenLibraryManagerCommand = new RelayCommand(OpenLibraryManager, () => HasStore);
+        ImportProjectFileCommand = new RelayCommand(ImportProjectFileInteractive, () => Access.CanUseProjectFiles);
+        ExportProjectFileCommand = new RelayCommand(ExportProjectFileInteractive, () => Access.CanUseProjectFiles);
+        OpenLibraryManagerCommand = new RelayCommand(OpenLibraryManager, CanOpenLibraryManager);
     }
+
+    /// <summary>The Library Manager changes the library, so it needs the feature and a licence that is not read-only.</summary>
+    private bool CanOpenLibraryManager() => HasStore && Access.CanManageLibrary && !Access.IsReadOnly;
 
     private void RaisePersistenceCanExecute()
     {
-        foreach (var command in new[] { SaveProjectCommand, SaveProjectAsCommand, OpenProjectCommand, OpenLibraryManagerCommand })
+        foreach (var command in new[]
+                 {
+                     SaveProjectCommand, SaveProjectAsCommand, OpenProjectCommand, OpenLibraryManagerCommand,
+                     ImportProjectFileCommand, ExportProjectFileCommand
+                 })
             ((RelayCommand)command).RaiseCanExecuteChanged();
         OnPropertyChanged(nameof(HasStore));
     }
@@ -85,6 +92,8 @@ public partial class MainViewModel
     {
         if (Store is null)
             return "There is no local database, so the project cannot be saved.";
+        if (Access.ReadOnlyMessage is { } readOnly)
+            return readOnly;
         try
         {
             // A quote named on its Client tab is saved under that name; only a still-default name is asked for.
@@ -114,6 +123,8 @@ public partial class MainViewModel
     {
         if (Store is null)
             return "There is no local database, so the project cannot be saved.";
+        if (Access.ReadOnlyMessage is { } readOnly)
+            return readOnly;
         if (string.IsNullOrWhiteSpace(name))
             return "Enter a project name.";
 
@@ -125,6 +136,8 @@ public partial class MainViewModel
 
     private string? Persist(string success)
     {
+        if (Access.ReadOnlyMessage is { } readOnly)
+            return readOnly;
         try
         {
             Store!.Projects.Save(Project, QuoteValueOf());
@@ -191,6 +204,9 @@ public partial class MainViewModel
     /// True when it is fine to replace the open design: it has no unsaved changes, or the user agreed to discard them
     /// (without a dialog service there is nobody to ask, so it is fine).
     /// </summary>
+    /// <summary>Treats the open design as saved, after the user agreed to discard its changes (e.g. when signing out).</summary>
+    public void ForgetChanges() => IsDirty = false;
+
     public bool ConfirmDiscardChanges()
         => !IsDirty || Dialogs is null
            || Dialogs.Confirm("Unsaved changes", $"'{Project.Name}' has unsaved changes. Discard them?");
@@ -291,6 +307,11 @@ public partial class MainViewModel
     {
         if (Store is null || Dialogs is null)
             return;
+        if (!CanOpenLibraryManager())
+        {
+            Report(Access.ReadOnlyMessage ?? AccessViewModel.LockedMessage(Licensing.Features.LibraryManager));
+            return;
+        }
         Dialogs.ShowLibraryManager(new LibraryManagerViewModel(Store.Library, Store.Projects, () => Project, Dialogs));
     }
 

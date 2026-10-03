@@ -47,6 +47,7 @@ public partial class MainViewModel
     private string? SaveDefaultPricing(PriceStructure pricing)
     {
         if (Store is null) return "There is no local database, so a default cannot be saved.";
+        if (Access.ReadOnlyMessage is { } readOnly) return readOnly;
         try
         {
             Store.Settings.SaveDefaultPricing(pricing);

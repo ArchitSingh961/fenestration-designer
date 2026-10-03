@@ -8,7 +8,7 @@ using Mark.Data;
 namespace Mark.Designer.ViewModels;
 
 /// <summary>The application's main pages.</summary>
-public enum AppPage { Dashboard, Quotes, Quote }
+public enum AppPage { Dashboard, Quotes, Quote, Account }
 
 /// <summary>The tabs of the open quote.</summary>
 public enum QuoteSection { Client, Designs, Drawing, Pricing }
@@ -66,6 +66,7 @@ public partial class MainViewModel
             OnPropertyChanged();
             if (value == AppPage.Dashboard) Dashboard.Reload();
             if (value == AppPage.Quotes) Quotes.Reload();
+            if (value == AppPage.Account) Account?.Refresh();
             Designs.IsVisible = value == AppPage.Quote && _section == QuoteSection.Designs;
         }
     }

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- The MARK licence server: companies, users, packages, keys and computers; signs the licences MARK checks.
+       Runs on the owner's computer or a server (MARK.LicenceServer.exe). -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Mark.LicenceServer</RootNamespace>
+    <AssemblyName>MARK.LicenceServer</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mark.Licensing\Mark.Licensing.csproj" />
+  </ItemGroup>
+
+</Project>

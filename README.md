@@ -43,7 +43,11 @@ src/
 │   └── ViewModels/             MainViewModel, CanvasViewModel (viewport), PropertiesViewModel, LibraryPickerViewModel,
 │                               CuttingPlanViewModel, LibraryManagerViewModel, LibraryItemEditorViewModel,
 │                               ProjectListViewModel, IDialogService, ViewModelBase, RelayCommand
-├── Mark.App/           net8.0-windows  — WPF shell (App.xaml, MainWindow.xaml, Resources/Theme.xaml,
+├── Mark.Licensing/     net8.0          — accounts and licensing: signed licence, evaluation, feature catalogue,
+│                               packages, API contracts and clients, LicenceManager. NO WPF  (see docs/licensing.md)
+├── Mark.LicenceServer/ net8.0 (ASP.NET Core) — MARK.LicenceServer.exe: companies, users, computers, keys; signs licences
+├── Mark.Owner/         net8.0-windows  — MARK.Owner.exe: the admin program (companies, keys, packages, company types)
+├── Mark.App/           net8.0-windows  — WPF shell (App.xaml, MainWindow.xaml, sign-in, Licensing/ — machine id, DPAPI,
 │                                                 Dialogs/ — Library Manager, Open Project, name prompt, WpfDialogService,
 │                                                 Library/library.json — the sample library, imported on first run,
 │                                                 Settings/calculation-rules.json — kerf, trim, minimum offcut)
@@ -56,9 +60,19 @@ docs/
 ├── pricing.md                  price structure (cost lines, rates, discount, charges, tax), sash pricing, quantities
 ├── quotes.md                   quotes, clients, design cards, quote list, dashboard, quote numbers
 ├── openings.md                 opening types (sashes), design library, design details, Inside/Outside view
-├── roadmap.md                  milestones 9-14: from designer to quoting system
+├── licensing.md                accounts, sign-in, licences, packages, keys, MARK Owner, running the licence server
+├── roadmap.md                  the milestone plan
 └── geometry.md                 coordinate system, tolerance, primitives, viewport math, grid
 ```
+
+## Accounts and sign-in
+
+MARK is sold as licensed accounts. Start **MARK Licence Server**, set up your admin account in **MARK Owner**, create
+an account for each company (name, logo, company type, User ID and password, uPVC / Aluminium each with its own
+validity, package, add-ons, computers), then sign in to **MARK** with it. The admin can extend, suspend, free a
+computer or delete an account at any time, and generate **licence keys** with a validity; MARK follows at its next
+check-in and becomes read-only when the account is suspended or expired. Features outside the company's package are
+shown locked. See [docs/licensing.md](docs/licensing.md).
 
 ## Quotes
 

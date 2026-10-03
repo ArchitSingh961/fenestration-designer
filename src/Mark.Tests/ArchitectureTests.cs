@@ -75,9 +75,12 @@ public class ArchitectureTests
             .Where(p =>
             {
                 var name = Path.GetFileNameWithoutExtension(p);
-                return name.EndsWith(".Core") || name.Contains("Calculation") || name.Contains(".Data");
+                return name.EndsWith(".Core") || name.Contains("Calculation") || name.Contains(".Data")
+                       || name.Contains("Licensing") || name.Contains("LicenceServer");
             })
             .ToList();
+        Assert.Contains(headless, p => p.EndsWith("Mark.Licensing.csproj"));
+        Assert.Contains(headless, p => p.EndsWith("Mark.LicenceServer.csproj"));
         Assert.Contains(headless, p => p.EndsWith("Mark.Core.csproj"));
         Assert.Contains(headless, p => p.EndsWith("Mark.Calculation.csproj"));
         Assert.Contains(headless, p => p.EndsWith("Mark.Data.csproj"));
@@ -119,6 +122,21 @@ public class ArchitectureTests
             Assert.DoesNotContain(references, r => r.Contains("Sqlite", StringComparison.OrdinalIgnoreCase)
                                                    || r.StartsWith("SQLitePCL", StringComparison.OrdinalIgnoreCase));
         }
+    }
+
+    /// <summary>
+    /// Licensing stands alone (no MARK project, no WPF) so the licence server can use it; the server depends on it only.
+    /// </summary>
+    [Fact]
+    public void Licensing_IsIndependent_AndTheServerUsesOnlyIt()
+    {
+        var licensing = typeof(Mark.Licensing.Licence).Assembly.GetReferencedAssemblies().Select(a => a.Name!).ToList();
+        Assert.DoesNotContain(licensing, r => r.StartsWith("Mark.", StringComparison.Ordinal));
+        Assert.Empty(licensing.Intersect(ForbiddenInCore));
+
+        var server = typeof(Mark.LicenceServer.LicenceService).Assembly.GetReferencedAssemblies().Select(a => a.Name!).ToList();
+        Assert.Equal(new[] { "Mark.Licensing" }, server.Where(r => r.StartsWith("Mark.", StringComparison.Ordinal)));
+        Assert.Empty(server.Intersect(ForbiddenInCore));
     }
 
     /// <summary>The data layer depends on Core only (plus SQLite): never on WPF, the designer, the app or Calculation.</summary>

@@ -107,6 +107,7 @@ public partial class MainViewModel : ViewModelBase, IDesignService
         CreateDesignFeatures();
         CreateQuoteFeatures();
         CreatePricingFeatures();
+        CreateLicenceFeatures();
 
         Selection.Changed += OnSelectionChanged;
 

@@ -14,7 +14,16 @@ Mark.Core       (models, geometry, viewport math, commands, JSON,  net8.0 — NO
                          product library)
 ```
 
-`Mark.Tests` (net8.0-windows) references Core, Calculation, Data and Designer. `ArchitectureTests` fail if
+Accounts and licensing sit beside this stack (see licensing.md):
+
+```text
+Mark.App ──► Mark.Licensing ◄── Mark.LicenceServer (ASP.NET Core)      Mark.Owner (WPF) ──► Mark.Licensing, Mark.Designer
+Mark.Designer ──► Mark.Licensing    (AccessViewModel: feature gates and read-only state)
+```
+
+`Mark.Licensing` (net8.0) references no other Mark project and no WPF, so the server can use it; the server references
+only Mark.Licensing. `Mark.Tests` (net8.0-windows) references Core, Calculation, Data and Designer, plus the licensing
+projects. `ArchitectureTests` fail if
 Core ever references WPF, Designer, App, Calculation or Data; if Calculation or Data references anything but Core; if
 Core or Calculation references SQLite; if any command holds a WPF object; or if Core, Calculation or Data turns on WPF
 or a Windows-only target.

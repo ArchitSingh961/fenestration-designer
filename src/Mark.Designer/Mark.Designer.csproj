@@ -13,6 +13,7 @@
     <ProjectReference Include="..\Mark.Core\Mark.Core.csproj" />
     <ProjectReference Include="..\Mark.Calculation\Mark.Calculation.csproj" />
     <ProjectReference Include="..\Mark.Data\Mark.Data.csproj" />
+    <ProjectReference Include="..\Mark.Licensing\Mark.Licensing.csproj" />
   </ItemGroup>
 
 </Project>

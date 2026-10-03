@@ -1,0 +1,198 @@
+using Mark.Licensing;
+using Mark.Licensing.Api;
+using Microsoft.Data.Sqlite;
+using static Mark.LicenceServer.LicenceDatabase;
+
+namespace Mark.LicenceServer;
+
+/// <summary>Company accounts: their owner login, products, package, add-ons, computers and suspension.</summary>
+public sealed partial class LicenceService
+{
+    /// <summary>The role of the person who signs in for a company (staff roles follow in Milestone 14).</summary>
+    public const string OwnerRole = "owner";
+
+    public IReadOnlyList<CompanySummary> Companies()
+    {
+        using var connection = Connect();
+        using var command = Command(connection, $"""
+            SELECT {CompanyColumns},
+                (SELECT name FROM company_types t WHERE t.id = c.company_type_id),
+                (SELECT name FROM packages p WHERE p.id = c.package_id),
+                (SELECT user_id FROM users u WHERE u.company_id = c.id AND u.role = '{OwnerRole}' LIMIT 1),
+                (SELECT COUNT(*) FROM computers m WHERE m.company_id = c.id),
+                (SELECT MAX(last_check_in_utc) FROM computers m WHERE m.company_id = c.id)
+            FROM companies c ORDER BY c.name COLLATE NOCASE
+            """, null);
+        using var reader = command.ExecuteReader();
+        var list = new List<CompanySummary>();
+        while (reader.Read())
+        {
+            var c = ReadCompany(reader);
+            list.Add(new CompanySummary(c.Id, c.Name, c.Logo is not null, reader.IsDBNull(13) ? null : reader.GetString(13),
+                reader.IsDBNull(15) ? "" : reader.GetString(15), c.Products, reader.IsDBNull(14) ? null : reader.GetString(14),
+                c.ValidUntilUtc, c.Suspended, reader.GetInt32(16), c.MaxComputers,
+                reader.IsDBNull(17) ? null : ParseTime(reader.GetString(17))));
+        }
+        return list;
+    }
+
+    public CompanyDetail Company(Guid id)
+    {
+        using var connection = Connect();
+        return Detail(connection, GetCompany(connection, id));
+    }
+
+    private static CompanyDetail Detail(SqliteConnection connection, CompanyRow c, SqliteTransaction? transaction = null)
+    {
+        string ownerName = "", ownerUserId = "";
+        using (var command = Command(connection, $"SELECT name, user_id FROM users WHERE company_id = $id AND role = '{OwnerRole}' LIMIT 1",
+                   transaction, ("$id", c.Id.ToString())))
+        using (var reader = command.ExecuteReader())
+        {
+            if (reader.Read())
+            {
+                ownerName = reader.GetString(0);
+                ownerUserId = reader.GetString(1);
+            }
+        }
+
+        var computers = new List<ComputerInfo>();
+        using (var command = Command(connection, """
+                   SELECT m.id, m.machine_name, u.user_id, m.first_seen_utc, m.last_check_in_utc
+                   FROM computers m JOIN users u ON u.id = m.user_ref WHERE m.company_id = $id ORDER BY m.first_seen_utc
+                   """, transaction, ("$id", c.Id.ToString())))
+        using (var reader = command.ExecuteReader())
+        {
+            while (reader.Read())
+                computers.Add(new ComputerInfo(Guid.Parse(reader.GetString(0)), reader.GetString(1), reader.GetString(2),
+                    ParseTime(reader.GetString(3)), reader.IsDBNull(4) ? null : ParseTime(reader.GetString(4))));
+        }
+
+        return new CompanyDetail(c.Id, c.Name, c.Logo, c.TypeId, ownerName, ownerUserId, c.Products, c.PackageId, c.ValidUntilUtc,
+            c.MaxComputers, c.AddOns, c.RemovedFeatures, c.Suspended, c.Notes, c.CreatedUtc, computers);
+    }
+
+    /// <summary>A new company account with its owner login (User ID and password set by the admin).</summary>
+    public CompanyDetail CreateCompany(CompanyEdit edit)
+    {
+        ArgumentNullException.ThrowIfNull(edit);
+        CheckPassword(edit.OwnerPassword);
+        using var connection = Connect();
+        using var transaction = connection.BeginTransaction();
+        var company = Validated(connection, edit, Guid.NewGuid(), Now, suspended: false, transaction);
+        string userId = CheckUserId(edit.OwnerUserId);
+        EnsureUserIdFree(connection, userId, exceptCompany: null, transaction);
+
+        WriteCompany(connection, company, transaction, insert: true);
+        Execute(connection, """
+            INSERT INTO users (id, company_id, user_id, name, role, password_hash, created_utc)
+            VALUES ($id, $company, $user, $name, $role, $hash, $now)
+            """, transaction,
+            ("$id", Guid.NewGuid().ToString()), ("$company", company.Id.ToString()), ("$user", userId),
+            ("$name", OwnerName(edit, company.Name)), ("$role", OwnerRole), ("$hash", PasswordHasher.Hash(edit.OwnerPassword!)),
+            ("$now", Time(Now)));
+        var detail = Detail(connection, company, transaction);
+        transaction.Commit();
+        return detail;
+    }
+
+    /// <summary>Changes an account. A non-empty password sets a new one (and unlocks the User ID). Takes effect on the
+    /// company's computers at their next check-in.</summary>
+    public CompanyDetail UpdateCompany(Guid id, CompanyEdit edit)
+    {
+        ArgumentNullException.ThrowIfNull(edit);
+        if (!string.IsNullOrEmpty(edit.OwnerPassword)) CheckPassword(edit.OwnerPassword);
+        using var connection = Connect();
+        using var transaction = connection.BeginTransaction();
+        var existing = GetCompany(connection, id, transaction);
+        var company = Validated(connection, edit, id, existing.CreatedUtc, existing.Suspended, transaction);
+        string userId = CheckUserId(edit.OwnerUserId);
+        EnsureUserIdFree(connection, userId, exceptCompany: id, transaction);
+
+        WriteCompany(connection, company, transaction, insert: false);
+        Execute(connection, $"UPDATE users SET user_id = $user, name = $name WHERE company_id = $company AND role = '{OwnerRole}'", transaction,
+            ("$user", userId), ("$name", OwnerName(edit, company.Name)), ("$company", id.ToString()));
+        if (!string.IsNullOrEmpty(edit.OwnerPassword))
+            Execute(connection, $"""
+                UPDATE users SET password_hash = $hash, failed_attempts = 0, locked_until_utc = NULL
+                WHERE company_id = $company AND role = '{OwnerRole}'
+                """, transaction, ("$hash", PasswordHasher.Hash(edit.OwnerPassword)), ("$company", id.ToString()));
+        var detail = Detail(connection, company, transaction);
+        transaction.Commit();
+        return detail;
+    }
+
+    /// <summary>Suspends (MARK becomes read-only at the next check-in) or reactivates an account.</summary>
+    public CompanyDetail SetSuspended(Guid id, bool suspended)
+    {
+        using var connection = Connect();
+        using var transaction = connection.BeginTransaction();
+        var company = GetCompany(connection, id, transaction) with { Suspended = suspended };
+        WriteCompany(connection, company, transaction, insert: false);
+        var detail = Detail(connection, company, transaction);
+        transaction.Commit();
+        return detail;
+    }
+
+    /// <summary>Signs a computer out: it no longer counts towards the limit, and MARK there must sign in again.</summary>
+    public CompanyDetail FreeComputer(Guid companyId, Guid computerId)
+    {
+        using var connection = Connect();
+        var company = GetCompany(connection, companyId);
+        Execute(connection, "DELETE FROM computers WHERE id = $id AND company_id = $company", null,
+            ("$id", computerId.ToString()), ("$company", companyId.ToString()));
+        return Detail(connection, company);
+    }
+
+    /// <summary>Deletes an account with its users and computers; its unused keys are revoked. MARK on its computers
+    /// becomes read-only at the next check-in.</summary>
+    public void DeleteCompany(Guid id)
+    {
+        using var connection = Connect();
+        using var transaction = connection.BeginTransaction();
+        GetCompany(connection, id, transaction);
+        Execute(connection, "UPDATE licence_keys SET state = $revoked WHERE company_id = $id AND state = $unused", transaction,
+            ("$revoked", KeyState.Revoked.ToString()), ("$unused", KeyState.Unused.ToString()), ("$id", id.ToString()));
+        Execute(connection, "DELETE FROM companies WHERE id = $id", transaction, ("$id", id.ToString()));
+        transaction.Commit();
+    }
+
+    private static string OwnerName(CompanyEdit edit, string companyName)
+        => string.IsNullOrWhiteSpace(edit.OwnerName) ? companyName : edit.OwnerName.Trim();
+
+    private static void EnsureUserIdFree(SqliteConnection connection, string userId, Guid? exceptCompany, SqliteTransaction transaction)
+    {
+        long taken = Scalar<long>(connection, "SELECT COUNT(*) FROM users WHERE user_id = $user AND company_id <> $company", transaction,
+            ("$user", userId), ("$company", (exceptCompany ?? Guid.Empty).ToString()));
+        if (taken > 0) throw ApiException.Conflict($"The User ID \"{userId}\" is already used by another company. Choose another.");
+    }
+
+    private static CompanyRow Validated(SqliteConnection connection, CompanyEdit edit, Guid id, DateTime createdUtc, bool suspended,
+        SqliteTransaction transaction)
+    {
+        string name = Required(edit.Name, "company name");
+        if (edit.MaxComputers is < 1 or > 1000) throw ApiException.Invalid("The number of computers must be between 1 and 1000.");
+
+        var products = (edit.Products ?? Array.Empty<ProductLicence>()).ToList();
+        if (products.Count == 0) throw ApiException.Invalid("Choose at least one product (uPVC or Aluminium).");
+        if (products.Select(p => p.Product).Distinct().Count() != products.Count) throw ApiException.Invalid("A product is listed twice.");
+
+        if (edit.PackageId is not { } packageId) throw ApiException.Invalid("Choose a package.");
+        if (FindPackage(connection, packageId, transaction) is null) throw ApiException.NotFound("The package");
+        if (edit.CompanyTypeId is { } typeId
+            && Scalar<long>(connection, "SELECT COUNT(*) FROM company_types WHERE id = $id", transaction, ("$id", typeId.ToString())) == 0)
+            throw ApiException.NotFound("The company type");
+
+        var addOns = (edit.AddOns ?? Array.Empty<AddOn>()).ToList();
+        var removed = (edit.RemovedFeatures ?? Array.Empty<string>()).Distinct().ToList();
+        var unknown = addOns.Select(a => a.FeatureId).Concat(removed).Where(f => !FeatureCatalog.Exists(f)).Distinct().ToList();
+        if (unknown.Count > 0) throw ApiException.Invalid($"Unknown feature: {string.Join(", ", unknown)}.");
+        if (addOns.Select(a => a.FeatureId).Distinct().Count() != addOns.Count) throw ApiException.Invalid("An add-on is listed twice.");
+        if (removed.Any(f => FeatureCatalog.Find(f)!.IsCore))
+            throw ApiException.Invalid("Quotes and the frame designer are always included and cannot be removed.");
+
+        string? notes = string.IsNullOrWhiteSpace(edit.Notes) ? null : edit.Notes.Trim();
+        return new CompanyRow(id, name, CheckLogo(edit.LogoBase64), edit.CompanyTypeId, packageId, edit.ValidUntilUtc, edit.MaxComputers,
+            suspended, products, addOns, removed, notes, createdUtc);
+    }
+}

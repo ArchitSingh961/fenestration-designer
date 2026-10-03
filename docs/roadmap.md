@@ -27,11 +27,17 @@ used unless changed before that milestone starts.
 | 9 | Openings and design library | Fixed, casement, top/bottom hung, tilt & turn, pivot, sliding, mesh; click-or-drag design library; Inside/Outside view |
 | 10 | Quotes and clients | Dashboard, quote list, client details, design cards, quote numbers |
 | 11 | Pricing | Price structure per quote (cost lines, rates, discount, charges, GST), live summary, saved default; sash and mesh priced; quantities everywhere |
+| 12 | Accounts, sign-in and licensing | Licence server, MARK Owner (companies, company types, packages, keys), sign-in, signed licences with daily check-in and 7-day grace, read-only when suspended or expired, features locked by package (see licensing.md) |
 | — | Along the way | Product renamed to MARK; colour-coded bill of materials; rail and drop-down fixes |
 
 ---
 
-## 12 — Accounts, sign-in, licensing and feature packages
+## 12 — Accounts, sign-in, licensing and feature packages — done
+
+Built as planned; see [licensing.md](licensing.md). Decisions taken: the owner side is a separate desktop program
+(MARK Owner); key validity counts from generation; read-only when expired or suspended; 7-day offline grace; the trial
+is the "Trial" company type (14 days, both products, Complete); locked features are shown locked. Restricting the
+library by product (uPVC / Aluminium) comes with the product systems of Milestone 13.
 
 **Goal:** the owner controls who may use MARK, with which products and features, for how long.
 

@@ -172,6 +172,11 @@
                 <Separator />
                 <MenuItem Header="_Library Manager..." Command="{Binding OpenLibraryManagerCommand}" />
                 <Separator />
+                <MenuItem Header="_Account" Command="{Binding ShowPageCommand}" CommandParameter="Account"
+                          Visibility="{Binding HasAccount, Converter={StaticResource BoolToVisibility}}" />
+                <MenuItem Header="Sign _Out" Command="{Binding Account.SignOutCommand}"
+                          Visibility="{Binding HasAccount, Converter={StaticResource BoolToVisibility}}" />
+                <Separator Visibility="{Binding HasAccount, Converter={StaticResource BoolToVisibility}}" />
                 <MenuItem Header="E_xit" Click="Exit_Click" />
             </MenuItem>
             <MenuItem Header="_Edit">
@@ -223,6 +228,25 @@
                 Padding="10,6">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Style="{StaticResource RowButton}" Margin="0,0,14,0" Command="{Binding ShowPageCommand}" CommandParameter="Account"
+                            ToolTip="Your account: licence, package and licence keys"
+                            Visibility="{Binding HasAccount, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel Orientation="Horizontal">
+                            <Image Source="{Binding Access.Logo}" Height="28" MaxWidth="90" Margin="0,0,8,0" VerticalAlignment="Center"
+                                   Visibility="{Binding Access.HasLogo, Converter={StaticResource BoolToVisibility}}" />
+                            <Border Width="28" Height="28" CornerRadius="14" Background="#E8EEF7" Margin="0,0,8,0"
+                                    Visibility="{Binding Access.HasLogo, Converter={StaticResource InverseBoolToVisibility}}">
+                                <TextBlock Text="&#xE731;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource AccentBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Access.CompanyName}" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"
+                                           MaxWidth="220" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding Access.UserName}" FontSize="10" Foreground="{StaticResource MutedTextBrush}"
+                                           MaxWidth="220" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
                     <TextBlock Text="{Binding QuoteTotalText}" VerticalAlignment="Center" Margin="0,0,14,0"
                                FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" />
                     <Button Style="{StaticResource SecondaryButton}" Content="New quote" Command="{Binding NewProjectCommand}"
@@ -242,6 +266,30 @@
                         <TextBlock Text="{Binding QuoteHeader}" MaxWidth="320" TextTrimming="CharacterEllipsis" />
                     </RadioButton>
                 </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- ── Licence notice: why MARK is read-only, or a warning (licence ending, offline) ── -->
+        <Border DockPanel.Dock="Top" Padding="14,7" BorderThickness="0,0,0,1"
+                Visibility="{Binding Access.HasNotice, Converter={StaticResource BoolToVisibility}}">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background" Value="#FFF8E6" />
+                    <Setter Property="BorderBrush" Value="#F2D9A0" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Access.IsReadOnly}" Value="True">
+                            <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}" />
+                            <Setter Property="BorderBrush" Value="#EBC4C4" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Content="Account" Command="{Binding ShowPageCommand}"
+                        CommandParameter="Account" Visibility="{Binding HasAccount, Converter={StaticResource BoolToVisibility}}" />
+                <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,10,0"
+                           Foreground="#B7791F" />
+                <TextBlock Text="{Binding Access.Notice}" TextWrapping="Wrap" VerticalAlignment="Center" Foreground="#3F2A00" />
             </DockPanel>
         </Border>
 
@@ -455,6 +503,226 @@
                     </ListView>
                 </Border>
             </DockPanel>
+
+            <!-- ══ Account: company, licence, products, package features, licence keys ══ -->
+            <ScrollViewer DataContext="{Binding Account}" VerticalScrollBarVisibility="Auto" Focusable="False"
+                          Background="{StaticResource PageBackgroundBrush}"
+                          Visibility="{Binding DataContext.Page, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=Account}">
+                <StackPanel Margin="24,18,24,24" MaxWidth="1100">
+                    <DockPanel Margin="0,0,0,14">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button Style="{StaticResource SecondaryButton}" Content="Check now" Command="{Binding CheckNowCommand}"
+                                    ToolTip="Ask the licence server for your current licence" />
+                            <Button Style="{StaticResource SecondaryButton}" Content="Sign out" Command="{Binding SignOutCommand}"
+                                    ToolTip="Sign out of MARK on this computer (frees it for another computer)" />
+                        </StackPanel>
+                        <TextBlock Text="Account" Style="{StaticResource PageTitle}" />
+                    </DockPanel>
+
+                    <Border Padding="10" Margin="0,0,0,12" CornerRadius="6" Visibility="{Binding HasMessage, Converter={StaticResource BoolToVisibility}}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#E8F6EE" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MessageIsError}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="{Binding Message}" TextWrapping="Wrap">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="#1D6B3A" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding MessageIsError}" Value="True">
+                                            <Setter Property="Foreground" Value="{StaticResource ErrorBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Border>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="3*" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="2*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Company and licence -->
+                        <Border Style="{StaticResource Card}" Padding="20,16">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,14">
+                                    <Grid DockPanel.Dock="Left" Width="64" Height="64" Margin="0,0,16,0">
+                                        <Border CornerRadius="8" Background="#E8EEF7"
+                                                Visibility="{Binding DataContext.Access.HasLogo, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBoolToVisibility}}">
+                                            <TextBlock Text="&#xE731;" FontFamily="Segoe MDL2 Assets" FontSize="26" Foreground="{StaticResource AccentBrush}"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <Image Source="{Binding DataContext.Access.Logo, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="Uniform" />
+                                    </Grid>
+                                    <Border DockPanel.Dock="Right" CornerRadius="10" Padding="10,3" VerticalAlignment="Top">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="#E8F6EE" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsReadOnly}" Value="True">
+                                                        <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Text="{Binding StateText}" FontWeight="SemiBold" FontSize="11">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="#1D6B3A" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsReadOnly}" Value="True">
+                                                            <Setter Property="Foreground" Value="{StaticResource ErrorBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding CompanyName}" FontSize="20" FontWeight="SemiBold" Foreground="#1F2A37" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding CompanyType}" Foreground="{StaticResource MutedTextBrush}" />
+                                    </StackPanel>
+                                </DockPanel>
+                                <Border Padding="10" Margin="0,0,0,12" CornerRadius="6" Background="#FFF8E6"
+                                        Visibility="{Binding HasNotice, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="{Binding Notice}" TextWrapping="Wrap" Foreground="#3F2A00" />
+                                </Border>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="Signed in as" Style="{StaticResource FormLabel}" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding UserText}" Margin="0,4,0,3" Foreground="#1F2A37" />
+                                    <TextBlock Grid.Row="1" Text="Package" Style="{StaticResource FormLabel}" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding PackageName}" Margin="0,4,0,3" Foreground="#1F2A37" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Row="2" Text="Licence valid until" Style="{StaticResource FormLabel}" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ValidUntilText}" Margin="0,4,0,3" Foreground="#1F2A37" />
+                                    <TextBlock Grid.Row="3" Text="Computers" Style="{StaticResource FormLabel}" />
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ComputersText}" Margin="0,4,0,3" Foreground="#1F2A37" />
+                                    <TextBlock Grid.Row="4" Text="Licence server" Style="{StaticResource FormLabel}" />
+                                    <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding ServerText}" Margin="0,4,0,3" Foreground="#1F2A37" />
+                                    <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding LastCheckText}" Margin="0,4,0,3" FontSize="11"
+                                               Foreground="{StaticResource MutedTextBrush}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Products and licence key -->
+                        <StackPanel Grid.Column="2">
+                            <Border Style="{StaticResource Card}" Padding="18,14" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock Text="Products" Style="{StaticResource CardTitle}" Margin="0,0,0,8" />
+                                    <ItemsControl ItemsSource="{Binding Products}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <DockPanel Margin="0,4">
+                                                    <Ellipse DockPanel.Dock="Left" Width="9" Height="9" Margin="0,0,10,0" VerticalAlignment="Center">
+                                                        <Ellipse.Style>
+                                                            <Style TargetType="Ellipse">
+                                                                <Setter Property="Fill" Value="#C9CED6" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsValid}" Value="True">
+                                                                        <Setter Property="Fill" Value="#2F9E5B" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Ellipse.Style>
+                                                    </Ellipse>
+                                                    <TextBlock DockPanel.Dock="Right" Text="{Binding Detail}" Foreground="{StaticResource MutedTextBrush}" />
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#1F2A37" />
+                                                </DockPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Padding="18,14">
+                                <StackPanel>
+                                    <TextBlock Text="Licence key" Style="{StaticResource CardTitle}" />
+                                    <TextBlock Text="Enter a key from your MARK supplier to renew, or to add a product or feature." TextWrapping="Wrap"
+                                               FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,8" />
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Content="Use key" Command="{Binding RedeemKeyCommand}" />
+                                        <TextBox Style="{StaticResource FormBox}" Margin="0" FontFamily="Consolas" CharacterCasing="Upper"
+                                                 Text="{Binding KeyText, UpdateSourceTrigger=PropertyChanged}">
+                                            <TextBox.InputBindings>
+                                                <KeyBinding Key="Enter" Command="{Binding RedeemKeyCommand}" />
+                                            </TextBox.InputBindings>
+                                        </TextBox>
+                                    </DockPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Package features by area -->
+                    <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,16,0,0">
+                        <StackPanel>
+                            <TextBlock Text="What your package includes" Style="{StaticResource CardTitle}" Margin="0,0,0,6" />
+                            <ItemsControl ItemsSource="{Binding FeatureGroups}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Columns="3" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="0,8,18,4">
+                                            <TextBlock Text="{Binding Area}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource HeaderTextBrush}"
+                                                       Margin="0,0,0,4" />
+                                            <ItemsControl ItemsSource="{Binding Features}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <DockPanel Margin="0,3" ToolTip="{Binding Description}">
+                                                            <TextBlock DockPanel.Dock="Left" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,2,8,0"
+                                                                       VerticalAlignment="Top">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Text" Value="&#xE72E;" />
+                                                                        <Setter Property="Foreground" Value="#A0A7B1" />
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsIncluded}" Value="True">
+                                                                                <Setter Property="Text" Value="&#xE73E;" />
+                                                                                <Setter Property="Foreground" Value="#2F9E5B" />
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                            <StackPanel>
+                                                                <TextBlock Text="{Binding Name}" Foreground="#1F2A37" />
+                                                                <TextBlock Text="{Binding State}" FontSize="10" Foreground="{StaticResource MutedTextBrush}" />
+                                                            </StackPanel>
+                                                        </DockPanel>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
 
             <!-- ══ The open quote: Client | Designs | Drawing ═══════════ -->
             <DockPanel Background="{StaticResource PageBackgroundBrush}"
@@ -684,6 +952,12 @@
                             <ColumnDefinition Width="2*" MinWidth="330" />
                         </Grid.ColumnDefinitions>
 
+                        <!-- Not in the package: the price structure is locked (the quote keeps the default pricing). -->
+                        <Border Grid.ColumnSpan="2" Panel.ZIndex="10" Background="{StaticResource PageBackgroundBrush}"
+                                Visibility="{Binding DataContext.Access.CanUsePriceStructure, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBoolToVisibility}}">
+                            <ContentControl Style="{StaticResource LockNotice}" MaxWidth="520" Margin="24" VerticalAlignment="Top"
+                                            Content="{Binding DataContext.Access.PriceStructureLock, RelativeSource={RelativeSource AncestorType=Window}}" />
+                        </Border>
                         <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
                             <StackPanel Margin="24,16,12,24">
                                 <Border Style="{StaticResource Card}" Padding="18,14" Margin="0,0,0,12">
@@ -1151,7 +1425,10 @@
                                                     Visibility="{Binding DesignLibrary.HasMessage, Converter={StaticResource BoolToVisibility}}">
                                                 <TextBlock Text="{Binding DesignLibrary.Message}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" />
                                             </Border>
-                                            <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                                            <ContentControl DockPanel.Dock="Top" Style="{StaticResource LockNotice}" Margin="12,4,12,4"
+                                                            Content="{Binding Access.DesignLibraryLock}"
+                                                            Visibility="{Binding Access.CanUseDesignLibrary, Converter={StaticResource InverseBoolToVisibility}}" />
+                                            <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False" IsEnabled="{Binding Access.CanUseDesignLibrary}">
                                                 <ItemsControl ItemsSource="{Binding DesignLibrary.Sections}" Margin="0,0,0,12">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
@@ -1289,7 +1566,10 @@
                                     </Border>
                                 </StackPanel>
 
-                                    <!-- Bill of materials for the whole project -->
+                                    <!-- Bill of materials for the whole project (with the costing feature) -->
+                                    <ContentControl Style="{StaticResource LockNotice}" Margin="10,18,10,6" Content="{Binding Access.CostingLock}"
+                                                    Visibility="{Binding Access.CanSeeCosting, Converter={StaticResource InverseBoolToVisibility}}" />
+                                    <StackPanel Visibility="{Binding Access.CanSeeCosting, Converter={StaticResource BoolToVisibility}}">
                                     <!-- Bill of materials: total with a cost bar, then colour-coded groups -->
                                     <Border Margin="10,18,10,6" Padding="14,12" CornerRadius="8" Background="White"
                                             BorderBrush="#DDE1E6" BorderThickness="1"
@@ -1396,8 +1676,13 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
 
-                                    <!-- Cutting plan (stock bars, remnants, waste) for the whole project -->
-                                    <StackPanel DataContext="{Binding Cutting}">
+                                    </StackPanel>
+
+                                    <!-- Cutting plan (stock bars, remnants, waste) for the whole project (with the cutting-plans feature) -->
+                                    <ContentControl Style="{StaticResource LockNotice}" Margin="10,8,10,12" Content="{Binding Access.CuttingPlansLock}"
+                                                    Visibility="{Binding Access.CanSeeCuttingPlans, Converter={StaticResource InverseBoolToVisibility}}" />
+                                    <StackPanel DataContext="{Binding Cutting}"
+                                                Visibility="{Binding DataContext.Access.CanSeeCuttingPlans, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}">
                                         <TextBlock Style="{StaticResource PanelHeader}" Text="CUTTING PLAN" Margin="12,8,12,4" />
                                         <TextBlock Margin="12,0,12,2" FontWeight="SemiBold" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}"
                                                    Text="{Binding SummaryText}" />

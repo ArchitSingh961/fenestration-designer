@@ -1,0 +1,66 @@
+<Window x:Class="Mark.Owner.SignInWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MARK Owner" Width="440" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen" Background="{StaticResource PageBackgroundBrush}">
+    <Window.InputBindings>
+        <KeyBinding Key="Enter" Command="{Binding SignInCommand}" />
+    </Window.InputBindings>
+
+    <StackPanel>
+        <Border Background="#1B2B44" Padding="28,22">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="MARK" FontSize="30" FontWeight="Bold" Foreground="White" />
+                    <Border Background="#E8A33D" CornerRadius="4" Padding="7,1" Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="OWNER" FontWeight="Bold" FontSize="11" Foreground="#1B2B44" />
+                    </Border>
+                </StackPanel>
+                <TextBlock Text="Companies, packages and licence keys" Foreground="#C9D6EA" Margin="0,2,0,0" />
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}" Margin="20" Padding="22,18">
+            <StackPanel>
+                <TextBlock Text="{Binding Title}" Style="{StaticResource CardTitle}" Margin="0,0,0,10" />
+
+                <TextBlock Text="Licence server" Style="{StaticResource FormLabel}" />
+                <DockPanel Margin="0,0,0,8">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Content="Connect" Command="{Binding ConnectCommand}" />
+                    <TextBox Style="{StaticResource FormBox}" Margin="0" Text="{Binding ServerUrl, UpdateSourceTrigger=PropertyChanged}" />
+                </DockPanel>
+
+                <StackPanel Visibility="{Binding IsSetUp, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="This licence server is new. Create the admin account: only it can manage companies." TextWrapping="Wrap"
+                               FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,8" />
+                    <TextBlock Text="Your name" Style="{StaticResource FormLabel}" />
+                    <TextBox Style="{StaticResource FormBox}" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+
+                <TextBlock Text="Admin User ID" Style="{StaticResource FormLabel}" />
+                <TextBox x:Name="UserIdBox" Style="{StaticResource FormBox}" Text="{Binding UserId, UpdateSourceTrigger=PropertyChanged}" />
+                <TextBlock Text="Password" Style="{StaticResource FormLabel}" />
+                <PasswordBox Padding="6,4" Margin="0,0,0,8" BorderBrush="#C9CED6" PasswordChanged="Password_Changed" />
+                <StackPanel Visibility="{Binding IsSetUp, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="Password again" Style="{StaticResource FormLabel}" />
+                    <PasswordBox Padding="6,4" Margin="0,0,0,8" BorderBrush="#C9CED6" PasswordChanged="ConfirmPassword_Changed" />
+                </StackPanel>
+
+                <Border Padding="10,8" Margin="0,4,0,8" CornerRadius="4" Background="#FFF8E6"
+                        Visibility="{Binding HasWarning, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding Warning}" TextWrapping="Wrap" Foreground="#7C4A03" />
+                </Border>
+                <Border Padding="10,8" Margin="0,4,0,8" CornerRadius="4" Background="{StaticResource ErrorBackgroundBrush}"
+                        Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding Error}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" />
+                </Border>
+
+                <Button Style="{StaticResource PrimaryButton}" Margin="0,4,0,0" Padding="16,9" Command="{Binding SignInCommand}">
+                    <TextBlock Text="{Binding ButtonText}" FontWeight="SemiBold" />
+                </Button>
+                <ProgressBar IsIndeterminate="True" Height="3" Margin="0,6,0,0" BorderThickness="0"
+                             Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</Window>

@@ -17,3 +17,7 @@ dotnet-install.ps1
 
 # Local app builds
 out/
+
+# Licence server signing keys: never in the repository
+*.pem
+signing-key*

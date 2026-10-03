@@ -76,6 +76,7 @@ public partial class MainViewModel : IViewportDropTarget
     {
         ArgumentNullException.ThrowIfNull(template);
         if (IsOutsideView) return "Switch to the Inside view to change the design.";
+        if (DesignBlocked(template) is { } blocked) return DesignMessage = blocked;
 
         var targets = new List<(Frame Frame, Guid? GlassId)>();
         foreach (var frame in Project.Frames)
@@ -163,6 +164,8 @@ public partial class MainViewModel : IViewportDropTarget
     public string? SetOpening(IReadOnlyList<GlassPanel> panels, OpeningType? opening, bool? mesh)
     {
         if (IsOutsideView) return "Switch to the Inside view to change the design.";
+        if (!Access.CanUseOpenings && (opening is not null and not OpeningType.Fixed || mesh == true))
+            return Access.OpeningsLock;
         var ids = panels.Select(p => p.Id).ToHashSet();
         var commands = Project.Frames
             .Select(f => (Frame: f, Ids: f.GlassPanels.Where(g => ids.Contains(g.Id)).Select(g => g.Id).ToList()))
@@ -215,7 +218,8 @@ public partial class MainViewModel : IViewportDropTarget
             return false;
 
         var (frame, glassId, _) = DropTargetAt(world);
-        string? error = frame is null
+        string? error = DesignBlocked(template) is { } blocked ? blocked
+            : frame is null
             ? CreateFrameWithDesign(template, new Point2D(Snap(world.X), Snap(world.Y)))
             : ApplyDesign(template, new[] { (frame, glassId) });
         DesignLibrary.Message = error;

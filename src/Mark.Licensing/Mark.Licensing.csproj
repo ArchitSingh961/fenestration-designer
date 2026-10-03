@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Accounts and licensing shared by MARK, MARK Owner and the licence server: the licence format and its signature,
+       the feature catalogue, the API contracts and the HTTP clients. Headless (plain net8.0, no WPF) and independent
+       of the design model; ArchitectureTests enforce this. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Mark.Licensing</RootNamespace>
+    <AssemblyName>Mark.Licensing</AssemblyName>
+  </PropertyGroup>
+
+</Project>

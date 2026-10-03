@@ -80,10 +80,11 @@ public sealed partial class LicenceService
         List<AddOn> AddOns,
         List<string> RemovedFeatures,
         string? Notes,
-        DateTime CreatedUtc);
+        DateTime CreatedUtc,
+        CompanyCatalogue Catalogue);
 
     private const string CompanyColumns =
-        "id, name, logo, company_type_id, package_id, valid_until_utc, max_computers, suspended, products, add_ons, removed_features, notes, created_utc";
+        "id, name, logo, company_type_id, package_id, valid_until_utc, max_computers, suspended, products, add_ons, removed_features, notes, created_utc, catalogue";
 
     private static CompanyRow ReadCompany(SqliteDataReader r) => new(
         Guid.Parse(r.GetString(0)),
@@ -98,7 +99,12 @@ public sealed partial class LicenceService
         FromJson<List<AddOn>>(r.GetString(9)),
         FromJson<List<string>>(r.GetString(10)),
         r.IsDBNull(11) ? null : r.GetString(11),
-        ParseTime(r.GetString(12)));
+        ParseTime(r.GetString(12)),
+        ReadCatalogue(r.IsDBNull(13) ? null : r.GetString(13)));
+
+    private static CompanyCatalogue ReadCatalogue(string? json)
+        => string.IsNullOrEmpty(json) ? CompanyCatalogue.Empty
+            : System.Text.Json.JsonSerializer.Deserialize<CompanyCatalogue>(json, LicenceJson.Options) ?? CompanyCatalogue.Empty;
 
     private static CompanyRow? FindCompany(SqliteConnection connection, Guid id, SqliteTransaction? transaction = null)
     {
@@ -113,17 +119,18 @@ public sealed partial class LicenceService
     private static void WriteCompany(SqliteConnection connection, CompanyRow c, SqliteTransaction transaction, bool insert)
     {
         string sql = insert
-            ? $"INSERT INTO companies ({CompanyColumns}) VALUES ($id, $name, $logo, $type, $package, $until, $max, $suspended, $products, $addOns, $removed, $notes, $created)"
+            ? $"INSERT INTO companies ({CompanyColumns}) VALUES ($id, $name, $logo, $type, $package, $until, $max, $suspended, $products, $addOns, $removed, $notes, $created, $catalogue)"
             : """
               UPDATE companies SET name = $name, logo = $logo, company_type_id = $type, package_id = $package, valid_until_utc = $until,
                   max_computers = $max, suspended = $suspended, products = $products, add_ons = $addOns, removed_features = $removed,
-                  notes = $notes WHERE id = $id
+                  notes = $notes, catalogue = $catalogue WHERE id = $id
               """;
         Execute(connection, sql, transaction,
             ("$id", c.Id.ToString()), ("$name", c.Name), ("$logo", c.Logo), ("$type", c.TypeId?.ToString()),
             ("$package", c.PackageId?.ToString()), ("$until", Time(c.ValidUntilUtc)), ("$max", c.MaxComputers),
             ("$suspended", c.Suspended ? 1 : 0), ("$products", ToJson(c.Products)), ("$addOns", ToJson(c.AddOns)),
-            ("$removed", ToJson(c.RemovedFeatures)), ("$notes", c.Notes), ("$created", Time(c.CreatedUtc)));
+            ("$removed", ToJson(c.RemovedFeatures)), ("$notes", c.Notes), ("$created", Time(c.CreatedUtc)),
+            ("$catalogue", ToJson(c.Catalogue)));
     }
 
     // ── Licences ────────────────────────────────────────────────────
@@ -164,7 +171,8 @@ public sealed partial class LicenceService
             PackageName = package?.Name ?? "",
             MaxComputers = company.MaxComputers,
             Products = company.Products.Where(p => !p.Suspended).Select(p => new ProductGrant(p.Product, p.ValidUntilUtc)).ToList(),
-            Features = features.OrderBy(f => f.Key, StringComparer.Ordinal).Select(f => new FeatureGrant(f.Key, f.Value)).ToList()
+            Features = features.OrderBy(f => f.Key, StringComparer.Ordinal).Select(f => new FeatureGrant(f.Key, f.Value)).ToList(),
+            CatalogueHash = CompanyCatalogueJson(connection, company, transaction) is { } catalogue ? Licensing.CatalogueHash.Of(catalogue) : null
         };
         return _signer.Sign(licence);
     }

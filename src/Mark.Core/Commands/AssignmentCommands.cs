@@ -60,3 +60,25 @@ public sealed class AssignProfileCommand : FrameEditCommand
 
     protected override void Apply(Frame frame) => FrameEditor.AssignProfile(frame, _profileIds, DefinitionId, _library, _rules);
 }
+
+/// <summary>
+/// Puts a frame in a product system (or takes it out of one): its members and glass follow the system; see
+/// <see cref="FrameEditor.TrySetSystem"/>.
+/// </summary>
+public sealed class SetFrameSystemCommand : FrameEditCommand
+{
+    private readonly IProductLibrary _library;
+    private readonly DesignRules _rules;
+
+    public SetFrameSystemCommand(Frame frame, string? systemId, IProductLibrary library, DesignRules rules)
+        : base(systemId is null ? "Remove the system" : $"Change system to {library?.FindSystem(systemId)?.Name ?? systemId}", frame)
+    {
+        _library = library ?? throw new ArgumentNullException(nameof(library));
+        _rules = rules;
+        SystemId = systemId;
+    }
+
+    public string? SystemId { get; }
+
+    protected override void Apply(Frame frame) => FrameEditor.SetSystem(frame, SystemId, _library, _rules);
+}

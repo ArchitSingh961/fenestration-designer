@@ -33,6 +33,12 @@ public class Frame
     /// <summary>Dimension annotations attached to this frame.</summary>
     public List<Dimension> Dimensions { get; set; } = new();
 
+    /// <summary>
+    /// The product system the frame is made in (library <c>ProductSystem</c> id), or null. Members without their own
+    /// profile, sashes and glass take the system's defaults, and the system's bundles apply.
+    /// </summary>
+    public string? SystemId { get; set; }
+
     /// <summary>Extensible metadata (e.g. notes, tags, series name).</summary>
     public Dictionary<string, string> Metadata { get; set; } = new();
 
@@ -77,6 +83,7 @@ public class Frame
             Y = Y,
             Width = Width,
             Height = Height,
+            SystemId = SystemId,
             Metadata = new Dictionary<string, string>(Metadata),
             Design = Design.Copy()
         };

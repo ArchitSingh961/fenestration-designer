@@ -1,4 +1,6 @@
+using Mark.Core.Commands;
 using Mark.Core.Design;
+using Mark.Core.Models;
 using Mark.Licensing;
 
 namespace Mark.Designer.ViewModels;
@@ -38,6 +40,27 @@ public partial class MainViewModel
     {
         RaisePersistenceCanExecute();
         Canvas.InvalidateContent();
+    }
+
+    // ── Product systems (Milestone 13) ─────────────────────────────
+
+    /// <summary>The frame a profile or glass panel belongs to, or null.</summary>
+    private Frame? FrameOf(Guid objectId)
+        => Project.Frames.FirstOrDefault(f => f.Profiles.Any(p => p.Id == objectId) || f.GlassPanels.Any(g => g.Id == objectId));
+
+    /// <summary>
+    /// Puts the selected frames (or the frames of the selected objects) in a product system, one undo step. Returns an
+    /// error message, or null.
+    /// </summary>
+    public string? AssignSystem(string? systemId)
+    {
+        if (IsOutsideView) return "Switch to the Inside view to change the design.";
+        var frames = Project.Frames.Where(f => Selection.Contains(f.Id)).ToList();
+        if (frames.Count == 0 && SingleSelectedFrame is { } single) frames.Add(single);
+        if (frames.Count == 0) return "Select a frame first.";
+        var commands = frames.Select(f => (IUndoableCommand)new SetFrameSystemCommand(f, systemId, Library, Rules))
+            .ToList();
+        return RunForMessage(() => CompositeCommand.Combine(commands[0].Description, commands)!);
     }
 
     /// <summary>Why a design cannot be applied under the company's package, or null.</summary>

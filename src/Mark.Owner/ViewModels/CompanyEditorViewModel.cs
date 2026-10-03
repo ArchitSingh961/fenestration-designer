@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Mark.Core.Library;
 using Mark.Designer.ViewModels;
 using Mark.Licensing;
 using Mark.Licensing.Api;
@@ -136,10 +137,14 @@ public sealed class CompanyEditorViewModel : ViewModelBase
 
     /// <param name="existing">The account to change, or null for a new one.</param>
     /// <param name="today">Today's local date (tests pass a fixed one).</param>
+    /// <param name="catalogue">The published master catalogue (null: none yet; the company keeps its own library).</param>
     public CompanyEditorViewModel(CompanyDetail? existing, IReadOnlyList<PackageInfo> packages, IReadOnlyList<CompanyTypeInfo> types,
-        Func<DateTime>? today = null)
+        Func<DateTime>? today = null, ProductLibrary? catalogue = null)
     {
         _today = today ?? (() => DateTime.Today);
+        _catalogue = catalogue;
+        if (catalogue is not null)
+            CatalogueChoice = new CatalogueChoiceViewModel(catalogue, existing?.Catalogue);
         Packages = packages;
         CompanyTypes = types;
         Existing = existing;
@@ -168,6 +173,22 @@ public sealed class CompanyEditorViewModel : ViewModelBase
     }
 
     public CompanyDetail? Existing { get; }
+
+    private readonly ProductLibrary? _catalogue;
+
+    private CatalogueChoiceViewModel? _catalogueChoice;
+    /// <summary>The systems and items the company gets from the catalogue; null when no catalogue is published.</summary>
+    public CatalogueChoiceViewModel? CatalogueChoice
+    {
+        get => _catalogueChoice;
+        private set
+        {
+            if (SetProperty(ref _catalogueChoice, value))
+                OnPropertyChanged(nameof(HasCatalogue));
+        }
+    }
+
+    public bool HasCatalogue => _catalogueChoice is not null;
 
     public bool IsNew => Existing is null;
 
@@ -305,6 +326,8 @@ public sealed class CompanyEditorViewModel : ViewModelBase
         }
         ValidUntil = until;
         Package = Packages.FirstOrDefault(p => p.Id == type.PackageId) ?? Package ?? Packages.FirstOrDefault();
+        if (_catalogue is not null)
+            CatalogueChoice = new CatalogueChoiceViewModel(_catalogue, type.Catalogue);
     }
 
     private void Load(CompanyDetail c)
@@ -390,7 +413,8 @@ public sealed class CompanyEditorViewModel : ViewModelBase
                 .Select(f => new AddOn(f.Feature.Id, f.ValidUntil is { } until ? LicenceDates.EndOfLocalDayUtc(until) : accountUntil))
                 .ToList(),
             _features.Where(f => f.IsRemoved && f.CanChange).Select(f => f.Feature.Id).ToList(),
-            string.IsNullOrWhiteSpace(Notes) ? null : Notes.Trim());
+            string.IsNullOrWhiteSpace(Notes) ? null : Notes.Trim(),
+            CatalogueChoice?.ToCatalogue() ?? Existing?.Catalogue);
     }
 
     /// <summary>Reads an image file for the logo; returns an error message, or null.</summary>

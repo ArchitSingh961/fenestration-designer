@@ -117,6 +117,7 @@ public static class LicenceServerApp
         app.MapPost("/api/client/sign-in", (SignInRequest r) => service.ClientSignIn(r));
         app.MapPost("/api/client/check-in", (CheckInRequest r) => service.CheckIn(r));
         app.MapPost("/api/client/redeem-key", (RedeemKeyRequest r) => service.RedeemKey(r));
+        app.MapPost("/api/client/catalogue", (CatalogueRequest r) => service.ClientCatalogue(r));
         app.MapPost("/api/client/sign-out", (SignOutRequest r) =>
         {
             service.ClientSignOut(r);
@@ -175,6 +176,9 @@ public static class LicenceServerApp
             service.DeleteCompanyType(id);
             return Results.NoContent();
         });
+
+        admin.MapGet("/catalogue", () => service.Catalogue());
+        admin.MapPut("/catalogue", (PublishCatalogueRequest r) => service.PublishCatalogue(r.LibraryJson));
 
         admin.MapGet("/keys", () => service.Keys());
         admin.MapPost("/keys", (GenerateKeysRequest r) => service.GenerateKeys(r));

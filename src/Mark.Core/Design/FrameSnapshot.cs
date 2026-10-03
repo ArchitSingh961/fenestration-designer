@@ -46,6 +46,7 @@ public sealed class FrameSnapshot
         target.Y = source.Y;
         target.Width = source.Width;
         target.Height = source.Height;
+        target.SystemId = source.SystemId;
         target.Metadata = new Dictionary<string, string>(source.Metadata);
         target.Design = source.Design.Copy();
         target.Profiles = source.Profiles.Select(CopyOf).ToList();

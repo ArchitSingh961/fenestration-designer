@@ -58,6 +58,12 @@ public sealed record ProfileDefinition
     /// <summary>Accessories consumed per piece or per metre of this profile (gaskets, cleats, connectors…).</summary>
     public IReadOnlyList<MaterialUsage> Materials { get; init; } = Array.Empty<MaterialUsage>();
 
+    /// <summary>The steel reinforcement inside this profile (uPVC), or null.</summary>
+    public ReinforcementRule? Reinforcement { get; init; }
+
+    /// <summary>The systems and openings this profile is used with (null = any).</summary>
+    public UsedWith? UsedWith { get; init; }
+
     public IReadOnlyDictionary<string, string> Properties { get; init; } = new Dictionary<string, string>();
 
     /// <summary>
@@ -111,6 +117,9 @@ public sealed record GlassDefinition
     /// <summary>Accessories consumed per pane, per metre of perimeter or per m² (glazing gasket, setting blocks…).</summary>
     public IReadOnlyList<MaterialUsage> Materials { get; init; } = Array.Empty<MaterialUsage>();
 
+    /// <summary>The systems this glass is used with (null = any; systems also limit the thickness).</summary>
+    public UsedWith? UsedWith { get; init; }
+
     public IReadOnlyDictionary<string, string> Properties { get; init; } = new Dictionary<string, string>();
 
     /// <summary>False once retired: not offered for new assignments, still resolvable by Id (see ProfileDefinition).</summary>
@@ -150,6 +159,9 @@ public sealed record MaterialDefinition
     public MaterialUnit Unit { get; init; } = MaterialUnit.Piece;
 
     public decimal CostPerUnit { get; init; }
+
+    /// <summary>The systems and openings this item is used with (null = any).</summary>
+    public UsedWith? UsedWith { get; init; }
 
     public IReadOnlyDictionary<string, string> Properties { get; init; } = new Dictionary<string, string>();
 
@@ -193,6 +205,9 @@ public sealed record LibraryDefaults
     public string? TransomProfileId { get; init; }
 
     public string? GlassId { get; init; }
+
+    /// <summary>The system new frames are drawn in (null = none).</summary>
+    public string? SystemId { get; init; }
 
     public string? ProfileIdFor(ProfileType role) => role switch
     {

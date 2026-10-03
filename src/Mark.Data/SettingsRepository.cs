@@ -59,4 +59,31 @@ public sealed class SettingsRepository
             command.ExecuteNonQuery();
         });
     }
+
+    private const string CatalogueHashKey = "catalogue.hash";
+
+    /// <summary>The fingerprint of the owner's catalogue last applied to the library, or null.</summary>
+    public string? LoadCatalogueHash()
+        => _database.Guard("read the settings", () =>
+        {
+            using var connection = _database.Connect();
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT value_json FROM app_settings WHERE key = $key";
+            command.Parameters.AddWithValue("$key", CatalogueHashKey);
+            return command.ExecuteScalar() is string json ? System.Text.Json.JsonSerializer.Deserialize<string>(json) : null;
+        });
+
+    public void SaveCatalogueHash(string? hash)
+        => _database.Guard("save the settings", () =>
+        {
+            using var connection = _database.Connect();
+            using var command = connection.CreateCommand();
+            command.CommandText = """
+                INSERT INTO app_settings (key, value_json) VALUES ($key, $value)
+                ON CONFLICT (key) DO UPDATE SET value_json = excluded.value_json
+                """;
+            command.Parameters.AddWithValue("$key", CatalogueHashKey);
+            command.Parameters.AddWithValue("$value", System.Text.Json.JsonSerializer.Serialize(hash));
+            command.ExecuteNonQuery();
+        });
 }

@@ -454,12 +454,12 @@ public class SashProfileTopUpTests : IDisposable
         var library = reopened.Library.Current;
         Assert.Contains(library.Profiles, p => p.Supports(ProfileType.Sash));
         Assert.Contains(library.Profiles, p => p.Supports(ProfileType.MeshSash));
-        Assert.Equal(before + 2, library.Profiles.Count);
+        Assert.True(library.Profiles.Count >= before + 2);          // sash and mesh, then the systems' profiles (Milestone 13)
         Assert.Contains(reopened.StartupMessages, m => m.Contains("sash", StringComparison.OrdinalIgnoreCase));
 
         // Nothing more is added on the next start.
         var third = _temp.Open(TempDatabase.ShippedLibraryPath);
-        Assert.Equal(before + 2, third.Library.Current.Profiles.Count);
+        Assert.Equal(library.Profiles.Count, third.Library.Current.Profiles.Count);
         Assert.DoesNotContain(third.StartupMessages, m => m.Contains("sash", StringComparison.OrdinalIgnoreCase));
     }
 }

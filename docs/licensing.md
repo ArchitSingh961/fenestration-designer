@@ -111,6 +111,6 @@ gate it in MARK with `Access.Allows(...)`.
 
 ## Not yet (later milestones)
 
-- Product licences (uPVC / Aluminium) restrict the library from Milestone 13, when every item belongs to a system
-  with its material; in Milestone 12 a company needs at least one valid product to work.
+- Product licences (uPVC / Aluminium) decide which systems of the owner's catalogue a company receives (Milestone 13,
+  see catalogue.md); a company needs at least one valid product to work.
 - Staff logins and per-person permissions: Milestone 14.

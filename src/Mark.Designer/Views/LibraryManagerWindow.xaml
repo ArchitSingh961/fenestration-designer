@@ -1,0 +1,433 @@
+<Window x:Class="Mark.Designer.Views.LibraryManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:Mark.Designer.ViewModels"
+        Title="Library Manager" Width="1180" Height="760" MinWidth="900" MinHeight="520" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner" Background="{StaticResource PanelBackgroundBrush}">
+
+    <Window.Resources>
+        <Style x:Key="FormLabel" TargetType="TextBlock" BasedOn="{StaticResource FieldLabel}">
+            <Setter Property="Margin" Value="0,4,8,4" />
+        </Style>
+        <Style x:Key="FormBox" TargetType="TextBox">
+            <Setter Property="Margin" Value="0,2" />
+            <Setter Property="Padding" Value="4,2" />
+        </Style>
+        <Style x:Key="SectionLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource HeaderTextBrush}" />
+            <Setter Property="Margin" Value="0,12,0,4" />
+        </Style>
+
+        <!-- Tick boxes of systems (used with) -->
+        <DataTemplate x:Key="CheckChoiceTemplate">
+            <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" Margin="0,2,14,2" />
+        </DataTemplate>
+        <ItemsPanelTemplate x:Key="WrapItems">
+            <WrapPanel />
+        </ItemsPanelTemplate>
+
+        <!-- Profiles, glass and materials. In prices-only mode everything but the price is read-only. -->
+        <DataTemplate DataType="{x:Type vm:LibraryItemEditorViewModel}">
+            <StackPanel>
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Margin="0,0,0,8" Foreground="{StaticResource TextBrush}" />
+                <Grid IsEnabled="{Binding CanEditDetails}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Id (permanent)" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding Id}" IsEnabled="{Binding IsNew}" />
+                    <TextBlock Grid.Row="1" Text="Name" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding Name}" />
+                    <TextBlock Grid.Row="2" Text="Code / article no." Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding Code}" />
+                    <TextBlock Grid.Row="3" Text="Manufacturer" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Row="3" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding Manufacturer}" />
+                    <CheckBox Grid.Row="4" Grid.Column="1" Margin="0,4" Content="Active (offered for new designs)" IsChecked="{Binding IsActive}" />
+                </Grid>
+
+                <!-- Profile -->
+                <Grid Visibility="{Binding IsProfile, Converter={StaticResource BoolToVisibility}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Series / system" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding Group}" IsEnabled="{Binding CanEditDetails}" />
+                    <TextBlock Grid.Row="1" Text="Roles" Style="{StaticResource FormLabel}" VerticalAlignment="Top" />
+                    <WrapPanel Grid.Row="1" Grid.Column="1" Margin="0,4" IsEnabled="{Binding CanEditDetails}">
+                        <CheckBox Content="Frame" Margin="0,0,12,4" IsChecked="{Binding RoleFrame}" />
+                        <CheckBox Content="Mullion" Margin="0,0,12,4" IsChecked="{Binding RoleMullion}" />
+                        <CheckBox Content="Transom" Margin="0,0,12,4" IsChecked="{Binding RoleTransom}" />
+                        <CheckBox Content="Sash" Margin="0,0,12,4" IsChecked="{Binding RoleSash}"
+                                  ToolTip="Bars of opening sashes (casement, tilt &amp; turn, sliding...)" />
+                        <CheckBox Content="Mesh sash" Margin="0,0,12,4" IsChecked="{Binding RoleMeshSash}" ToolTip="Bars of insect-mesh shutters" />
+                        <CheckBox Content="Reinforcement" Margin="0,0,12,4" IsChecked="{Binding RoleReinforcement}"
+                                  ToolTip="Steel that goes inside another profile" />
+                        <CheckBox Content="Glazing bead" Margin="0,0,12,4" IsChecked="{Binding RoleGlazingBead}" />
+                        <CheckBox Content="Interlock" Margin="0,0,12,4" IsChecked="{Binding RoleInterlock}" />
+                        <CheckBox Content="Track" Margin="0,0,12,4" IsChecked="{Binding RoleTrack}" />
+                        <CheckBox Content="Coupler / cover" Margin="0,0,12,4" IsChecked="{Binding RoleCoupler}" />
+                    </WrapPanel>
+                    <TextBlock Grid.Row="2" Text="Face width (mm)" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding FaceWidth}" IsEnabled="{Binding CanEditDetails}" />
+                    <TextBlock Grid.Row="3" Text="Depth (mm)" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Row="3" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding Depth}" IsEnabled="{Binding CanEditDetails}" />
+                    <TextBlock Grid.Row="4" Text="Weight (kg/m)" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Row="4" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding WeightPerMetre}" IsEnabled="{Binding CanEditDetails}" />
+                    <TextBlock Grid.Row="5" Text="Cost per metre" Style="{StaticResource FormLabel}" FontWeight="SemiBold" />
+                    <TextBox Grid.Row="5" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding CostPerMetre}" />
+                    <TextBlock Grid.Row="6" Text="Stock length (mm)" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Row="6" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding StockLength}" IsEnabled="{Binding CanEditDetails}" />
+                    <TextBlock Grid.Row="7" Text="Other stock lengths" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Row="7" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding OtherStockLengths}" IsEnabled="{Binding CanEditDetails}"
+                             ToolTip="Further lengths the bar is sold in, e.g. 6500, 7000" />
+                    <TextBlock Grid.Row="8" Text="Cut allowance / end" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Row="8" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding CutAllowance}" IsEnabled="{Binding CanEditDetails}" />
+                    <TextBlock Grid.Row="9" Text="Glazing bite (mm)" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Row="9" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding GlazingBite}" IsEnabled="{Binding CanEditDetails}" />
+                </Grid>
+
+                <!-- Reinforcement (profiles) -->
+                <StackPanel Visibility="{Binding IsProfile, Converter={StaticResource BoolToVisibility}}" IsEnabled="{Binding CanEditDetails}">
+                    <TextBlock Text="REINFORCEMENT" Style="{StaticResource SectionLabel}" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="Steel inside" Style="{StaticResource FormLabel}" />
+                        <ComboBox Grid.Column="1" Margin="0,2" ItemsSource="{Binding ReinforcementChoices}" SelectedItem="{Binding Reinforcement}"
+                                  ToolTip="Profiles with the Reinforcement role" />
+                        <TextBlock Grid.Row="1" Text="Only bars from (mm)" Style="{StaticResource FormLabel}" />
+                        <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding ReinforcementMinLength}"
+                                 ToolTip="Empty: every bar is reinforced" />
+                        <TextBlock Grid.Row="2" Text="Cut shorter by (mm)" Style="{StaticResource FormLabel}" />
+                        <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding ReinforcementDeduction}" />
+                    </Grid>
+                </StackPanel>
+
+                <!-- Glass -->
+                <Grid Visibility="{Binding IsGlass, Converter={StaticResource BoolToVisibility}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Category" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding Group}" IsEnabled="{Binding CanEditDetails}" />
+                    <TextBlock Grid.Row="1" Text="Thickness (mm)" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding Thickness}" IsEnabled="{Binding CanEditDetails}" />
+                    <TextBlock Grid.Row="2" Text="Cost per m²" Style="{StaticResource FormLabel}" FontWeight="SemiBold" />
+                    <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding CostPerSquareMetre}" />
+                    <TextBlock Grid.Row="3" Text="Weight (kg/m², optional)" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Row="3" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding WeightPerSquareMetre}" IsEnabled="{Binding CanEditDetails}" />
+                    <TextBlock Grid.Row="4" Text="Min. chargeable m²" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Row="4" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding MinChargeableArea}" IsEnabled="{Binding CanEditDetails}" />
+                </Grid>
+
+                <!-- Material (hardware, gasket, accessory, consumable) -->
+                <Grid Visibility="{Binding IsMaterial, Converter={StaticResource BoolToVisibility}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Category" Style="{StaticResource FormLabel}" />
+                    <ComboBox Grid.Column="1" Margin="0,2" ItemsSource="{x:Static vm:LibraryItemEditorViewModel.MaterialCategories}"
+                              SelectedItem="{Binding MaterialCategory}" IsEnabled="{Binding CanEditDetails}" />
+                    <TextBlock Grid.Row="1" Text="Unit" Style="{StaticResource FormLabel}" />
+                    <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,2" ItemsSource="{x:Static vm:LibraryItemEditorViewModel.MaterialUnits}"
+                              SelectedItem="{Binding MaterialUnit}" IsEnabled="{Binding CanEditDetails}" />
+                    <TextBlock Grid.Row="2" Text="Cost per unit" Style="{StaticResource FormLabel}" FontWeight="SemiBold" />
+                    <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding CostPerUnit}" />
+                </Grid>
+
+                <!-- Used with -->
+                <StackPanel IsEnabled="{Binding CanEditDetails}" Visibility="{Binding HasSystems, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="USED WITH SYSTEMS (NONE TICKED = ANY)" Style="{StaticResource SectionLabel}" />
+                    <ItemsControl ItemsSource="{Binding UsedWithSystems}" ItemTemplate="{StaticResource CheckChoiceTemplate}"
+                                  ItemsPanel="{StaticResource WrapItems}" />
+                </StackPanel>
+                <StackPanel IsEnabled="{Binding CanEditDetails}" Visibility="{Binding IsMaterial, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="FOR OPENING TYPES (NONE TICKED = ANY)" Style="{StaticResource SectionLabel}" />
+                    <ItemsControl ItemsSource="{Binding UsedWithOpenings}" ItemTemplate="{StaticResource CheckChoiceTemplate}"
+                                  ItemsPanel="{StaticResource WrapItems}" />
+                </StackPanel>
+
+                <!-- Material usages (profiles and glass) -->
+                <StackPanel Margin="0,8,0,0" IsEnabled="{Binding CanEditDetails}">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsMaterial}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <TextBlock Text="Materials used (one per line: MATERIAL-ID perPiece|perMetre|perSquareMetre quantity)"
+                               TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" FontSize="11" />
+                    <TextBox Text="{Binding UsagesText}" AcceptsReturn="True" MinHeight="70" Margin="0,4,0,0" Padding="4,2"
+                             FontFamily="Consolas" VerticalScrollBarVisibility="Auto" />
+                </StackPanel>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- Product system -->
+        <DataTemplate DataType="{x:Type vm:SystemEditorViewModel}">
+            <StackPanel>
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Margin="0,0,0,8" Foreground="{StaticResource TextBrush}" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Id (permanent)" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding Id}" IsEnabled="{Binding IsNew}" />
+                    <TextBlock Grid.Row="1" Text="Name" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding Name}"
+                             ToolTip="e.g. 62mm Casement – uPVC" />
+                    <TextBlock Grid.Row="2" Text="Material" Style="{StaticResource FormLabel}" />
+                    <ComboBox Grid.Row="2" Grid.Column="1" Margin="0,2" ItemsSource="{x:Static vm:SystemEditorViewModel.Materials}"
+                              SelectedItem="{Binding Material}" ToolTip="uPVC and Aluminium are licensed separately" />
+                    <TextBlock Grid.Row="3" Text="For" Style="{StaticResource FormLabel}" />
+                    <ComboBox Grid.Row="3" Grid.Column="1" Margin="0,2" ItemsSource="{x:Static vm:SystemEditorViewModel.Uses}"
+                              SelectedItem="{Binding Use}" />
+                    <TextBlock Grid.Row="4" Text="Description" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Row="4" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding Description}" />
+                    <CheckBox Grid.Row="5" Grid.Column="1" Margin="0,4" Content="Active (offered for new designs)" IsChecked="{Binding IsActive}" />
+                </Grid>
+
+                <TextBlock Text="DESIGNS IN THIS SYSTEM USE" Style="{StaticResource SectionLabel}" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Frame" Style="{StaticResource FormLabel}" />
+                    <ComboBox Grid.Column="1" Margin="0,2" ItemsSource="{Binding FrameChoices}" SelectedItem="{Binding FrameProfile}" />
+                    <TextBlock Grid.Row="1" Text="Mullion" Style="{StaticResource FormLabel}" />
+                    <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,2" ItemsSource="{Binding MullionChoices}" SelectedItem="{Binding MullionProfile}" />
+                    <TextBlock Grid.Row="2" Text="Transom" Style="{StaticResource FormLabel}" />
+                    <ComboBox Grid.Row="2" Grid.Column="1" Margin="0,2" ItemsSource="{Binding TransomChoices}" SelectedItem="{Binding TransomProfile}" />
+                    <TextBlock Grid.Row="3" Text="Sash" Style="{StaticResource FormLabel}" />
+                    <ComboBox Grid.Row="3" Grid.Column="1" Margin="0,2" ItemsSource="{Binding SashChoices}" SelectedItem="{Binding SashProfile}" />
+                    <TextBlock Grid.Row="4" Text="Mesh shutter" Style="{StaticResource FormLabel}" />
+                    <ComboBox Grid.Row="4" Grid.Column="1" Margin="0,2" ItemsSource="{Binding MeshChoices}" SelectedItem="{Binding MeshProfile}" />
+                    <TextBlock Grid.Row="5" Text="Glass" Style="{StaticResource FormLabel}" />
+                    <ComboBox Grid.Row="5" Grid.Column="1" Margin="0,2" ItemsSource="{Binding GlassChoices}" SelectedItem="{Binding Glass}" />
+                    <TextBlock Grid.Row="6" Text="Glass thickness (mm)" Style="{StaticResource FormLabel}" />
+                    <StackPanel Grid.Row="6" Grid.Column="1" Orientation="Horizontal">
+                        <TextBox Style="{StaticResource FormBox}" Width="60" Text="{Binding GlassMin}" ToolTip="Thinnest; empty = no limit" />
+                        <TextBlock Text="to" Style="{StaticResource FormLabel}" Margin="8,0" />
+                        <TextBox Style="{StaticResource FormBox}" Width="60" Text="{Binding GlassMax}" ToolTip="Thickest; empty = no limit" />
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- Bundle -->
+        <DataTemplate DataType="{x:Type vm:BundleEditorViewModel}">
+            <StackPanel>
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Margin="0,0,0,8" Foreground="{StaticResource TextBrush}" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Id (permanent)" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding Id}" IsEnabled="{Binding IsNew}" />
+                    <TextBlock Grid.Row="1" Text="Name" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding Name}"
+                             ToolTip="e.g. Sliding 2-track frame, or Casement hardware" />
+                    <TextBlock Grid.Row="2" Text="System" Style="{StaticResource FormLabel}" />
+                    <ComboBox Grid.Row="2" Grid.Column="1" Margin="0,2" ItemsSource="{Binding SystemChoices}" SelectedItem="{Binding System}" />
+                    <TextBlock Grid.Row="3" Text="Description" Style="{StaticResource FormLabel}" />
+                    <TextBox Grid.Row="3" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding Description}" />
+                    <CheckBox Grid.Row="4" Grid.Column="1" Margin="0,4" Content="Active (its parts are added)" IsChecked="{Binding IsActive}" />
+                </Grid>
+
+                <TextBlock Text="GOES WITH" Style="{StaticResource SectionLabel}" />
+                <RadioButton Content="Every bar of a profile (e.g. frame: track rail, gasket, drainage)" IsChecked="{Binding GoesWithProfile}" Margin="0,2" />
+                <ComboBox Margin="20,2,0,4" ItemsSource="{Binding ProfileChoices}" SelectedItem="{Binding Profile}"
+                          IsEnabled="{Binding GoesWithProfile}" />
+                <RadioButton Content="Every opening of these types (e.g. hardware sets)" IsChecked="{Binding GoesWithOpenings}" Margin="0,6,0,2" />
+                <TextBlock Text="Sash bundles: only for these opening types. None ticked: every openable opening." Margin="20,0,0,2"
+                           FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" />
+                <ItemsControl Margin="20,0,0,0" ItemsSource="{Binding OpeningTypes}" ItemTemplate="{StaticResource CheckChoiceTemplate}"
+                              ItemsPanel="{StaticResource WrapItems}" />
+
+                <DockPanel Margin="0,12,0,4">
+                    <Button DockPanel.Dock="Right" Content="+ Add part" Padding="10,2" Command="{Binding AddPartCommand}" />
+                    <TextBlock Text="PARTS" Style="{StaticResource SectionLabel}" Margin="0" VerticalAlignment="Center" />
+                </DockPanel>
+                <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,4"
+                           Text="Per piece: how many per bar (or opening). Per metre: per metre of the bar (or measure). By size: e.g. 1200:2, 9999:3 = 2 up to 1200 mm, 3 above. Profiles are cut to the bar length (or the measure) minus the deduction." />
+                <ItemsControl ItemsSource="{Binding Parts}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="#DDE1E6" BorderThickness="1" CornerRadius="4" Padding="8,6" Margin="0,0,0,6" Background="White">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Content="Remove" Padding="6,0" Margin="6,0,0,0"
+                                                Command="{Binding DataContext.RemovePartCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}" />
+                                        <ComboBox ItemsSource="{Binding Items}" SelectedItem="{Binding Item}" IsEditable="False" />
+                                    </DockPanel>
+                                    <WrapPanel Margin="0,4,0,0">
+                                        <ComboBox Width="90" ItemsSource="{x:Static vm:BundlePartRow.Bases}" SelectedItem="{Binding Basis}" Margin="0,0,6,2" />
+                                        <TextBlock Text="qty" Style="{StaticResource FieldLabel}" Margin="0,0,4,0" />
+                                        <TextBox Width="45" Text="{Binding QuantityText}" Margin="0,0,8,2" Padding="2,1" />
+                                        <TextBlock Text="measure" Style="{StaticResource FieldLabel}" Margin="0,0,4,0" />
+                                        <ComboBox Width="95" ItemsSource="{x:Static vm:BundlePartRow.Measures}" SelectedItem="{Binding Measure}" Margin="0,0,8,2" />
+                                        <TextBlock Text="side" Style="{StaticResource FieldLabel}" Margin="0,0,4,0" />
+                                        <ComboBox Width="85" ItemsSource="{x:Static vm:BundlePartRow.Sides}" SelectedItem="{Binding Side}" Margin="0,0,8,2" />
+                                        <TextBlock Text="deduct mm" Style="{StaticResource FieldLabel}" Margin="0,0,4,0" />
+                                        <TextBox Width="45" Text="{Binding DeductionText}" Margin="0,0,8,2" Padding="2,1" />
+                                    </WrapPanel>
+                                    <DockPanel Margin="0,2,0,0" Visibility="{Binding IsBySize, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock Text="sizes (up to mm : qty)" Style="{StaticResource FieldLabel}" Margin="0,0,6,0" />
+                                        <TextBox Text="{Binding StepsText}" Padding="2,1" FontFamily="Consolas" />
+                                    </DockPanel>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </DataTemplate>
+    </Window.Resources>
+
+    <DockPanel Margin="12">
+        <!-- Prices-only notice -->
+        <Border DockPanel.Dock="Top" Padding="10,8" Margin="0,0,0,10" CornerRadius="4" Background="#FFF8E6"
+                Visibility="{Binding PricesOnly, Converter={StaticResource BoolToVisibility}}">
+            <TextBlock TextWrapping="Wrap" Foreground="#3F2A00"
+                       Text="Your products, systems and bundles come from your MARK supplier's catalogue and follow it automatically. You can enter your own prices: choose an item, change its cost and Save." />
+        </Border>
+
+        <!-- Kind and filters -->
+        <Grid DockPanel.Dock="Top" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" /><ColumnDefinition Width="190" />
+                <ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" /><ColumnDefinition Width="150" />
+                <ColumnDefinition Width="Auto" /><ColumnDefinition Width="150" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Show" Style="{StaticResource FieldLabel}" Margin="0,0,6,0" />
+            <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:LibraryManagerViewModel.KindChoices}" SelectedValuePath="Kind"
+                      SelectedValue="{Binding Kind}" />
+            <TextBlock Grid.Column="2" Text="Search" Style="{StaticResource FieldLabel}" Margin="14,0,6,0" />
+            <TextBox Grid.Column="3" Padding="4,2" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Name, id, code, manufacturer or series/category" />
+            <TextBlock Grid.Column="4" Text="Manufacturer" Style="{StaticResource FieldLabel}" Margin="14,0,6,0"
+                       Visibility="{Binding HasFilters, Converter={StaticResource BoolToVisibility}}" />
+            <ComboBox Grid.Column="5" ItemsSource="{Binding Manufacturers}" SelectedItem="{Binding ManufacturerFilter}"
+                      Visibility="{Binding HasFilters, Converter={StaticResource BoolToVisibility}}" />
+            <TextBlock Grid.Column="6" Text="{Binding GroupLabel}" Style="{StaticResource FieldLabel}" Margin="14,0,6,0"
+                       Visibility="{Binding HasFilters, Converter={StaticResource BoolToVisibility}}" />
+            <ComboBox Grid.Column="7" ItemsSource="{Binding Groups}" SelectedItem="{Binding GroupFilter}"
+                      Visibility="{Binding HasFilters, Converter={StaticResource BoolToVisibility}}" />
+            <CheckBox Grid.Column="8" Content="Show retired" Margin="14,0,0,0" VerticalAlignment="Center" IsChecked="{Binding ShowInactive}" />
+        </Grid>
+
+        <!-- Library file actions and close -->
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="Import Library File..." Padding="10,3" Command="{Binding ImportCommand}"
+                        ToolTip="Add products, systems and bundles from a library JSON file. Existing ids are skipped, never overwritten." />
+                <Button Content="Export Library File..." Padding="10,3" Margin="8,0,0,0" Command="{Binding ExportCommand}" />
+            </StackPanel>
+            <Button DockPanel.Dock="Right" Content="Close" Width="80" HorizontalAlignment="Right" IsCancel="True" Click="Close_Click" />
+        </DockPanel>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="2*" MinWidth="420" />
+            </Grid.ColumnDefinitions>
+
+            <!-- List -->
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Bottom" Text="{Binding ResultSummary}" Margin="0,4,0,0" FontSize="11"
+                           Foreground="{StaticResource MutedTextBrush}" />
+                <ListView ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Id" Width="140" DisplayMemberBinding="{Binding Id}" />
+                            <GridViewColumn Header="Name" Width="190" DisplayMemberBinding="{Binding Name}" />
+                            <GridViewColumn Header="Details" Width="320" DisplayMemberBinding="{Binding Detail}" />
+                            <GridViewColumn Header="" Width="60" DisplayMemberBinding="{Binding Status}" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </DockPanel>
+
+            <!-- Editor -->
+            <DockPanel Grid.Column="2">
+                <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                    <TextBlock Text="{Binding UsageText}" TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
+                    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Margin="0,6,0,0">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MessageIsError}" Value="True">
+                                        <Setter Property="Foreground" Value="{StaticResource ErrorBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button Content="New" Width="70" Command="{Binding NewCommand}" />
+                        <Button Content="Save" Width="70" Margin="8,0,0,0" Command="{Binding SaveCommand}" />
+                        <Button Content="{Binding ToggleActiveText}" Width="80" Margin="8,0,0,0" Command="{Binding ToggleActiveCommand}"
+                                ToolTip="Retired items are hidden from new designs but keep existing designs priced" />
+                        <Button Content="Delete" Width="70" Margin="8,0,0,0" Command="{Binding DeleteCommand}"
+                                ToolTip="Only items nothing uses can be deleted; retire the others" />
+                    </StackPanel>
+                </StackPanel>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ContentControl Content="{Binding Editor}" Focusable="False" />
+                </ScrollViewer>
+            </DockPanel>
+        </Grid>
+    </DockPanel>
+</Window>

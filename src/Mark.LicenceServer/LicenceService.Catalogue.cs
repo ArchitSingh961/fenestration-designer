@@ -80,14 +80,16 @@ public sealed partial class LicenceService
     {
         using var connection = Connect();
         using var command = Command(connection, """
-            SELECT t.id, t.name, t.products, t.package_id, t.validity_days, (SELECT COUNT(*) FROM companies c WHERE c.company_type_id = t.id)
+            SELECT t.id, t.name, t.products, t.package_id, t.validity_days, (SELECT COUNT(*) FROM companies c WHERE c.company_type_id = t.id),
+                t.catalogue
             FROM company_types t ORDER BY t.name
             """, null);
         using var reader = command.ExecuteReader();
         var list = new List<CompanyTypeInfo>();
         while (reader.Read())
             list.Add(new CompanyTypeInfo(Guid.Parse(reader.GetString(0)), reader.GetString(1), FromJson<List<Product>>(reader.GetString(2)),
-                reader.IsDBNull(3) ? null : Guid.Parse(reader.GetString(3)), reader.GetInt32(4), reader.GetInt32(5)));
+                reader.IsDBNull(3) ? null : Guid.Parse(reader.GetString(3)), reader.GetInt32(4), reader.GetInt32(5),
+                ReadCatalogue(reader.IsDBNull(6) ? null : reader.GetString(6))));
         return list;
     }
 
@@ -110,16 +112,20 @@ public sealed partial class LicenceService
         var parameters = new (string, object?)[]
         {
             ("$id", id.ToString()), ("$name", name), ("$products", ToJson(products)), ("$package", type.PackageId?.ToString()),
-            ("$days", type.ValidityDays)
+            ("$days", type.ValidityDays), ("$catalogue", ToJson(type.Catalogue ?? CompanyCatalogue.Empty))
         };
         if (type.Id == Guid.Empty)
-            Execute(connection, "INSERT INTO company_types (id, name, products, package_id, validity_days) VALUES ($id, $name, $products, $package, $days)",
-                transaction, parameters);
+            Execute(connection, """
+                INSERT INTO company_types (id, name, products, package_id, validity_days, catalogue)
+                VALUES ($id, $name, $products, $package, $days, $catalogue)
+                """, transaction, parameters);
         else if (Scalar<long>(connection, "SELECT COUNT(*) FROM company_types WHERE id = $id", transaction, ("$id", id.ToString())) == 0)
             throw ApiException.NotFound("The company type");
         else
-            Execute(connection, "UPDATE company_types SET name = $name, products = $products, package_id = $package, validity_days = $days WHERE id = $id",
-                transaction, parameters);
+            Execute(connection, """
+                UPDATE company_types SET name = $name, products = $products, package_id = $package, validity_days = $days,
+                    catalogue = $catalogue WHERE id = $id
+                """, transaction, parameters);
         transaction.Commit();
         return CompanyTypes().First(t => t.Id == id);
     }

@@ -32,6 +32,12 @@ public interface ICalculationEngine
 ///         clearance per side. Cost = max(area, minimum chargeable area) × price per m².</item>
 ///   <item><b>Materials.</b> Usage rules in the definitions (per piece, per metre, per m²) add hardware, gaskets
 ///         and accessories.</item>
+///   <item><b>Systems.</b> A frame in a product system takes the system's profiles, sash, mesh and glass for anything
+///         without its own reference; glass outside the system's thickness range is a warning.</item>
+///   <item><b>Bundles and reinforcement.</b> Every bar (frame member, mullion, transom, sash or mesh bar) gets the parts
+///         of the bundles of its profile (and system), on the sides they are for, and its profile's reinforcement when it
+///         is long enough. Every opening gets the opening sets (hardware) of its type. Profile parts are cut and listed
+///         like members; material parts are counted per piece, per metre or by size.</item>
 /// </list>
 /// </summary>
 public sealed class CalculationEngine : ICalculationEngine
@@ -64,6 +70,14 @@ public sealed class CalculationEngine : ICalculationEngine
         private readonly List<OpeningLine> _openings = new();
         private readonly DesignRules _designRules = new();
 
+        /// <summary>The system of the frame being added, or null.</summary>
+        private ProductSystem? _system;
+        private string? _systemId;
+
+        /// <summary>Costs and quantities of the parts added for the frame being added.</summary>
+        private decimal _partProfiles, _partMaterials;
+        private double _partWeight, _reinforcementMetres;
+
         /// <summary>Quantity of the design being added (lines are per window; this is how many windows).</summary>
         private int _windows = 1;
 
@@ -80,6 +94,12 @@ public sealed class CalculationEngine : ICalculationEngine
             decimal profileCost = 0, glassCost = 0, materialCost = 0;
             double weight = 0, metres = 0, glassArea = 0;
             _windows = Math.Max(1, frame.Design.Quantity);
+            _systemId = frame.SystemId;
+            _system = _library.FindSystem(frame.SystemId);
+            _partProfiles = _partMaterials = 0;
+            _partWeight = _reinforcementMetres = 0;
+            if (frame.SystemId is { } systemId && _system is null)
+                Warning($"The frame is in system '{systemId}', which is not in the library; the library defaults are used.", frame.Id);
 
             foreach (var profile in frame.Profiles)
             {
@@ -90,7 +110,10 @@ public sealed class CalculationEngine : ICalculationEngine
                 weight += line.WeightKg;
                 metres += line.CutLengthMm / 1000.0;
                 if (definition is not null)
+                {
                     materialCost += AddMaterials(frame.Id, profile.Id, definition.Materials, line.CutLengthMm / 1000.0, 0);
+                    AddBarParts(frame, line, definition, SideOf(outer, profile), null);
+                }
             }
 
             foreach (var panel in frame.GlassPanels)
@@ -101,13 +124,16 @@ public sealed class CalculationEngine : ICalculationEngine
                 var sash = OpeningGeometry.SashOf(frame, panel, sashRules);
                 if (sash is { } s)
                 {
-                    foreach (var bar in SashBars(frame, panel, s.Outer, ProfileType.Sash, sashDefinition))
+                    foreach (var (bar, side) in SashBars(frame, panel, s.Outer, ProfileType.Sash, sashDefinition))
                     {
                         profileCost += bar.Cost;
                         weight += bar.WeightKg;
                         metres += bar.CutLengthMm / 1000.0;
                         if (sashDefinition is not null)
+                        {
                             materialCost += AddMaterials(frame.Id, panel.Id, sashDefinition.Materials, bar.CutLengthMm / 1000.0, 0);
+                            AddBarParts(frame, bar, sashDefinition, side, panel);
+                        }
                     }
                 }
 
@@ -119,16 +145,20 @@ public sealed class CalculationEngine : ICalculationEngine
                     double face = meshDefinition?.FaceWidthMm ?? 0;
                     meshArea = Round(Math.Max(0, meshOuter.Width - 2 * face) * Math.Max(0, meshOuter.Height - 2 * face) / 1_000_000.0,
                         _rules.AreaDecimals);
-                    foreach (var bar in SashBars(frame, panel, meshOuter, ProfileType.MeshSash, meshDefinition))
+                    foreach (var (bar, side) in SashBars(frame, panel, meshOuter, ProfileType.MeshSash, meshDefinition))
                     {
                         profileCost += bar.Cost;
                         weight += bar.WeightKg;
                         metres += bar.CutLengthMm / 1000.0;
                         if (meshDefinition is not null)
+                        {
                             materialCost += AddMaterials(frame.Id, panel.Id, meshDefinition.Materials, bar.CutLengthMm / 1000.0, 0);
+                            AddBarParts(frame, bar, meshDefinition, side, panel);
+                        }
                     }
                 }
-                _openings.Add(new OpeningLine(frame.Id, panel.Id, panel.Opening, sash is not null, panel.HasMesh, meshArea, _windows));
+                bool hasSet = AddOpeningSets(frame, panel, sash?.Outer ?? panel.Boundary);
+                _openings.Add(new OpeningLine(frame.Id, panel.Id, panel.Opening, sash is not null, panel.HasMesh, meshArea, _windows, hasSet));
 
                 var line = CalculateGlass(frame, panel, definitions, sash, sashDefinition, out var definition);
                 _glass.Add(line);
@@ -139,13 +169,161 @@ public sealed class CalculationEngine : ICalculationEngine
                     materialCost += AddMaterials(frame.Id, panel.Id, definition.Materials, line.PerimeterM, line.AreaM2);
             }
 
+            profileCost += _partProfiles;
+            materialCost += _partMaterials;
+            weight += _partWeight;
             _frames.Add(new FrameCalculation(frame.Id, frame.Width, frame.Height,
                 new CostSummary(profileCost, glassCost, materialCost), Round(weight, _rules.QuantityDecimals))
             {
                 Quantity = _windows,
                 ProfileMetres = Round(metres, _rules.QuantityDecimals),
-                GlassAreaM2 = Round(glassArea, _rules.AreaDecimals)
+                GlassAreaM2 = Round(glassArea, _rules.AreaDecimals),
+                ReinforcementMetres = Round(_reinforcementMetres, _rules.QuantityDecimals)
             });
+        }
+
+        // ── Bundles, reinforcement and opening sets ─────────────────
+
+        /// <summary>Which side of the frame a design member is on (frame members), or its direction (divisions).</summary>
+        private static BarSide SideOf(FrameMembers? outer, Profile profile)
+        {
+            if (outer is not null)
+            {
+                if (ReferenceEquals(profile, outer.Left)) return BarSide.Left;
+                if (ReferenceEquals(profile, outer.Right)) return BarSide.Right;
+                if (ReferenceEquals(profile, outer.Top)) return BarSide.Top;
+                if (ReferenceEquals(profile, outer.Bottom)) return BarSide.Bottom;
+            }
+            return Members.AxisOf(profile) == MemberAxis.Vertical ? BarSide.Vertical : BarSide.Horizontal;
+        }
+
+        private static bool OnSide(BarSide wanted, BarSide side) => wanted switch
+        {
+            BarSide.Any => true,
+            BarSide.Horizontal => side is BarSide.Horizontal or BarSide.Top or BarSide.Bottom,
+            BarSide.Vertical => side is BarSide.Vertical or BarSide.Left or BarSide.Right,
+            _ => wanted == side
+        };
+
+        /// <summary>
+        /// The parts of the member bundles of <paramref name="definition"/> (for the frame's system and, for sash bars,
+        /// the opening's type) and the profile's reinforcement, for one bar.
+        /// </summary>
+        private void AddBarParts(Frame frame, ProfileLine bar, ProfileDefinition definition, BarSide side, GlassPanel? panel)
+        {
+            if (bar.CutLengthMm <= 0) return;
+            Guid source = panel?.Id ?? bar.ProfileId;
+            foreach (var bundle in _library.Bundles.Where(b => b.IsActive && b.ProfileId == definition.Id && b.AppliesToSystem(_systemId)
+                                                               && (panel is null || b.OpeningTypes.Count == 0 || b.OpeningTypes.Contains(panel.Opening))))
+            {
+                foreach (var part in bundle.Parts.Where(p => OnSide(p.Side, side)))
+                {
+                    double length = bar.CutLengthMm;
+                    if (_library.FindProfile(part.ItemId) is { } partProfile)
+                    {
+                        if (part.Basis == PartBasis.PerMetre)
+                            AddPartBar(frame, bar.ProfileId, bar.OpeningId, partProfile, length * part.Quantity - part.CutDeductionMm, bundle.Name);
+                        else
+                            for (int i = 0, n = Count(part.QuantityFor(length)); i < n; i++)
+                                AddPartBar(frame, bar.ProfileId, bar.OpeningId, partProfile, length - part.CutDeductionMm, bundle.Name);
+                    }
+                    else
+                    {
+                        AddPartMaterial(frame.Id, source, part, length / 1000.0, length);
+                    }
+                }
+            }
+
+            if (definition.Reinforcement is { } rule && bar.CutLengthMm >= rule.MinLengthMm - Tol)
+            {
+                if (_library.FindProfile(rule.ProfileId) is { } steel)
+                {
+                    var line = AddPartBar(frame, bar.ProfileId, bar.OpeningId, steel, bar.CutLengthMm - rule.CutDeductionMm, "Reinforcement");
+                    if (line is not null) _reinforcementMetres += line.CutLengthMm / 1000.0;
+                }
+            }
+        }
+
+        /// <summary>
+        /// The opening sets (e.g. hardware) for one opening of the frame, measured on its sash (or the opening). Returns
+        /// true when at least one set applied.
+        /// </summary>
+        private bool AddOpeningSets(Frame frame, GlassPanel panel, Rectangle2D outer)
+        {
+            bool any = false;
+            foreach (var set in _library.Bundles.Where(b => b.IsActive && b.IsOpeningSet && b.AppliesToSystem(_systemId)
+                                                            && b.AppliesToOpening(panel.Opening)))
+            {
+                any = true;
+                foreach (var part in set.Parts)
+                {
+                    double size = part.Measure switch
+                    {
+                        SizeMeasure.Width => outer.Width,
+                        SizeMeasure.Height => outer.Height,
+                        SizeMeasure.LongestSide => Math.Max(outer.Width, outer.Height),
+                        _ => 2 * (outer.Width + outer.Height)
+                    };
+                    if (_library.FindProfile(part.ItemId) is { } partProfile)
+                    {
+                        if (part.Basis == PartBasis.PerMetre)
+                            AddPartBar(frame, Guid.Empty, panel.Id, partProfile, size * part.Quantity - part.CutDeductionMm, set.Name);
+                        else
+                            for (int i = 0, n = Count(part.QuantityFor(size)); i < n; i++)
+                                AddPartBar(frame, Guid.Empty, panel.Id, partProfile, size - part.CutDeductionMm, set.Name);
+                    }
+                    else
+                    {
+                        AddPartMaterial(frame.Id, panel.Id, part, size / 1000.0, size);
+                    }
+                }
+            }
+            return any;
+        }
+
+        private static int Count(double quantity) => Math.Max(0, (int)Math.Round(quantity, MidpointRounding.AwayFromZero));
+
+        /// <summary>One cut piece of a part profile (square cut). Nothing is added when no length is left.</summary>
+        private ProfileLine? AddPartBar(Frame frame, Guid memberId, Guid? openingId, ProfileDefinition definition, double rawLength, string partOf)
+        {
+            double length = Round(rawLength, _rules.LengthDecimals);
+            if (length <= 0)
+            {
+                Warning($"'{definition.Name}' ({partOf}) has no length left after its cut deduction and is left out.", openingId ?? memberId);
+                return null;
+            }
+            double metres = length / 1000.0;
+            var line = new ProfileLine
+            {
+                FrameId = frame.Id,
+                ProfileId = memberId,
+                OpeningId = openingId,
+                Role = definition.Roles.Count > 0 ? definition.Roles[0] : ProfileType.Generic,
+                DefinitionId = definition.Id,
+                Name = definition.Name,
+                IsResolved = true,
+                IsDefault = false,
+                CutLengthMm = length,
+                Quantity = _windows,
+                WeightKg = Round(metres * definition.WeightKgPerMetre, _rules.QuantityDecimals),
+                CostPerMetre = definition.CostPerMetre,
+                Cost = Money(ToDecimal(metres) * definition.CostPerMetre),
+                PartOf = partOf
+            };
+            _profiles.Add(line);
+            _partProfiles += line.Cost;
+            _partWeight += line.WeightKg;
+            return line;
+        }
+
+        /// <summary>A material part: per piece, per metre of <paramref name="metres"/>, or by <paramref name="sizeMm"/>.</summary>
+        private void AddPartMaterial(Guid frameId, Guid sourceId, BundlePart part, double metres, double sizeMm)
+        {
+            var basis = part.Basis == PartBasis.PerMetre ? UsageBasis.PerMetre : UsageBasis.PerPiece;
+            double quantity = part.Basis == PartBasis.PerMetre ? part.Quantity : part.QuantityFor(sizeMm);
+            if (quantity <= 0) return;
+            _partMaterials += AddMaterials(frameId, sourceId, new[] { new MaterialUsage { MaterialId = part.ItemId, Basis = basis, Quantity = quantity } },
+                metres, 0);
         }
 
         // ── Sashes and mesh shutters ────────────────────────────────
@@ -156,7 +334,8 @@ public sealed class CalculationEngine : ICalculationEngine
         /// </summary>
         private ProfileDefinition? SashProfile(ProfileType role, Guid panelId)
         {
-            var definition = _library.Profiles.FirstOrDefault(p => p.IsActive && p.Supports(role))
+            var definition = _library.FindProfile(_system?.ProfileIdFor(role))
+                             ?? _library.Profiles.FirstOrDefault(p => p.IsActive && p.Supports(role))
                              ?? _library.Profiles.FirstOrDefault(p => p.Supports(role));
             if (definition is null)
                 Error(role == ProfileType.Sash
@@ -166,12 +345,13 @@ public sealed class CalculationEngine : ICalculationEngine
             return definition;
         }
 
-        /// <summary>Four mitred bars around <paramref name="outer"/> (frame-relative mm): two widths, two heights.</summary>
-        private IEnumerable<ProfileLine> SashBars(Frame frame, GlassPanel panel, Rectangle2D outer, ProfileType role,
+        /// <summary>Four mitred bars around <paramref name="outer"/> (frame-relative mm): top, bottom, left, right.</summary>
+        private IEnumerable<(ProfileLine Bar, BarSide Side)> SashBars(Frame frame, GlassPanel panel, Rectangle2D outer, ProfileType role,
             ProfileDefinition? definition)
         {
-            var bars = new List<ProfileLine>();
-            foreach (double raw in new[] { outer.Width, outer.Width, outer.Height, outer.Height })
+            var bars = new List<(ProfileLine, BarSide)>();
+            foreach (var (raw, side) in new[] { (outer.Width, BarSide.Top), (outer.Width, BarSide.Bottom), (outer.Height, BarSide.Left),
+                         (outer.Height, BarSide.Right) })
             {
                 double length = Round(raw, _rules.LengthDecimals);
                 double metres = length / 1000.0;
@@ -194,7 +374,7 @@ public sealed class CalculationEngine : ICalculationEngine
                     Cost = definition is null ? 0 : Money(ToDecimal(metres) * definition.CostPerMetre)
                 };
                 _profiles.Add(line);
-                bars.Add(line);
+                bars.Add((line, side));
             }
             return bars;
         }
@@ -204,7 +384,8 @@ public sealed class CalculationEngine : ICalculationEngine
         private ProfileLine CalculateProfile(Frame frame, FrameMembers? outer, Profile profile, out ProfileDefinition? definition)
         {
             bool isDefault = profile.ProfileDefinitionId is null;
-            string? id = profile.ProfileDefinitionId ?? _library.Defaults.ProfileIdFor(profile.ProfileType);
+            string? id = profile.ProfileDefinitionId ?? _system?.ProfileIdFor(profile.ProfileType)
+                         ?? _library.Defaults.ProfileIdFor(profile.ProfileType);
             definition = _library.FindProfile(id);
             string role = profile.ProfileType.ToString().ToLowerInvariant();
 
@@ -223,6 +404,8 @@ public sealed class CalculationEngine : ICalculationEngine
                             $"is {Format(definition.FaceWidthMm)} mm.", profile.Id);
                 if (!definition.IsActive)
                     Warning($"{Members.Describe(profile)} uses '{definition.Name}', which is retired in the library.", profile.Id);
+                if (_system is not null && definition.UsedWith is { } usedWith && !usedWith.FitsSystem(_system.Id))
+                    Warning($"{Members.Describe(profile)} uses '{definition.Name}', which is not used with the system '{_system.Name}'.", profile.Id);
             }
 
             double length = Round(CutLength(frame, outer, profile, definition, out double startAngle, out double endAngle),
@@ -282,7 +465,7 @@ public sealed class CalculationEngine : ICalculationEngine
             SashLayout? sash, ProfileDefinition? sashDefinition, out GlassDefinition? definition)
         {
             bool isDefault = panel.GlassDefinitionId is null;
-            string? id = panel.GlassDefinitionId ?? _library.Defaults.GlassId;
+            string? id = panel.GlassDefinitionId ?? _system?.GlassId ?? _library.Defaults.GlassId;
             definition = _library.FindGlass(id);
             string where = $"The glass panel {Format(panel.Boundary.Width)} × {Format(panel.Boundary.Height)} mm";
 
@@ -297,6 +480,9 @@ public sealed class CalculationEngine : ICalculationEngine
                             $"{Format(definition.ThicknessMm)} mm.", panel.Id);
                 if (!definition.IsActive)
                     Warning($"{where} uses '{definition.Name}', which is retired in the library.", panel.Id);
+                if (_system is not null && !_system.AcceptsGlass(definition.ThicknessMm))
+                    Warning($"{where} uses '{definition.Name}' ({Format(definition.ThicknessMm)} mm); the system '{_system.Name}' " +
+                            $"takes glass of {_system.GlassRangeText}.", panel.Id);
             }
 
             var b = panel.Boundary;
@@ -415,7 +601,8 @@ public sealed class CalculationEngine : ICalculationEngine
             {
                 int pieces = group.Sum(p => p.Quantity);
                 double length = Round(group.Sum(p => p.CutLengthMm * p.Quantity), _rules.LengthDecimals);
-                bom.Add(new BomLine(BomCategory.Profile, group.Key, group.First().Name,
+                var category = group.All(p => p.Role == ProfileType.Reinforcement) ? BomCategory.Reinforcement : BomCategory.Profile;
+                bom.Add(new BomLine(category, group.Key, group.First().Name,
                     $"{pieces} pcs, {Format(length / 1000.0, "0.###")} m", pieces, "pcs", length, null,
                     Round(group.Sum(p => p.WeightKg * p.Quantity), _rules.QuantityDecimals), group.Sum(p => p.Cost * p.Quantity)));
             }

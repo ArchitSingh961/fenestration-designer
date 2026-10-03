@@ -57,6 +57,19 @@ public sealed record Licence
     public IReadOnlyList<ProductGrant> Products { get; init; } = Array.Empty<ProductGrant>();
 
     public IReadOnlyList<FeatureGrant> Features { get; init; } = Array.Empty<FeatureGrant>();
+
+    /// <summary>
+    /// SHA-256 (hex) of the company's catalogue (the library JSON it gets from the owner), or null when the owner gives
+    /// it none and the company keeps its own library. MARK downloads the catalogue when this changes and checks it.
+    /// </summary>
+    public string? CatalogueHash { get; init; }
+}
+
+/// <summary>The fingerprint of a catalogue as the licence carries it.</summary>
+public static class CatalogueHash
+{
+    public static string Of(string libraryJson)
+        => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(libraryJson ?? "")));
 }
 
 /// <summary>A licence as stored and sent: the exact JSON bytes (base64) and their ECDSA P-256 / SHA-256 signature.</summary>

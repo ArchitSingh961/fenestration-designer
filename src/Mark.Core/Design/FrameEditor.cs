@@ -59,7 +59,7 @@ public static partial class FrameEditor
         if (CheckFrameSize(width, height, rules.FrameThicknessMm, rules.FrameThicknessMm, rules) is { } sizeError)
             return EditResult.Fail(sizeError);
 
-        var created = new Frame { X = x, Y = y, Width = width, Height = height };
+        var created = new Frame { X = x, Y = y, Width = width, Height = height, SystemId = rules.SystemId };
         created.Profiles.AddRange(BuildOuterProfiles(width, height, rules.FrameThicknessMm));
 
         var layout = FrameLayout.Compute(created, rules);

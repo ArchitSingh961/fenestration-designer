@@ -1551,7 +1551,8 @@
 
                                     <ItemsControl ItemsSource="{Binding Items}" Margin="12,8,12,0" ItemTemplate="{StaticResource PropertyRow}" />
 
-                                    <!-- Library assignments: change glass / profile after design -->
+                                    <!-- Library assignments: the frame's system, then glass / profile after design -->
+                                    <ContentControl Content="{Binding SystemPicker}" Focusable="False" />
                                     <ContentControl Content="{Binding ProfilePicker}" Focusable="False" />
                                     <ContentControl Content="{Binding GlassPicker}" Focusable="False" />
 

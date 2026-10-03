@@ -37,6 +37,12 @@ public class PropertiesViewModel : ViewModelBase
     /// <summary>Host callback: make the selection from this library profile. Returns an error message, or null.</summary>
     public Func<string, string?>? AssignProfile { get; set; }
 
+    /// <summary>Host callback: put the selected frame(s) in this system (null = none). Returns an error message, or null.</summary>
+    public Func<string?, string?>? AssignSystem { get; set; }
+
+    /// <summary>The system of the frame the selection is in (pickers offer what fits it), or null.</summary>
+    private string? _systemId;
+
     /// <summary>Stores new design information for the selected frame; returns an error message or null.</summary>
     public Func<DesignInfo, string?>? SetDesignInfo { get; set; }
 
@@ -136,6 +142,14 @@ public class PropertiesViewModel : ViewModelBase
         private set => SetProperty(ref _profilePicker, value);
     }
 
+    private LibraryPickerViewModel? _systemPicker;
+    /// <summary>The product system of the selected frame(s); null when not applicable.</summary>
+    public LibraryPickerViewModel? SystemPicker
+    {
+        get => _systemPicker;
+        private set => SetProperty(ref _systemPicker, value);
+    }
+
     private LibraryPickerViewModel? _glassPicker;
     /// <summary>Glass selection for the selected glass panel, or for all panels of the selected frame.</summary>
     public LibraryPickerViewModel? GlassPicker
@@ -215,6 +229,10 @@ public class PropertiesViewModel : ViewModelBase
         var panes = panels.Concat(frames.SelectMany(f => f.GlassPanels)).Distinct().ToList();
         var members = profiles.Concat(frames.SelectMany(f => f.Profiles.Where(p => p.ProfileType == ProfileType.Frame)))
             .Distinct().ToList();
+        var systems = frames.Select(f => f.SystemId).Distinct().ToList();
+        _systemId = systems.Count == 1 ? systems[0] : null;
+        if (frames.Count > 0 && Library.Systems.Count > 0)
+            SystemPicker = CreateSystemPicker(frames);
         if (members.Count > 0)
             ProfilePicker = CreateProfilePicker(members.All(p => p.ProfileType == ProfileType.Frame) ? "Frame profile" : "Profile", members);
         if (panes.Count > 0)
@@ -251,10 +269,13 @@ public class PropertiesViewModel : ViewModelBase
     public void ShowFrame(Frame frame)
     {
         Reset("FRAME");
+        _systemId = frame.SystemId;
         IsFrameEditable = true;
         WidthText = Format(frame.Width);
         HeightText = Format(frame.Height);
 
+        if (frame.SystemId is { } systemId)
+            Items.Add(new PropertyItem("System", Library.FindSystem(systemId)?.Name ?? $"Missing: {systemId}"));
         Items.Add(new PropertyItem("X", Format(frame.X), "mm"));
         Items.Add(new PropertyItem("Y", Format(frame.Y), "mm"));
         if (frame.Profiles.FirstOrDefault(p => p.ProfileType == ProfileType.Frame) is { } outer)
@@ -263,6 +284,8 @@ public class PropertiesViewModel : ViewModelBase
         Items.Add(new PropertyItem("Transoms", frame.Profiles.Count(p => p.ProfileType == ProfileType.Transom).ToString(CultureInfo.InvariantCulture)));
         Items.Add(new PropertyItem("Glass panels", frame.GlassPanels.Count.ToString(CultureInfo.InvariantCulture)));
 
+        if (Library.Systems.Count > 0)
+            SystemPicker = CreateSystemPicker(new[] { frame });
         DesignEditor = new DesignInfoEditorViewModel(frame.Design,
             info => SetDesignInfo is { } set ? set(info) : "The design details cannot be changed here.");
         if (frame.GlassPanels.Count > 0)
@@ -286,10 +309,12 @@ public class PropertiesViewModel : ViewModelBase
         });
     }
 
-    public void ShowProfile(Profile profile)
+    /// <param name="systemId">The system of the frame the member is in (the picker offers what fits it).</param>
+    public void ShowProfile(Profile profile, string? systemId = null)
     {
         bool isDivision = Members.IsDivision(profile);
         Reset(profile.ProfileType.ToString().ToUpperInvariant());
+        _systemId = systemId;
 
         if (isDivision)
         {
@@ -321,9 +346,11 @@ public class PropertiesViewModel : ViewModelBase
         });
     }
 
-    public void ShowGlass(GlassPanel panel)
+    /// <param name="systemId">The system of the frame the panel is in (the picker offers glass that fits it).</param>
+    public void ShowGlass(GlassPanel panel, string? systemId = null)
     {
         Reset("GLASS");
+        _systemId = systemId;
         Items.Add(new PropertyItem("Width", Format(panel.Boundary.Width), "mm"));
         Items.Add(new PropertyItem("Height", Format(panel.Boundary.Height), "mm"));
         Items.Add(new PropertyItem("Area", (panel.Boundary.Area / 1_000_000.0).ToString("0.###", CultureInfo.InvariantCulture), "m²"));
@@ -359,11 +386,38 @@ public class PropertiesViewModel : ViewModelBase
         var ids = panels.Select(p => p.GlassDefinitionId).Distinct().ToList();
         string? currentId = ids.Count == 1 ? ids[0] : null;
         string currentText = ids.Count > 1 ? "Mixed" : DescribeGlass(currentId);
+        var system = Library.FindSystem(_systemId);
         return new LibraryPickerViewModel(label, currentText, currentId,
-            text => Library.SearchGlass(new LibraryQuery(text)).Select(g => new LibraryOption(g.Id, g.Name,
-                Join($"{Format(g.ThicknessMm)} mm", g.Category, $"{Money(g.CostPerSquareMetre)}/m²"))).ToList(),
+            text => Library.SearchGlass(new LibraryQuery(text))
+                .Where(g => (g.UsedWith?.FitsSystem(_systemId) ?? true) && (system?.AcceptsGlass(g.ThicknessMm) ?? true))
+                .Select(g => new LibraryOption(g.Id, g.Name,
+                    Join($"{Format(g.ThicknessMm)} mm", g.Category, $"{Money(g.CostPerSquareMetre)}/m²"))).ToList(),
             id => AssignGlass is { } assign ? assign(id) : "The glass cannot be changed here.");
     }
+
+    /// <summary>The product systems (and "No system"); choosing one puts the frames in it.</summary>
+    private LibraryPickerViewModel CreateSystemPicker(IReadOnlyList<Frame> frames)
+    {
+        var ids = frames.Select(f => f.SystemId).Distinct().ToList();
+        string? currentId = ids.Count == 1 ? ids[0] ?? NoSystem : null;
+        string currentText = ids.Count > 1 ? "Mixed"
+            : ids[0] is { } id ? Library.FindSystem(id)?.Name ?? $"Missing: {id}" : "No system";
+        return new LibraryPickerViewModel("System", currentText, currentId,
+            text =>
+            {
+                var words = (text ?? "").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+                var options = Library.Systems.Where(x => x.IsActive && words.All(w => x.Name.Contains(w, StringComparison.OrdinalIgnoreCase)))
+                    .Select(x => new LibraryOption(x.Id, x.Name, Join(x.Material == SystemMaterial.Upvc ? "uPVC" : "Aluminium",
+                        x.Use == ProductUse.WindowAndDoor ? "windows and doors" : x.Use.ToString().ToLowerInvariant() + "s",
+                        x.GlassRangeText.Length > 0 ? $"glass {x.GlassRangeText}" : null)))
+                    .ToList();
+                options.Add(new LibraryOption(NoSystem, "No system", "Library defaults"));
+                return options;
+            },
+            id => AssignSystem is { } assign ? assign(id == NoSystem ? null : id) : "The system cannot be changed here.");
+    }
+
+    private const string NoSystem = "(none)";
 
     /// <summary>Offers only sections usable in every role among <paramref name="profiles"/> (e.g. mullion and transom).</summary>
     private LibraryPickerViewModel CreateProfilePicker(string label, IReadOnlyList<Profile> profiles)
@@ -374,14 +428,14 @@ public class PropertiesViewModel : ViewModelBase
         string currentText = ids.Count > 1 ? "Mixed" : DescribeProfile(currentId, roles);
         return new LibraryPickerViewModel(label, currentText, currentId,
             text => Library.SearchProfiles(new LibraryQuery(text, roles.Count == 1 ? roles[0] : null))
-                .Where(p => roles.All(p.Supports))
+                .Where(p => roles.All(p.Supports) && (p.UsedWith?.FitsSystem(_systemId) ?? true))
                 .Select(p => new LibraryOption(p.Id, p.Name,
                     Join($"{Format(p.FaceWidthMm)} mm", p.Series, $"{Money(p.CostPerMetre)}/m"))).ToList(),
             id => AssignProfile is { } assign ? assign(id) : "The profile cannot be changed here.");
     }
 
     private string DescribeGlass(string? id) => id is null
-        ? Library.DefaultGlass is { } d ? $"{d.Name} (default)" : "None assigned"
+        ? (Library.FindGlass(Library.FindSystem(_systemId)?.GlassId) ?? Library.DefaultGlass) is { } d ? $"{d.Name} (default)" : "None assigned"
         : Library.FindGlass(id)?.Name ?? $"Missing: {id}";
 
     /// <summary>A null id means each member uses the library default for its role.</summary>
@@ -389,7 +443,8 @@ public class PropertiesViewModel : ViewModelBase
     {
         if (id is not null)
             return Library.FindProfile(id)?.Name ?? $"Missing: {id}";
-        var defaults = roles.Select(Library.DefaultProfileFor).Distinct().ToList();
+        var system = Library.FindSystem(_systemId);
+        var defaults = roles.Select(r => Library.FindProfile(system?.ProfileIdFor(r)) ?? Library.DefaultProfileFor(r)).Distinct().ToList();
         return defaults switch
         {
             [{ } d] => $"{d.Name} (default)",
@@ -460,6 +515,8 @@ public class PropertiesViewModel : ViewModelBase
         ErrorMessage = null;
         ProfilePicker = null;
         GlassPicker = null;
+        SystemPicker = null;
+        _systemId = null;
         DesignEditor = null;
         OpeningEditor = null;
         CalculationItems.Clear();

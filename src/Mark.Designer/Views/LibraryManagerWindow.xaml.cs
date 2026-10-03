@@ -1,7 +1,7 @@
 using System.Windows;
 using Mark.Designer.ViewModels;
 
-namespace Mark.App.Dialogs;
+namespace Mark.Designer.Views;
 
 /// <summary>Shows a <see cref="LibraryManagerViewModel"/>. UI glue only: all behaviour is in the view model.</summary>
 public partial class LibraryManagerWindow : Window

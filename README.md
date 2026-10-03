@@ -61,6 +61,7 @@ docs/
 ├── quotes.md                   quotes, clients, design cards, quote list, dashboard, quote numbers
 ├── openings.md                 opening types (sashes), design library, design details, Inside/Outside view
 ├── licensing.md                accounts, sign-in, licences, packages, keys, MARK Owner, running the licence server
+├── catalogue.md                product systems, used with, reinforcement, bundles, the owner's catalogue
 ├── roadmap.md                  the milestone plan
 └── geometry.md                 coordinate system, tolerance, primitives, viewport math, grid
 ```
@@ -73,6 +74,14 @@ validity, package, add-ons, computers), then sign in to **MARK** with it. The ad
 computer or delete an account at any time, and generate **licence keys** with a validity; MARK follows at its next
 check-in and becomes read-only when the account is suspended or expired. Features outside the company's package are
 shown locked. See [docs/licensing.md](docs/licensing.md).
+
+## Product catalogue, systems and bundles
+
+The owner keeps one master catalogue in **MARK Owner → Catalogue** (profiles, glass, hardware, **systems** such as
+*62mm Casement – uPVC* and **bundles** of parts that go together, e.g. a sliding frame's track rail and seals, or a
+casement's hinges by size) and ticks per company which systems and items it gets. MARK follows it at check-in; the
+company enters only its own prices. A window is made in a system: its profiles, sash, glass, steel reinforcement and
+bundle parts are picked automatically. See [docs/catalogue.md](docs/catalogue.md).
 
 ## Quotes
 

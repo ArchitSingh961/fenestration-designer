@@ -39,6 +39,11 @@ public sealed record RedeemKeyResponse(SignedLicence Licence, string Message);
 
 public sealed record SignOutRequest(string DeviceToken, string MachineId);
 
+public sealed record CatalogueRequest(string DeviceToken, string MachineId);
+
+/// <summary>The company's catalogue: a library file (JSON) whose SHA-256 is the licence's catalogue hash.</summary>
+public sealed record CatalogueResponse(string LibraryJson);
+
 // ── MARK Owner (the admin) ──────────────────────────────────────────
 
 /// <param name="CanSetUpHere">True when no admin exists yet and the request came from the server's own computer:
@@ -51,6 +56,19 @@ public sealed record AdminSignInRequest(string UserId, string Password);
 
 /// <summary>A signed-in admin: send <see cref="Token"/> as "Authorization: Bearer …".</summary>
 public sealed record AdminSession(string Token, string Name, DateTime ExpiresUtc);
+
+/// <summary>What the owner gives a company (or a company type) from the catalogue: whole systems and single items.</summary>
+public sealed record CompanyCatalogue(IReadOnlyList<string> SystemIds, IReadOnlyList<string> ItemIds)
+{
+    public static CompanyCatalogue Empty { get; } = new(Array.Empty<string>(), Array.Empty<string>());
+
+    public bool IsEmpty => SystemIds.Count == 0 && ItemIds.Count == 0;
+}
+
+/// <summary>The owner's master catalogue: a library file (JSON), its version and when it was published.</summary>
+public sealed record CatalogueInfo(int Version, DateTime? PublishedUtc, string? LibraryJson);
+
+public sealed record PublishCatalogueRequest(string LibraryJson);
 
 /// <summary>A product line of an account, with its own validity; a suspended product is left out of licences.</summary>
 public sealed record ProductLicence(Product Product, DateTime ValidUntilUtc, bool Suspended = false);
@@ -90,7 +108,8 @@ public sealed record CompanyDetail(
     bool Suspended,
     string? Notes,
     DateTime CreatedUtc,
-    IReadOnlyList<ComputerInfo> Computers);
+    IReadOnlyList<ComputerInfo> Computers,
+    CompanyCatalogue? Catalogue = null);
 
 /// <summary>A new account, or the changes to one.</summary>
 /// <param name="OwnerPassword">Required for a new account; for an existing one a non-empty value sets a new password.</param>
@@ -108,7 +127,8 @@ public sealed record CompanyEdit(
     int MaxComputers,
     IReadOnlyList<AddOn> AddOns,
     IReadOnlyList<string> RemovedFeatures,
-    string? Notes);
+    string? Notes,
+    CompanyCatalogue? Catalogue = null);
 
 public sealed record SetSuspendedRequest(bool Suspended);
 
@@ -116,7 +136,8 @@ public sealed record SetSuspendedRequest(bool Suspended);
 public sealed record PackageInfo(Guid Id, string Name, string? Description, IReadOnlyList<string> Features, int UsedBy = 0);
 
 /// <summary>A kind of company and what a new account of that kind starts with. <see cref="Id"/> is empty for a new one.</summary>
-public sealed record CompanyTypeInfo(Guid Id, string Name, IReadOnlyList<Product> Products, Guid? PackageId, int ValidityDays, int UsedBy = 0);
+public sealed record CompanyTypeInfo(Guid Id, string Name, IReadOnlyList<Product> Products, Guid? PackageId, int ValidityDays, int UsedBy = 0,
+    CompanyCatalogue? Catalogue = null);
 
 /// <summary>What a licence key gives: more account validity, a product, or a feature add-on.</summary>
 public enum KeyTarget

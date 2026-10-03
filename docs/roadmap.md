@@ -28,6 +28,7 @@ used unless changed before that milestone starts.
 | 10 | Quotes and clients | Dashboard, quote list, client details, design cards, quote numbers |
 | 11 | Pricing | Price structure per quote (cost lines, rates, discount, charges, GST), live summary, saved default; sash and mesh priced; quantities everywhere |
 | 12 | Accounts, sign-in and licensing | Licence server, MARK Owner (companies, company types, packages, keys), sign-in, signed licences with daily check-in and 7-day grace, read-only when suspended or expired, features locked by package (see licensing.md) |
+| 13 | Product catalogue, systems and bundles | Owner's master catalogue in MARK Owner; systems (uPVC / Aluminium) with default profiles and glass range; "used with"; steel reinforcement; bundles per profile and hardware sets per opening type (by size); per-company and per-type selection; delivered at check-in; prices-only library in MARK (see catalogue.md) |
 | — | Along the way | Product renamed to MARK; colour-coded bill of materials; rail and drop-down fixes |
 
 ---
@@ -77,7 +78,12 @@ grace period; a tampered licence file is rejected.
 
 ---
 
-## 13 — Product catalogue, systems and bundles
+## 13 — Product catalogue, systems and bundles — done
+
+Built as planned; see [catalogue.md](catalogue.md). Decisions taken: companies enter their own prices; untick-to-hide is
+by system plus single items; items no longer given are retired (saved quotes keep working); hardware sets and listed
+reinforcement replace the pricing rates for those windows. Still to come: door frames and inward/outward as design
+choices, couplers joining frames in a design.
 
 **Goal:** the admin decides what every company can use, and the designer uses the right parts automatically.
 

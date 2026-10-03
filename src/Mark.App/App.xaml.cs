@@ -33,6 +33,7 @@ public partial class App : Application
     private static readonly TimeSpan RefreshInterval = TimeSpan.FromMinutes(15);
 
     private LicenceManager? _licence;
+    private CatalogueSync? _catalogue;
     private string[] _args = Array.Empty<string>();
 
     protected override void OnStartup(StartupEventArgs e)
@@ -58,9 +59,19 @@ public partial class App : Application
         {
             // The local database is the source of truth for the library and saved projects. On first run it is created
             // and the shipped library.json is imported into it; afterwards library.json is only an import/export format.
-            messages.Add(LocalStore.AdoptLegacyDatabase(LocalStore.DefaultPath, LocalStore.LegacyDefaultPath));
-            var store = LocalStore.Open(LocalStore.DefaultPath, LibraryPath);
+            // --database <file> uses another database (e.g. for testing); normally %LOCALAPPDATA%\MARK\mark.db.
+            string databasePath = ArgumentAfter(e.Args, "--database") ?? LocalStore.DefaultPath;
+            if (databasePath == LocalStore.DefaultPath)
+                messages.Add(LocalStore.AdoptLegacyDatabase(LocalStore.DefaultPath, LocalStore.LegacyDefaultPath));
+            var store = LocalStore.Open(databasePath, LibraryPath);
             messages.AddRange(store.StartupMessages);
+            // The owner's catalogue first, so the designer starts with the company's systems (waits briefly when online).
+            _catalogue = new CatalogueSync(_licence, store);
+            if (_catalogue.IsDue)
+            {
+                var sync = Task.Run(() => _catalogue.SyncAsync());
+                if (sync.Wait(TimeSpan.FromSeconds(8))) messages.Add(sync.Result);
+            }
             mainViewModel = new MainViewModel(store, rules, dialogs);
         }
         catch (DataStoreException ex)
@@ -79,10 +90,16 @@ public partial class App : Application
 
         var licence = _licence;
         mainViewModel.Access.Apply(licence.Status);
+        void OnLicenceChanged()
+        {
+            mainViewModel.Access.Apply(licence.Status);
+            if (_catalogue is { IsDue: true } catalogue)
+                _ = SyncCatalogueAsync(catalogue, mainViewModel);
+        }
         licence.StatusChanged += () =>
         {
-            if (Dispatcher.CheckAccess()) mainViewModel.Access.Apply(licence.Status);
-            else Dispatcher.BeginInvoke(() => mainViewModel.Access.Apply(licence.Status));
+            if (Dispatcher.CheckAccess()) OnLicenceChanged();
+            else Dispatcher.BeginInvoke(OnLicenceChanged);
         };
         mainViewModel.Account = new AccountViewModel(licence, () => SignOutAsync(licence, mainViewModel));
 
@@ -93,14 +110,20 @@ public partial class App : Application
         StartLicenceChecks(licence);
     }
 
+    /// <summary>Applies a changed catalogue while MARK runs and says what changed.</summary>
+    private static async Task SyncCatalogueAsync(CatalogueSync catalogue, MainViewModel mainViewModel)
+    {
+        if (await catalogue.SyncAsync() is { } message)
+            mainViewModel.DesignMessage = message;
+    }
+
     /// <summary>
     /// The licence of this computer, kept encrypted in <c>%LOCALAPPDATA%\MARK\licence.dat</c>
     /// (<c>--licence-state &lt;file&gt;</c> uses another file, e.g. for testing).
     /// </summary>
     private static LicenceManager CreateLicenceManager(string[] args)
     {
-        int index = Array.IndexOf(args, "--licence-state");
-        string path = index >= 0 && index + 1 < args.Length ? args[index + 1] : FileLicenceStateStore.DefaultPath;
+        string path = ArgumentAfter(args, "--licence-state") ?? FileLicenceStateStore.DefaultPath;
         var clients = new Dictionary<string, LicenceApiClient>();
         LicenceApiClient ClientFor(string url)
         {
@@ -141,6 +164,13 @@ public partial class App : Application
         if (Environment.ProcessPath is { } exe)
             Process.Start(new ProcessStartInfo(exe) { Arguments = string.Join(" ", _args.Select(QuoteArgument)), UseShellExecute = false });
         Shutdown();
+    }
+
+    /// <summary>The value after <paramref name="name"/> on the command line, or null.</summary>
+    private static string? ArgumentAfter(string[] args, string name)
+    {
+        int index = Array.IndexOf(args, name);
+        return index >= 0 && index + 1 < args.Length ? args[index + 1] : null;
     }
 
     private static string QuoteArgument(string argument) => argument.Contains(' ') ? $"\"{argument}\"" : argument;

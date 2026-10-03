@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Mark.Licensing\Mark.Licensing.csproj" />
+    <ProjectReference Include="..\Mark.Core\Mark.Core.csproj" />
   </ItemGroup>
 
 </Project>

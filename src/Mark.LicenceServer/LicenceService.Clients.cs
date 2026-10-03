@@ -89,6 +89,17 @@ public sealed partial class LicenceService
         return new RedeemKeyResponse(licence, message);
     }
 
+    /// <summary>The company's catalogue (library JSON) for a signed-in computer.</summary>
+    public CatalogueResponse ClientCatalogue(CatalogueRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        using var connection = Connect();
+        var computer = Computer(connection, request.DeviceToken, request.MachineId);
+        var company = GetCompany(connection, computer.CompanyId);
+        return new CatalogueResponse(CompanyCatalogueJson(connection, company)
+                                     ?? throw ApiException.NotFound("A catalogue for your account"));
+    }
+
     /// <summary>Frees the computer. Unknown tokens are ignored (already signed out).</summary>
     public void ClientSignOut(SignOutRequest request)
     {

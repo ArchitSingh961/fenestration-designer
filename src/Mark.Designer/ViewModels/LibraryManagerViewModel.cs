@@ -14,6 +14,12 @@ public sealed record LibraryItemRow(LibraryItemKind Kind, string Id, string Name
     public string Status => IsActive ? "" : "retired";
 }
 
+/// <summary>A kind of library entry as offered in the manager's "Show" list.</summary>
+public sealed record LibraryKindChoice(LibraryItemKind Kind, string Name)
+{
+    public override string ToString() => Name;
+}
+
 /// <summary>
 /// The library manager: browse, search and filter the products of one kind, and add, edit, retire, reinstate, delete,
 /// import and export them. Searching runs on the in-memory library snapshot (<see cref="IProductLibrary"/> search with
@@ -32,24 +38,41 @@ public sealed class LibraryManagerViewModel : ViewModelBase
     private readonly IDialogService? _dialogs;
     private bool _refreshing;
 
+    /// <param name="pricesOnly">The library follows the owner's catalogue: only the company's own prices can be changed.</param>
     public LibraryManagerViewModel(LibraryService library, IProjectRepository? projects = null, Func<Project?>? openProject = null,
-        IDialogService? dialogs = null)
+        IDialogService? dialogs = null, bool pricesOnly = false)
     {
         _library = library ?? throw new ArgumentNullException(nameof(library));
         _projects = projects;
         _openProject = openProject ?? (() => null);
         _dialogs = dialogs;
+        PricesOnly = pricesOnly;
 
-        NewCommand = new RelayCommand(() => Editor = LibraryItemEditorViewModel.ForNew(Kind));
-        SaveCommand = new RelayCommand(Save, () => Editor is not null);
-        DeleteCommand = new RelayCommand(Delete, () => SelectedItem is not null);
-        ToggleActiveCommand = new RelayCommand(ToggleActive, () => SelectedItem is not null);
-        ImportCommand = new RelayCommand(Import);
+        NewCommand = new RelayCommand(New, () => !PricesOnly);
+        SaveCommand = new RelayCommand(Save, () => Editor is not null && (!PricesOnly || Kind is LibraryItemKind.Profile or LibraryItemKind.Glass
+                                                                                                   or LibraryItemKind.Material));
+        DeleteCommand = new RelayCommand(Delete, () => SelectedItem is not null && !PricesOnly);
+        ToggleActiveCommand = new RelayCommand(ToggleActive, () => SelectedItem is not null && !PricesOnly);
+        ImportCommand = new RelayCommand(Import, () => !PricesOnly);
         ExportCommand = new RelayCommand(Export);
         Refresh();
     }
 
+    /// <summary>Only prices can be changed: products, systems and bundles come from the owner's catalogue.</summary>
+    public bool PricesOnly { get; }
+
+    public bool CanEdit => !PricesOnly;
+
     public static IReadOnlyList<LibraryItemKind> Kinds { get; } = Enum.GetValues<LibraryItemKind>();
+
+    public static IReadOnlyList<LibraryKindChoice> KindChoices { get; } = new[]
+    {
+        new LibraryKindChoice(LibraryItemKind.Profile, "Profiles"),
+        new LibraryKindChoice(LibraryItemKind.Glass, "Glass"),
+        new LibraryKindChoice(LibraryItemKind.Material, "Hardware and accessories"),
+        new LibraryKindChoice(LibraryItemKind.System, "Systems"),
+        new LibraryKindChoice(LibraryItemKind.Bundle, "Bundles")
+    };
 
     private LibraryItemKind _kind = LibraryItemKind.Profile;
     public LibraryItemKind Kind
@@ -63,9 +86,14 @@ public sealed class LibraryManagerViewModel : ViewModelBase
             OnPropertyChanged(nameof(ManufacturerFilter));
             OnPropertyChanged(nameof(GroupFilter));
             OnPropertyChanged(nameof(GroupLabel));
+            OnPropertyChanged(nameof(HasFilters));
+            ((RelayCommand)SaveCommand).RaiseCanExecuteChanged();
             Refresh();
         }
     }
+
+    /// <summary>Manufacturer and series/category filters apply to products only.</summary>
+    public bool HasFilters => Kind is LibraryItemKind.Profile or LibraryItemKind.Glass or LibraryItemKind.Material;
 
     /// <summary>"Series" for profiles, "Category" for glass and materials.</summary>
     public string GroupLabel => Kind == LibraryItemKind.Profile ? "Series" : "Category";
@@ -128,8 +156,11 @@ public sealed class LibraryManagerViewModel : ViewModelBase
         }
     }
 
-    private LibraryItemEditorViewModel? _editor;
-    public LibraryItemEditorViewModel? Editor
+    /// <summary>The editor when it is a product (profile, glass, material) form, else null.</summary>
+    public LibraryItemEditorViewModel? ItemEditor => _editor as LibraryItemEditorViewModel;
+
+    private ILibraryEditor? _editor;
+    public ILibraryEditor? Editor
     {
         get => _editor;
         private set
@@ -190,8 +221,17 @@ public sealed class LibraryManagerViewModel : ViewModelBase
                 MaterialCategory = Kind == LibraryItemKind.Material && GroupFilter != All
                                    && Enum.TryParse<MaterialCategory>(GroupFilter, out var category) ? category : null
             };
+            var words = (SearchText ?? "").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+            bool Matches(params string?[] fields) => words.All(w => fields.Any(f => f?.Contains(w, StringComparison.OrdinalIgnoreCase) ?? false));
             var rows = Kind switch
             {
+                LibraryItemKind.System => library.Systems.Where(x => (x.IsActive || ShowInactive) && Matches(x.Id, x.Name, x.Description))
+                    .Select(x => new LibraryItemRow(Kind, x.Id, x.Name, Join(EditorText.MaterialName(x.Material), EditorText.UseName(x.Use),
+                        library.FindProfile(x.FrameProfileId)?.Name, x.GlassRangeText.Length > 0 ? $"glass {x.GlassRangeText}" : null), x.IsActive)),
+                LibraryItemKind.Bundle => library.Bundles.Where(b => (b.IsActive || ShowInactive) && Matches(b.Id, b.Name, b.Description))
+                    .Select(b => new LibraryItemRow(Kind, b.Id, b.Name, Join(library.FindSystem(b.SystemId)?.Name ?? "Any system",
+                        b.IsOpeningSet ? "with openings" : $"with {library.FindProfile(b.ProfileId)?.Name ?? b.ProfileId}",
+                        $"{b.Parts.Count} part{(b.Parts.Count == 1 ? "" : "s")}"), b.IsActive)),
                 LibraryItemKind.Profile => library.SearchProfiles(query).Select(p => new LibraryItemRow(Kind, p.Id, p.Name,
                     Join($"{Number(p.FaceWidthMm)} mm", p.Series, p.Manufacturer, $"{Money(p.CostPerMetre)}/m",
                         string.Join("/", p.Roles.Select(r => r.ToString().ToLowerInvariant()))), p.IsActive)),
@@ -208,9 +248,11 @@ public sealed class LibraryManagerViewModel : ViewModelBase
             {
                 LibraryItemKind.Profile => library.Profiles.Count,
                 LibraryItemKind.Glass => library.Glass.Count,
+                LibraryItemKind.System => library.Systems.Count,
+                LibraryItemKind.Bundle => library.Bundles.Count,
                 _ => library.Materials.Count
             };
-            ResultSummary = $"{Items.Count} of {total} {Kind.ToString().ToLowerInvariant()} item(s)";
+            ResultSummary = $"{Items.Count} of {total} {KindChoices.First(k => k.Kind == Kind).Name.ToLowerInvariant()}";
             SelectedItem = Items.FirstOrDefault(i => i.Id == selectedId);
         }
         finally
@@ -220,19 +262,32 @@ public sealed class LibraryManagerViewModel : ViewModelBase
         Editor = SelectedItem is null ? (Editor is { IsNew: true } ? Editor : null) : EditorFor(SelectedItem);
     }
 
+    private void New()
+    {
+        var library = _library.Current;
+        Editor = Kind switch
+        {
+            LibraryItemKind.System => new SystemEditorViewModel(new ProductSystem(), library, isNew: true),
+            LibraryItemKind.Bundle => new BundleEditorViewModel(new Bundle(), library, isNew: true),
+            _ => LibraryItemEditorViewModel.ForNew(Kind, library)
+        };
+    }
+
     private void RefreshChoices(IProductLibrary library)
     {
         IEnumerable<string?> manufacturers = Kind switch
         {
             LibraryItemKind.Profile => library.Profiles.Select(p => p.Manufacturer),
             LibraryItemKind.Glass => library.Glass.Select(g => g.Manufacturer),
-            _ => library.Materials.Select(m => m.Manufacturer)
+            LibraryItemKind.Material => library.Materials.Select(m => m.Manufacturer),
+            _ => Array.Empty<string?>()
         };
         IEnumerable<string?> groups = Kind switch
         {
             LibraryItemKind.Profile => library.Profiles.Select(p => p.Series),
             LibraryItemKind.Glass => library.Glass.Select(g => g.Category),
-            _ => Enum.GetNames<MaterialCategory>()
+            LibraryItemKind.Material => Enum.GetNames<MaterialCategory>(),
+            _ => Array.Empty<string?>()
         };
         Replace(Manufacturers, manufacturers, ManufacturerFilter, v => _manufacturerFilter = v, nameof(ManufacturerFilter));
         Replace(Groups, groups, GroupFilter, v => _groupFilter = v, nameof(GroupFilter));
@@ -250,26 +305,34 @@ public sealed class LibraryManagerViewModel : ViewModelBase
         OnPropertyChanged(property);
     }
 
-    private LibraryItemEditorViewModel? EditorFor(LibraryItemRow row) => row.Kind switch
+    private ILibraryEditor? EditorFor(LibraryItemRow row)
     {
-        LibraryItemKind.Profile => _library.Current.FindProfile(row.Id) is { } p ? LibraryItemEditorViewModel.For(p) : null,
-        LibraryItemKind.Glass => _library.Current.FindGlass(row.Id) is { } g ? LibraryItemEditorViewModel.For(g) : null,
-        _ => _library.Current.FindMaterial(row.Id) is { } m ? LibraryItemEditorViewModel.For(m) : null
-    };
+        var library = _library.Current;
+        ILibraryEditor? editor = row.Kind switch
+        {
+            LibraryItemKind.Profile => library.FindProfile(row.Id) is { } p ? LibraryItemEditorViewModel.For(p, library: library) : null,
+            LibraryItemKind.Glass => library.FindGlass(row.Id) is { } g ? LibraryItemEditorViewModel.For(g, library: library) : null,
+            LibraryItemKind.System => library.FindSystem(row.Id) is { } x ? new SystemEditorViewModel(x, library) : null,
+            LibraryItemKind.Bundle => library.FindBundle(row.Id) is { } b ? new BundleEditorViewModel(b, library) : null,
+            _ => library.FindMaterial(row.Id) is { } m ? LibraryItemEditorViewModel.For(m, library: library) : null
+        };
+        if (editor is LibraryItemEditorViewModel item) item.CanEditDetails = !PricesOnly;
+        return editor;
+    }
 
     private string DescribeUsage(LibraryItemRow row)
     {
         try
         {
             var parts = new List<string>();
-            if (row.Kind != LibraryItemKind.Material && _projects is not null)
+            if (row.Kind is LibraryItemKind.Profile or LibraryItemKind.Glass or LibraryItemKind.System && _projects is not null)
             {
                 var saved = _projects.FindUsing(row.Kind, row.Id);
                 if (saved.Count > 0) parts.Add($"Used by {saved.Count} saved project(s): {string.Join(", ", saved.Select(p => p.Name))}.");
             }
             var blockers = _library.FindBlockers(row.Kind, row.Id, _openProject());
             parts.AddRange(blockers.Where(b => !b.StartsWith("Saved project", StringComparison.Ordinal)));
-            return parts.Count == 0 ? "Not used by any saved project, the open project or another product." : string.Join(" ", parts);
+            return parts.Count == 0 ? "Not used by any saved project, the open project, a system, a bundle or another product." : string.Join(" ", parts);
         }
         catch (DataStoreException ex)
         {
@@ -299,6 +362,10 @@ public sealed class LibraryManagerViewModel : ViewModelBase
                 case GlassDefinition g: _library.Update(g); break;
                 case MaterialDefinition m when editor.IsNew: _library.Add(m); break;
                 case MaterialDefinition m: _library.Update(m); break;
+                case ProductSystem x when editor.IsNew: _library.Add(x); break;
+                case ProductSystem x: _library.Update(x); break;
+                case Bundle b when editor.IsNew: _library.Add(b); break;
+                case Bundle b: _library.Update(b); break;
             }
             string id = editor.Id.Trim();
             Refresh(select: id);
@@ -316,7 +383,7 @@ public sealed class LibraryManagerViewModel : ViewModelBase
     {
         if (SelectedItem is not { } row)
             return;
-        if (_dialogs is not null && !_dialogs.Confirm("Delete product", $"Delete '{row.Name}' ({row.Id}) from the library permanently?"))
+        if (_dialogs is not null && !_dialogs.Confirm("Delete", $"Delete '{row.Name}' ({row.Id}) from the library permanently?"))
             return;
         Try(() =>
         {

@@ -36,6 +36,9 @@ public sealed class DesignRules
     /// </summary>
     public double MinSashOpeningMm { get; init; } = 250.0;
 
+    /// <summary>The product system new frames are made in (a library system id), or null.</summary>
+    public string? SystemId { get; init; }
+
     /// <summary>Visible face width of a sash inside its opening (drawing only; sash bars are priced in a later milestone).</summary>
     public double SashFaceWidthMm { get; init; } = 55.0;
 

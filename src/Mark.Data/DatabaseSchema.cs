@@ -13,14 +13,37 @@ internal static class DatabaseSchema
     public const int ApplicationId = 0x46454E31;
 
     /// <summary>The schema version written by this build.</summary>
-    public const int CurrentVersion = 3;
+    public const int CurrentVersion = 4;
 
     /// <summary>Upgrade scripts keyed by the version they upgrade FROM.</summary>
     public static readonly IReadOnlyDictionary<int, string> Upgrades = new Dictionary<int, string>
     {
         [1] = Version2,
-        [2] = Version3
+        [2] = Version3,
+        [3] = Version4
     };
+
+    /// <summary>
+    /// Version 4 (Milestone 13, product systems): systems and bundles as JSON documents in library order; what each
+    /// item is used with, and each profile's reinforcement, as JSON columns; the default system.
+    /// </summary>
+    public const string Version4 = """
+        ALTER TABLE profiles ADD COLUMN used_with_json TEXT NULL;
+        ALTER TABLE profiles ADD COLUMN reinforcement_json TEXT NULL;
+        ALTER TABLE glass ADD COLUMN used_with_json TEXT NULL;
+        ALTER TABLE materials ADD COLUMN used_with_json TEXT NULL;
+        ALTER TABLE library_settings ADD COLUMN default_system_id TEXT NULL;
+        CREATE TABLE systems (
+            id              TEXT PRIMARY KEY NOT NULL,
+            sort_order      INTEGER NOT NULL,
+            definition_json TEXT NOT NULL
+        );
+        CREATE TABLE bundles (
+            id              TEXT PRIMARY KEY NOT NULL,
+            sort_order      INTEGER NOT NULL,
+            definition_json TEXT NOT NULL
+        );
+        """;
 
     /// <summary>Version 3 (Milestone 11, pricing): company settings such as the default price structure, as JSON by key.</summary>
     public const string Version3 = """

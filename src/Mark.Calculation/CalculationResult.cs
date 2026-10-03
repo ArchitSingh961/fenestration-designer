@@ -80,6 +80,12 @@ public sealed record ProfileLine
     public double WeightKg { get; init; }
     public decimal CostPerMetre { get; init; }
     public decimal Cost { get; init; }
+
+    /// <summary>
+    /// For a part that goes with a bar or opening (a bundle part or reinforcement): what it is part of, e.g.
+    /// "Sliding 2-track frame" or "Reinforcement". Null for the design's own members and sash bars.
+    /// </summary>
+    public string? PartOf { get; init; }
 }
 
 /// <summary>Material consumed by one profile piece or glass pane, from a usage rule in its definition.</summary>
@@ -106,8 +112,9 @@ public sealed record MaterialLine
 /// An opening of a window as the pricing needs it: its type (hardware), whether it has a sash, and the mesh area.
 /// Values are for ONE window; <see cref="Windows"/> is the design's quantity.
 /// </summary>
+/// <param name="HasHardwareSet">The library's opening sets (hardware) already priced this opening's hardware.</param>
 public sealed record OpeningLine(Guid FrameId, Guid GlassPanelId, OpeningType Opening, bool HasSash, bool HasMesh,
-    double MeshAreaM2, int Windows);
+    double MeshAreaM2, int Windows, bool HasHardwareSet = false);
 
 /// <summary>Identical pieces of one profile, grouped for the saw (input for cutting optimisation).</summary>
 public sealed record CutListLine(string DefinitionId, string Name, double CutLengthMm, double StartCutAngle,
@@ -120,7 +127,10 @@ public enum BomCategory
     Hardware,
     Gasket,
     Accessory,
-    Consumable
+    Consumable,
+
+    /// <summary>Reinforcement sections (steel inside uPVC profiles).</summary>
+    Reinforcement
 }
 
 /// <summary>One aggregated Bill of Materials row.</summary>
@@ -152,6 +162,9 @@ public sealed record FrameCalculation(Guid FrameId, double WidthMm, double Heigh
 
     /// <summary>Glass area of one window in m².</summary>
     public double GlassAreaM2 { get; init; }
+
+    /// <summary>Metres of library reinforcement in one window (0 when the library has none for its profiles).</summary>
+    public double ReinforcementMetres { get; init; }
 
     /// <summary>Outer area of one window in m².</summary>
     public double AreaM2 => WidthMm * HeightMm / 1_000_000.0;

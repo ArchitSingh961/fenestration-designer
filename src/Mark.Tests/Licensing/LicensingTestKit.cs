@@ -127,6 +127,9 @@ internal sealed class DirectApi : ILicenceApi
         return true;
     });
 
+    public Task<CatalogueResponse> CatalogueAsync(CatalogueRequest request, CancellationToken cancel = default)
+        => Call(() => _service.ClientCatalogue(request));
+
     private Task<T> Call<T>(Func<T> call)
     {
         if (Offline)

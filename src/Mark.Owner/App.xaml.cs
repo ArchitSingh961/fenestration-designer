@@ -2,6 +2,8 @@ using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Threading;
+using Mark.Designer.ViewModels;
+using Mark.Designer.Views;
 using Mark.Licensing.Api;
 using Mark.Licensing.Client;
 using Mark.Owner.ViewModels;
@@ -45,7 +47,8 @@ public partial class App : Application
 
         SaveSettings(new OwnerSettings(client.ServerUrl.TrimEnd('/'), viewModel.UserId.Trim()));
         MainWindow? main = null;
-        var shell = new OwnerShellViewModel(client, new OwnerDialogs(() => main), () =>
+        var dialogs = new OwnerDialogs(() => main);
+        var shell = new OwnerShellViewModel(client, dialogs, () =>
         {
             // Signed out, or the session ended: back to the sign-in page (once).
             if (main is null || !main.IsLoaded) return;
@@ -53,7 +56,8 @@ public partial class App : Application
             main = null;
             closing.Close();
             Dispatcher.BeginInvoke(ShowSignIn);
-        });
+        }, dialogs, Path.Combine(Path.GetDirectoryName(SettingsPath)!, "work"),
+            Path.Combine(AppContext.BaseDirectory, "Library", "sample-catalogue.json"));
         main = new MainWindow { DataContext = shell };
         MainWindow = main;
         main.Closed += (_, _) =>
@@ -100,8 +104,8 @@ public partial class App : Application
     }
 }
 
-/// <summary>MARK Owner's dialogs: confirmations, choosing a logo, copying keys.</summary>
-internal sealed class OwnerDialogs : IOwnerDialogs
+/// <summary>MARK Owner's dialogs: confirmations, choosing a logo, copying keys, and the Library Manager for the catalogue.</summary>
+internal sealed class OwnerDialogs : IOwnerDialogs, ICatalogueEditorHost, IDialogService
 {
     private readonly Func<Window?> _owner;
 
@@ -127,4 +131,27 @@ internal sealed class OwnerDialogs : IOwnerDialogs
     }
 
     public void CopyText(string text) => Clipboard.SetText(text);
+
+    // ── The Library Manager for the catalogue ───────────────────────
+
+    public IDialogService Dialogs => this;
+
+    public void ShowLibraryManager(LibraryManagerViewModel manager)
+        => new LibraryManagerWindow(manager) { Owner = _owner(), Title = "Catalogue — Library Manager" }.ShowDialog();
+
+    public string? PromptText(string title, string label, string initialText) => null;
+
+    public Guid? ChooseProject(ProjectListViewModel projects) => null;
+
+    public string? ChooseOpenFile(string title, string filter)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog { Title = title, Filter = filter };
+        return dialog.ShowDialog(_owner()) == true ? dialog.FileName : null;
+    }
+
+    public string? ChooseSaveFile(string title, string filter, string fileName)
+    {
+        var dialog = new Microsoft.Win32.SaveFileDialog { Title = title, Filter = filter, FileName = fileName };
+        return dialog.ShowDialog(_owner()) == true ? dialog.FileName : null;
+    }
 }

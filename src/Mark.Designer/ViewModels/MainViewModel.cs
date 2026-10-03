@@ -67,6 +67,7 @@ public partial class MainViewModel : ViewModelBase, IDesignService
             MoveDivision = MoveSelectedDivision,
             AssignGlass = AssignGlass,
             AssignProfile = AssignProfile,
+            AssignSystem = AssignSystem,
             Library = library,
             CalculationSource = () => Calculation.Result
         };
@@ -163,13 +164,18 @@ public partial class MainViewModel : ViewModelBase, IDesignService
     private static DesignRules RulesFor(IProductLibrary library)
     {
         var generic = new DesignRules();
+        // New frames are made in the library's default system, so they are drawn with its profiles and glass.
+        var system = library.DefaultSystem;
+        ProfileDefinition? Profile(ProfileType role) => library.FindProfile(system?.ProfileIdFor(role)) ?? library.DefaultProfileFor(role);
         return new DesignRules
         {
-            FrameThicknessMm = library.DefaultProfileFor(ProfileType.Frame)?.FaceWidthMm ?? generic.FrameThicknessMm,
-            MullionThicknessMm = library.DefaultProfileFor(ProfileType.Mullion)?.FaceWidthMm ?? generic.MullionThicknessMm,
-            TransomThicknessMm = library.DefaultProfileFor(ProfileType.Transom)?.FaceWidthMm ?? generic.TransomThicknessMm,
-            DefaultGlassThicknessMm = library.DefaultGlass?.ThicknessMm ?? generic.DefaultGlassThicknessMm,
-            SashFaceWidthMm = (library.Profiles.FirstOrDefault(p => p.IsActive && p.Supports(ProfileType.Sash))
+            SystemId = system?.Id,
+            FrameThicknessMm = Profile(ProfileType.Frame)?.FaceWidthMm ?? generic.FrameThicknessMm,
+            MullionThicknessMm = Profile(ProfileType.Mullion)?.FaceWidthMm ?? generic.MullionThicknessMm,
+            TransomThicknessMm = Profile(ProfileType.Transom)?.FaceWidthMm ?? generic.TransomThicknessMm,
+            DefaultGlassThicknessMm = (library.FindGlass(system?.GlassId) ?? library.DefaultGlass)?.ThicknessMm ?? generic.DefaultGlassThicknessMm,
+            SashFaceWidthMm = (library.FindProfile(system?.SashProfileId)
+                               ?? library.Profiles.FirstOrDefault(p => p.IsActive && p.Supports(ProfileType.Sash))
                                ?? library.Profiles.FirstOrDefault(p => p.Supports(ProfileType.Sash)))?.FaceWidthMm
                               ?? generic.SashFaceWidthMm
         };
@@ -347,8 +353,8 @@ public partial class MainViewModel : ViewModelBase, IDesignService
                 switch (FindObject(Selection.SelectedIds.First()))
                 {
                     case Frame frame: Properties.ShowFrame(frame); break;
-                    case Profile profile: Properties.ShowProfile(profile); break;
-                    case GlassPanel glass: Properties.ShowGlass(glass); break;
+                    case Profile profile: Properties.ShowProfile(profile, FrameOf(profile.Id)?.SystemId); break;
+                    case GlassPanel glass: Properties.ShowGlass(glass, FrameOf(glass.Id)?.SystemId); break;
                     default: Properties.ShowNothing(); break;
                 }
             }

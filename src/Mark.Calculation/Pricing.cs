@@ -95,9 +95,12 @@ public static class PricingEngine
 
             var openings = calculation.Openings.Where(o => o.FrameId == frame.Id).ToList();
             int sashes = openings.Count(o => o.HasSash);
-            decimal hardware = openings.Where(o => o.HasSash).Sum(o => pricing.Rates.HardwareFor(o.Opening));
+            // Per-sash hardware rates stand in for hardware the library does not list (no opening set for the opening).
+            decimal hardware = openings.Where(o => o.HasSash && !o.HasHardwareSet).Sum(o => pricing.Rates.HardwareFor(o.Opening));
             decimal mesh = Money((decimal)openings.Sum(o => o.MeshAreaM2) * pricing.Rates.MeshPerSquareMetre);
-            decimal reinforcement = Money((decimal)calc.ProfileMetres * pricing.Rates.ReinforcementPerMetre);
+            // The rate stands in for reinforcement the library does not list; listed reinforcement is already in the cost.
+            decimal reinforcement = calc.ReinforcementMetres > 0 ? 0
+                : Money((decimal)calc.ProfileMetres * pricing.Rates.ReinforcementPerMetre);
             decimal rated = Money(hardware + mesh + reinforcement);
             decimal material = calc.Cost.Total;
 

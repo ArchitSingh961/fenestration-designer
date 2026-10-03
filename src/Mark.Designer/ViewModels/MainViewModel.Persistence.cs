@@ -68,8 +68,11 @@ public partial class MainViewModel
         OpenLibraryManagerCommand = new RelayCommand(OpenLibraryManager, CanOpenLibraryManager);
     }
 
-    /// <summary>The Library Manager changes the library, so it needs the feature and a licence that is not read-only.</summary>
-    private bool CanOpenLibraryManager() => HasStore && Access.CanManageLibrary && !Access.IsReadOnly;
+    /// <summary>
+    /// The Library Manager changes the library, so it needs a licence that is not read-only, and the feature, unless the
+    /// library follows the owner's catalogue (then it only sets the company's own prices, which every company needs).
+    /// </summary>
+    private bool CanOpenLibraryManager() => HasStore && !Access.IsReadOnly && (Access.CanManageLibrary || Access.IsCatalogueManaged);
 
     private void RaisePersistenceCanExecute()
     {
@@ -312,7 +315,8 @@ public partial class MainViewModel
             Report(Access.ReadOnlyMessage ?? AccessViewModel.LockedMessage(Licensing.Features.LibraryManager));
             return;
         }
-        Dialogs.ShowLibraryManager(new LibraryManagerViewModel(Store.Library, Store.Projects, () => Project, Dialogs));
+        Dialogs.ShowLibraryManager(new LibraryManagerViewModel(Store.Library, Store.Projects, () => Project, Dialogs,
+            pricesOnly: Access.IsCatalogueManaged));
     }
 
     private void Report(string? error)

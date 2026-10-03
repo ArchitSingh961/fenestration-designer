@@ -46,6 +46,19 @@ public interface IProductLibrary
     /// <summary>All other materials, in library order.</summary>
     IReadOnlyList<MaterialDefinition> Materials { get; }
 
+    /// <summary>Product systems (e.g. "62mm Casement – uPVC"), in library order.</summary>
+    IReadOnlyList<ProductSystem> Systems { get; }
+
+    /// <summary>Bundles: parts that go together with a profile, or with an opening (hardware sets).</summary>
+    IReadOnlyList<Bundle> Bundles { get; }
+
+    ProductSystem? FindSystem(string? id);
+
+    Bundle? FindBundle(string? id);
+
+    /// <summary>The system new frames are drawn in, or null.</summary>
+    ProductSystem? DefaultSystem { get; }
+
     ProfileDefinition? FindProfile(string? id);
 
     GlassDefinition? FindGlass(string? id);

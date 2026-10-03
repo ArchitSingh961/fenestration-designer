@@ -134,8 +134,10 @@ public class ArchitectureTests
         Assert.DoesNotContain(licensing, r => r.StartsWith("Mark.", StringComparison.Ordinal));
         Assert.Empty(licensing.Intersect(ForbiddenInCore));
 
+        // The server also uses the library model (Core) to cut each company's catalogue from the owner's.
         var server = typeof(Mark.LicenceServer.LicenceService).Assembly.GetReferencedAssemblies().Select(a => a.Name!).ToList();
-        Assert.Equal(new[] { "Mark.Licensing" }, server.Where(r => r.StartsWith("Mark.", StringComparison.Ordinal)));
+        Assert.Equal(new[] { "Mark.Core", "Mark.Licensing" },
+            server.Where(r => r.StartsWith("Mark.", StringComparison.Ordinal)).Order(StringComparer.Ordinal));
         Assert.Empty(server.Intersect(ForbiddenInCore));
     }
 

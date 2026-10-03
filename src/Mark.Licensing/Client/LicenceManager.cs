@@ -204,6 +204,35 @@ public sealed class LicenceManager
         }
     }
 
+    /// <summary>The fingerprint of the company's catalogue in the current licence, or null (the company keeps its own library).</summary>
+    public string? CatalogueHash => _licence?.CatalogueHash;
+
+    /// <summary>
+    /// Downloads the company's catalogue (library JSON) and checks it against the hash in the signed licence, so a
+    /// changed file is never used. Returns the JSON, or null with <paramref name="error"/>.
+    /// </summary>
+    public async Task<(string? Json, string? Error)> DownloadCatalogueAsync(CancellationToken cancel = default)
+    {
+        if (_state.DeviceToken is null || _licence?.CatalogueHash is not { } expected)
+            return (null, "There is no catalogue for this account.");
+        try
+        {
+            var response = await _apiFor(_state.ServerUrl).CatalogueAsync(new CatalogueRequest(_state.DeviceToken, MachineId), cancel);
+            if (Mark.Licensing.CatalogueHash.Of(response.LibraryJson) != expected)
+                return (null, "The catalogue from the licence server does not match your licence. Choose Check now and try again.");
+            return (response.LibraryJson, null);
+        }
+        catch (LicenceServerException ex) when (ex.Code == ErrorCodes.SignedOut)
+        {
+            SignedOutByServer(ex.Message);
+            return (null, ex.Message);
+        }
+        catch (LicenceServerException ex)
+        {
+            return (null, ex.Message);
+        }
+    }
+
     /// <summary>
     /// Signs out of this computer: the server frees it (best effort; offline it stays counted until the owner frees it)
     /// and the licence is removed from the computer. The User ID and server address are remembered.

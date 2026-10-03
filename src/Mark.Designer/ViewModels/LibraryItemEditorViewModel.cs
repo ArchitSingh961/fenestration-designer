@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Globalization;
 using Mark.Core.Library;
 using Mark.Core.Models;
@@ -11,16 +12,39 @@ namespace Mark.Designer.ViewModels;
 /// saved. Fields the form does not show (e.g. extra properties) are carried over from the original unchanged.
 /// Material usages are edited as one line each: <c>MATERIAL-ID basis quantity</c>, e.g. <c>MAT-GSK perMetre 2</c>.
 /// </summary>
-public sealed class LibraryItemEditorViewModel : ViewModelBase
+public sealed class LibraryItemEditorViewModel : ViewModelBase, ILibraryEditor
 {
     private readonly object _original;
 
-    private LibraryItemEditorViewModel(LibraryItemKind kind, object original, bool isNew)
+    private LibraryItemEditorViewModel(LibraryItemKind kind, object original, bool isNew, IProductLibrary? library, UsedWith? usedWith)
     {
         Kind = kind;
         _original = original;
         IsNew = isNew;
+        library ??= ProductLibrary.Empty;
+        UsedWithSystems = EditorText.SystemChoices(library, usedWith?.SystemIds);
+        UsedWithOpenings = EditorText.OpeningChoices(usedWith?.OpeningTypes);
+        ReinforcementChoices = library.Profiles.Where(p => p.Supports(ProfileType.Reinforcement))
+            .Select(p => new LibraryChoice(p.Id, p.Name)).Prepend(new LibraryChoice(null, "(none)")).ToList();
+        Reinforcement = ReinforcementChoices[0];
     }
+
+    /// <summary>False when only prices may be changed (the library follows the owner's catalogue).</summary>
+    public bool CanEditDetails { get; set; } = true;
+
+    /// <summary>The systems this item is used with (none ticked = any system).</summary>
+    public ObservableCollection<CheckChoice<string>> UsedWithSystems { get; }
+
+    public bool HasSystems => UsedWithSystems.Count > 0;
+
+    /// <summary>Hardware and accessories: the opening types they are for (none ticked = any).</summary>
+    public ObservableCollection<CheckChoice<OpeningType>> UsedWithOpenings { get; }
+
+    /// <summary>The reinforcement section inside this profile, or "(none)".</summary>
+    public IReadOnlyList<LibraryChoice> ReinforcementChoices { get; }
+    public LibraryChoice Reinforcement { get; set; }
+    public string ReinforcementMinLength { get; set; } = "";
+    public string ReinforcementDeduction { get; set; } = "";
 
     public LibraryItemKind Kind { get; }
 
@@ -54,6 +78,11 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase
     public bool RoleTransom { get; set; }
     public bool RoleSash { get; set; }
     public bool RoleMeshSash { get; set; }
+    public bool RoleReinforcement { get; set; }
+    public bool RoleGlazingBead { get; set; }
+    public bool RoleInterlock { get; set; }
+    public bool RoleTrack { get; set; }
+    public bool RoleCoupler { get; set; }
     public string FaceWidth { get; set; } = "";
     public string Depth { get; set; } = "";
     public string WeightPerMetre { get; set; } = "";
@@ -80,19 +109,34 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase
 
     // ── Factories ───────────────────────────────────────────────────
 
-    public static LibraryItemEditorViewModel ForNew(LibraryItemKind kind) => kind switch
+    public static LibraryItemEditorViewModel ForNew(LibraryItemKind kind, IProductLibrary? library = null) => kind switch
     {
-        LibraryItemKind.Profile => For(new ProfileDefinition(), isNew: true),
-        LibraryItemKind.Glass => For(new GlassDefinition(), isNew: true),
-        _ => For(new MaterialDefinition(), isNew: true)
+        LibraryItemKind.Profile => For(new ProfileDefinition(), isNew: true, library),
+        LibraryItemKind.Glass => For(new GlassDefinition(), isNew: true, library),
+        _ => For(new MaterialDefinition(), isNew: true, library)
     };
 
-    public static LibraryItemEditorViewModel For(ProfileDefinition p, bool isNew = false) => new(LibraryItemKind.Profile, p, isNew)
+    public static LibraryItemEditorViewModel For(ProfileDefinition p, bool isNew = false, IProductLibrary? library = null)
+    {
+        var editor = ForProfile(p, isNew, library);
+        if (p.Reinforcement is { } rule)
+        {
+            editor.Reinforcement = editor.ReinforcementChoices.FirstOrDefault(c => c.Id == rule.ProfileId) ?? editor.Reinforcement;
+            editor.ReinforcementMinLength = Text(rule.MinLengthMm, true);
+            editor.ReinforcementDeduction = Text(rule.CutDeductionMm, true);
+        }
+        return editor;
+    }
+
+    private static LibraryItemEditorViewModel ForProfile(ProfileDefinition p, bool isNew, IProductLibrary? library)
+        => new(LibraryItemKind.Profile, p, isNew, library, p.UsedWith)
     {
         Id = p.Id, Name = p.Name, Code = p.Code ?? "", Manufacturer = p.Manufacturer ?? "", Group = p.Series ?? "",
         IsActive = p.IsActive,
         RoleFrame = p.Supports(ProfileType.Frame), RoleMullion = p.Supports(ProfileType.Mullion), RoleTransom = p.Supports(ProfileType.Transom),
         RoleSash = p.Supports(ProfileType.Sash), RoleMeshSash = p.Supports(ProfileType.MeshSash),
+        RoleReinforcement = p.Supports(ProfileType.Reinforcement), RoleGlazingBead = p.Supports(ProfileType.GlazingBead),
+        RoleInterlock = p.Supports(ProfileType.Interlock), RoleTrack = p.Supports(ProfileType.Track), RoleCoupler = p.Supports(ProfileType.Coupler),
         FaceWidth = Text(p.FaceWidthMm, isNew), Depth = Text(p.DepthMm, isNew), WeightPerMetre = Text(p.WeightKgPerMetre, isNew),
         CostPerMetre = Text(p.CostPerMetre, isNew), StockLength = Text(p.StockLengthMm, isNew),
         OtherStockLengths = string.Join(", ", p.StockLengthsMm.Select(l => Text(l))),
@@ -100,7 +144,8 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase
         UsagesText = UsageLines(p.Materials)
     };
 
-    public static LibraryItemEditorViewModel For(GlassDefinition g, bool isNew = false) => new(LibraryItemKind.Glass, g, isNew)
+    public static LibraryItemEditorViewModel For(GlassDefinition g, bool isNew = false, IProductLibrary? library = null)
+        => new(LibraryItemKind.Glass, g, isNew, library, g.UsedWith)
     {
         Id = g.Id, Name = g.Name, Code = g.Code ?? "", Manufacturer = g.Manufacturer ?? "", Group = g.Category ?? "",
         IsActive = g.IsActive, Thickness = Text(g.ThicknessMm, isNew), CostPerSquareMetre = Text(g.CostPerSquareMetre, isNew),
@@ -108,7 +153,8 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase
         UsagesText = UsageLines(g.Materials)
     };
 
-    public static LibraryItemEditorViewModel For(MaterialDefinition m, bool isNew = false) => new(LibraryItemKind.Material, m, isNew)
+    public static LibraryItemEditorViewModel For(MaterialDefinition m, bool isNew = false, IProductLibrary? library = null)
+        => new(LibraryItemKind.Material, m, isNew, library, m.UsedWith)
     {
         Id = m.Id, Name = m.Name, Code = m.Code ?? "", Manufacturer = m.Manufacturer ?? "", IsActive = m.IsActive,
         MaterialCategory = m.Category, MaterialUnit = m.Unit, CostPerUnit = Text(m.CostPerUnit, isNew)
@@ -141,7 +187,21 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase
         if (RoleTransom) roles.Add(ProfileType.Transom);
         if (RoleSash) roles.Add(ProfileType.Sash);
         if (RoleMeshSash) roles.Add(ProfileType.MeshSash);
-        return (ProfileDefinition)_original with
+        if (RoleReinforcement) roles.Add(ProfileType.Reinforcement);
+        if (RoleGlazingBead) roles.Add(ProfileType.GlazingBead);
+        if (RoleInterlock) roles.Add(ProfileType.Interlock);
+        if (RoleTrack) roles.Add(ProfileType.Track);
+        if (RoleCoupler) roles.Add(ProfileType.Coupler);
+        var original = (ProfileDefinition)_original;
+        var reinforcement = Reinforcement?.Id is { } steel
+            ? new ReinforcementRule
+            {
+                ProfileId = steel,
+                MinLengthMm = Number(ReinforcementMinLength, "Reinforcement from length", errors, blankIsZero: true),
+                CutDeductionMm = Number(ReinforcementDeduction, "Reinforcement cut deduction", errors, blankIsZero: true)
+            }
+            : null;
+        return original with
         {
             Id = Id.Trim(), Name = Name.Trim(), Code = Optional(Code), Manufacturer = Optional(Manufacturer), Series = Optional(Group),
             IsActive = IsActive, Roles = roles,
@@ -152,7 +212,9 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase
             StockLengthsMm = NumberList(OtherStockLengths, "Other stock lengths", errors),
             CutAllowancePerEndMm = Number(CutAllowance, "Cut allowance", errors, blankIsZero: true),
             GlazingBiteMm = Number(GlazingBite, "Glazing bite", errors, blankIsZero: true),
-            Materials = Usages(errors)
+            Materials = Usages(errors),
+            Reinforcement = reinforcement,
+            UsedWith = EditorText.UsedWith(original.UsedWith, UsedWithSystems)
         };
     }
 
@@ -163,13 +225,15 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase
         CostPerSquareMetre = Money(CostPerSquareMetre, "Cost per m²", errors),
         WeightKgPerSquareMetre = string.IsNullOrWhiteSpace(WeightPerSquareMetre) ? null : Number(WeightPerSquareMetre, "Weight per m²", errors),
         MinChargeableAreaM2 = Number(MinChargeableArea, "Minimum chargeable area", errors, blankIsZero: true),
-        Materials = Usages(errors)
+        Materials = Usages(errors),
+        UsedWith = EditorText.UsedWith(((GlassDefinition)_original).UsedWith, UsedWithSystems)
     };
 
     private MaterialDefinition BuildMaterial(List<string> errors) => (MaterialDefinition)_original with
     {
         Id = Id.Trim(), Name = Name.Trim(), Code = Optional(Code), Manufacturer = Optional(Manufacturer), IsActive = IsActive,
-        Category = MaterialCategory, Unit = MaterialUnit, CostPerUnit = Money(CostPerUnit, "Cost per unit", errors)
+        Category = MaterialCategory, Unit = MaterialUnit, CostPerUnit = Money(CostPerUnit, "Cost per unit", errors),
+        UsedWith = EditorText.UsedWith(((MaterialDefinition)_original).UsedWith, UsedWithSystems, UsedWithOpenings)
     };
 
     private IReadOnlyList<MaterialUsage> Usages(List<string> errors)

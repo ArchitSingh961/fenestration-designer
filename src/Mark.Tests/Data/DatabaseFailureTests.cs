@@ -103,7 +103,7 @@ public class DatabaseFailureTests : IDisposable
         manager.SelectedItem = manager.Items.First(i => i.Id == Clear6);  // looks up the saved projects using it
         Assert.Contains("could not be checked", manager.UsageText);
 
-        manager.Editor!.CostPerSquareMetre = "1234";
+        manager.ItemEditor!.CostPerSquareMetre = "1234";
         manager.SaveCommand.Execute(null);
         Assert.True(manager.MessageIsError);
         Assert.Contains("local database could not", manager.Message);

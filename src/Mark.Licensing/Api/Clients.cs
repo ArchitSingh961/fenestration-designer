@@ -10,6 +10,8 @@ public interface ILicenceApi
     Task<RedeemKeyResponse> RedeemKeyAsync(RedeemKeyRequest request, CancellationToken cancel = default);
 
     Task SignOutAsync(SignOutRequest request, CancellationToken cancel = default);
+
+    Task<CatalogueResponse> CatalogueAsync(CatalogueRequest request, CancellationToken cancel = default);
 }
 
 /// <summary>MARK's HTTP client for the licence server.</summary>
@@ -33,6 +35,9 @@ public sealed class LicenceApiClient : ILicenceApi, IDisposable
 
     public Task SignOutAsync(SignOutRequest request, CancellationToken cancel = default)
         => _api.SendAsync(HttpMethod.Post, "api/client/sign-out", request, cancel);
+
+    public Task<CatalogueResponse> CatalogueAsync(CatalogueRequest request, CancellationToken cancel = default)
+        => _api.SendAsync<CatalogueResponse>(HttpMethod.Post, "api/client/catalogue", request, cancel);
 
     public void Dispose() => _api.Dispose();
 }
@@ -127,6 +132,13 @@ public sealed class OwnerApiClient : IDisposable
 
     public Task DeleteCompanyTypeAsync(Guid id, CancellationToken cancel = default)
         => _api.SendAsync(HttpMethod.Delete, $"api/admin/company-types/{id}", null, cancel);
+
+    // Catalogue
+    public Task<CatalogueInfo> CatalogueAsync(CancellationToken cancel = default)
+        => _api.SendAsync<CatalogueInfo>(HttpMethod.Get, "api/admin/catalogue", null, cancel);
+
+    public Task<CatalogueInfo> PublishCatalogueAsync(string libraryJson, CancellationToken cancel = default)
+        => _api.SendAsync<CatalogueInfo>(HttpMethod.Put, "api/admin/catalogue", new PublishCatalogueRequest(libraryJson), cancel);
 
     // Licence keys
     public Task<List<LicenceKeyInfo>> KeysAsync(CancellationToken cancel = default)

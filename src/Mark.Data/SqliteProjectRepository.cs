@@ -232,10 +232,13 @@ public sealed class SqliteProjectRepository : IProjectRepository
         ArgumentNullException.ThrowIfNull(project);
         var profiles = project.Frames.SelectMany(f => f.Profiles).Select(p => p.ProfileDefinitionId);
         var glass = project.Frames.SelectMany(f => f.GlassPanels).Select(g => g.GlassDefinitionId);
+        var systems = project.Frames.Select(f => f.SystemId);
         return profiles.OfType<string>().Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)
             .Select(id => (LibraryItemKind.Profile, id))
             .Concat(glass.OfType<string>().Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)
                 .Select(id => (LibraryItemKind.Glass, id)))
+            .Concat(systems.OfType<string>().Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)
+                .Select(id => (LibraryItemKind.System, id)))
             .ToList();
     }
 

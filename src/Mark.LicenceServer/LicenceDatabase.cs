@@ -12,7 +12,7 @@ namespace Mark.LicenceServer;
 /// </summary>
 public sealed class LicenceDatabase
 {
-    public const int SchemaVersion = 1;
+    public const int SchemaVersion = 2;
 
     private readonly string _connectionString;
 
@@ -57,7 +57,29 @@ public sealed class LicenceDatabase
         if (version == SchemaVersion) return;
         if (version > SchemaVersion)
             throw new InvalidOperationException($"The licence database {Path} is from a newer version of the server (schema {version}).");
+        if (version == 0) CreateVersion1(connection);
+        Upgrade(connection);
+    }
 
+    /// <summary>Version 2 (Milestone 13): the owner's catalogue, and what each company and company type gets from it.</summary>
+    private static void Upgrade(SqliteConnection connection)
+    {
+        using var transaction = connection.BeginTransaction();
+        Execute(connection, """
+            CREATE TABLE catalogue (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                version INTEGER NOT NULL,
+                library_json TEXT NOT NULL,
+                published_utc TEXT NOT NULL);
+            ALTER TABLE companies ADD COLUMN catalogue TEXT NULL;
+            ALTER TABLE company_types ADD COLUMN catalogue TEXT NULL;
+            """, transaction);
+        Execute(connection, $"PRAGMA user_version = {SchemaVersion}", transaction);
+        transaction.Commit();
+    }
+
+    private static void CreateVersion1(SqliteConnection connection)
+    {
         using var transaction = connection.BeginTransaction();
         Execute(connection, """
             CREATE TABLE admins (
@@ -130,7 +152,7 @@ public sealed class LicenceDatabase
                 note TEXT);
             """, transaction);
         Seed(connection, transaction);
-        Execute(connection, $"PRAGMA user_version = {SchemaVersion}", transaction);
+        Execute(connection, "PRAGMA user_version = 1", transaction);
         transaction.Commit();
     }
 

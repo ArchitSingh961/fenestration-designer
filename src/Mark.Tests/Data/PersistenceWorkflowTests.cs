@@ -102,7 +102,7 @@ public class PersistenceWorkflowTests : IDisposable
             Assert.Equal(Toughened8, Assert.Single(manager.Items).Id);
             manager.SelectedItem = manager.Items[0];
             Assert.Contains("Kitchen window", manager.UsageText);
-            manager.Editor!.CostPerSquareMetre = "2500";                  // was 2000
+            manager.ItemEditor!.CostPerSquareMetre = "2500";                  // was 2000
             manager.SaveCommand.Execute(null);
             Assert.False(manager.MessageIsError, manager.Message);
         };
@@ -244,7 +244,7 @@ public class PersistenceWorkflowTests : IDisposable
         {
             manager.Kind = LibraryItemKind.Glass;
             manager.NewCommand.Execute(null);
-            var editor = manager.Editor!;
+            var editor = manager.ItemEditor!;
             editor.Id = "GLS-LOWE-6";
             editor.Name = "6mm Low-E";
             editor.Group = "Low-E";
@@ -270,21 +270,21 @@ public class PersistenceWorkflowTests : IDisposable
         dialogs.OnLibraryManager = manager =>
         {
             manager.NewCommand.Execute(null);                            // profile
-            manager.Editor!.Id = Frame60;                                // already used
-            manager.Editor.Name = "Dup";
-            manager.Editor.RoleFrame = true;
-            manager.Editor.FaceWidth = "60";
+            manager.ItemEditor!.Id = Frame60;                                // already used
+            manager.ItemEditor!.Name = "Dup";
+            manager.ItemEditor!.RoleFrame = true;
+            manager.ItemEditor!.FaceWidth = "60";
             manager.SaveCommand.Execute(null);
             Assert.True(manager.MessageIsError);
             Assert.Contains("already used", manager.Message);
 
-            manager.Editor.Id = "PRF-NEW";
-            manager.Editor.FaceWidth = "sixty";
+            manager.ItemEditor!.Id = "PRF-NEW";
+            manager.ItemEditor!.FaceWidth = "sixty";
             manager.SaveCommand.Execute(null);
             Assert.Contains("Face width must be a number", manager.Message);
 
-            manager.Editor.FaceWidth = "60";
-            manager.Editor.RoleFrame = false;                            // no role: library validation refuses it
+            manager.ItemEditor!.FaceWidth = "60";
+            manager.ItemEditor!.RoleFrame = false;                            // no role: library validation refuses it
             manager.SaveCommand.Execute(null);
             Assert.Contains("at least one role", manager.Message);
         };

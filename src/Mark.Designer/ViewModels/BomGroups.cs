@@ -80,6 +80,7 @@ public static class BomGroupBuilder
     private static readonly (BomCategory Category, string Title, string Glyph, string Accent)[] Layout =
     {
         (BomCategory.Profile, "Profiles", "", "#1E63C7"),
+        (BomCategory.Reinforcement, "Reinforcement", "", "#5B6573"),
         (BomCategory.Glass, "Glass", "", "#0E9FB0"),
         (BomCategory.Hardware, "Hardware", "", "#E07B00"),
         (BomCategory.Gasket, "Gaskets", "", "#7C4DFF"),

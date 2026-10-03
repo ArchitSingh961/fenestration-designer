@@ -54,15 +54,18 @@ public sealed class CompaniesViewModel : OwnerPage
 {
     private readonly Func<IReadOnlyList<PackageInfo>> _packages;
     private readonly Func<IReadOnlyList<CompanyTypeInfo>> _types;
+    private readonly Func<Mark.Core.Library.ProductLibrary?> _catalogue;
     private readonly Func<DateTime> _utcNow;
     private List<CompanyRow> _all = new();
 
     public CompaniesViewModel(OwnerApiClient api, IOwnerDialogs dialogs, Action sessionEnded,
-        Func<IReadOnlyList<PackageInfo>> packages, Func<IReadOnlyList<CompanyTypeInfo>> types, Func<DateTime>? utcNow = null)
+        Func<IReadOnlyList<PackageInfo>> packages, Func<IReadOnlyList<CompanyTypeInfo>> types, Func<DateTime>? utcNow = null,
+        Func<Mark.Core.Library.ProductLibrary?>? catalogue = null)
         : base(api, dialogs, sessionEnded)
     {
         _packages = packages;
         _types = types;
+        _catalogue = catalogue ?? (() => null);
         _utcNow = utcNow ?? (() => DateTime.UtcNow);
         NewAccountCommand = new RelayCommand(NewAccount);
         RefreshCommand = new AsyncCommand(LoadAsync);
@@ -168,7 +171,7 @@ public sealed class CompaniesViewModel : OwnerPage
         _selected = null;
         OnPropertyChanged(nameof(Selected));
         Show(null);
-        Editor = new CompanyEditorViewModel(null, _packages(), _types());
+        Editor = new CompanyEditorViewModel(null, _packages(), _types(), catalogue: _catalogue());
     }
 
     public async Task OpenAsync(Guid id)
@@ -176,7 +179,7 @@ public sealed class CompaniesViewModel : OwnerPage
         await RunAsync(async () =>
         {
             var detail = await Api.CompanyAsync(id);
-            Editor = new CompanyEditorViewModel(detail, _packages(), _types());
+            Editor = new CompanyEditorViewModel(detail, _packages(), _types(), catalogue: _catalogue());
             Show(null);
         });
     }
@@ -202,7 +205,7 @@ public sealed class CompaniesViewModel : OwnerPage
         await LoadAsync();
         _selected = Companies.FirstOrDefault(c => c.Id == saved.Id);
         OnPropertyChanged(nameof(Selected));
-        Editor = new CompanyEditorViewModel(saved, _packages(), _types());
+        Editor = new CompanyEditorViewModel(saved, _packages(), _types(), catalogue: _catalogue());
         Show(editor.IsNew
             ? $"Created the account of {saved.Name}. They sign in to MARK with the User ID \"{saved.OwnerUserId}\" and the password you set."
             : $"Saved {saved.Name}. Their computers get the changes at the next check-in.");
@@ -222,7 +225,7 @@ public sealed class CompaniesViewModel : OwnerPage
         {
             string message = Message ?? "";
             await LoadAsync();
-            Editor = new CompanyEditorViewModel(updated!, _packages(), _types());
+            Editor = new CompanyEditorViewModel(updated!, _packages(), _types(), catalogue: _catalogue());
             Show(message);
         }
     }
@@ -254,7 +257,7 @@ public sealed class CompaniesViewModel : OwnerPage
         {
             string message = Message ?? "";
             await LoadAsync();
-            Editor = new CompanyEditorViewModel(updated!, _packages(), _types());
+            Editor = new CompanyEditorViewModel(updated!, _packages(), _types(), catalogue: _catalogue());
             Show(message);
         }
     }

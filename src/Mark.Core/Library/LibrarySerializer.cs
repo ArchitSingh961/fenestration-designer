@@ -7,7 +7,7 @@ namespace Mark.Core.Library;
 /// Reads and writes a product library as JSON (System.Text.Json, camelCase, enums as strings):
 /// <code>
 /// { "version": 1, "currency": "INR", "defaults": { "frameProfileId": "…", "glassId": "…" },
-///   "profiles": [ … ], "glass": [ … ], "materials": [ … ] }
+///   "profiles": [ … ], "glass": [ … ], "materials": [ … ], "systems": [ … ], "bundles": [ … ] }
 /// </code>
 /// A library is data: adding or changing products never needs a code change.
 /// </summary>
@@ -35,6 +35,8 @@ public static class LibrarySerializer
         public List<ProfileDefinition> Profiles { get; set; } = new();
         public List<GlassDefinition> Glass { get; set; } = new();
         public List<MaterialDefinition> Materials { get; set; } = new();
+        public List<ProductSystem> Systems { get; set; } = new();
+        public List<Bundle> Bundles { get; set; } = new();
     }
 
     public static string Serialize(IProductLibrary library)
@@ -46,7 +48,9 @@ public static class LibrarySerializer
             Defaults = library.Defaults,
             Profiles = library.Profiles.ToList(),
             Glass = library.Glass.ToList(),
-            Materials = library.Materials.ToList()
+            Materials = library.Materials.ToList(),
+            Systems = library.Systems.ToList(),
+            Bundles = library.Bundles.ToList()
         }, Options);
     }
 
@@ -70,7 +74,7 @@ public static class LibrarySerializer
             throw new InvalidOperationException(
                 $"Library file version {file.Version} is newer than this application supports (version {CurrentVersion}).");
 
-        return new ProductLibrary(file.Profiles, file.Glass, file.Materials, file.Defaults, file.Currency);
+        return new ProductLibrary(file.Profiles, file.Glass, file.Materials, file.Defaults, file.Currency, file.Systems, file.Bundles);
     }
 
     public static ProductLibrary Load(string filePath) => Deserialize(File.ReadAllText(filePath));

@@ -29,6 +29,9 @@ public sealed class AccessViewModel : ViewModelBase
 
     public bool IsLicensed => _status is not null;
 
+    /// <summary>The library follows the owner's catalogue: the company changes only its own prices.</summary>
+    public bool IsCatalogueManaged => _status?.Licence.CatalogueHash is not null;
+
     /// <summary>Quotes can be opened, viewed and exported, but not saved, deleted or used as default.</summary>
     public bool IsReadOnly => _status?.IsReadOnly ?? false;
 

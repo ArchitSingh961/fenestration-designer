@@ -7,7 +7,9 @@ public enum LibraryItemKind
 {
     Profile,
     Glass,
-    Material
+    Material,
+    System,
+    Bundle
 }
 
 /// <summary>
@@ -31,6 +33,10 @@ public interface ILibraryRepository
 
     void SaveMaterial(MaterialDefinition material);
 
+    void SaveSystem(ProductSystem system);
+
+    void SaveBundle(Bundle bundle);
+
     /// <summary>Removes a product and its own child rows. Fails if another row still references it.</summary>
     void Delete(LibraryItemKind kind, string id);
 
@@ -41,5 +47,12 @@ public interface ILibraryRepository
     /// the settings. Nothing is written unless everything succeeds.
     /// </summary>
     void Insert(IReadOnlyList<MaterialDefinition> materials, IReadOnlyList<ProfileDefinition> profiles,
-        IReadOnlyList<GlassDefinition> glass, (string Currency, LibraryDefaults Defaults)? settings);
+        IReadOnlyList<GlassDefinition> glass, (string Currency, LibraryDefaults Defaults)? settings,
+        IReadOnlyList<ProductSystem>? systems = null, IReadOnlyList<Bundle>? bundles = null);
+
+    /// <summary>
+    /// Writes every product, system and bundle of <paramref name="library"/> (inserting new ones at the end, updating the
+    /// others in place) and its settings, in one transaction. Rows not in <paramref name="library"/> are left alone.
+    /// </summary>
+    void SaveAll(ProductLibrary library);
 }

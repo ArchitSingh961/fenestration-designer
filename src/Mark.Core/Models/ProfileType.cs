@@ -21,5 +21,20 @@ public enum ProfileType
     MeshSash,
 
     /// <summary>Application-specific or unclassified profile.</summary>
-    Generic
+    Generic,
+
+    /// <summary>Steel (or other) reinforcement inside a profile; cut and listed with the bar it reinforces.</summary>
+    Reinforcement,
+
+    /// <summary>Glazing bead that holds the glass.</summary>
+    GlazingBead,
+
+    /// <summary>Interlock of sliding sashes.</summary>
+    Interlock,
+
+    /// <summary>Track rail of a sliding frame.</summary>
+    Track,
+
+    /// <summary>Coupler joining two frames, or an add-on section such as a cover or sill.</summary>
+    Coupler
 }

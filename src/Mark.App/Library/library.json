@@ -3,19 +3,25 @@
   // edit this file (or replace it with a supplier's library) to change what the designer offers and prices.
   // Ids are stable references stored in project files; never reuse an id for a different product.
   // A profile is bought in "stockLengthMm" plus any further "stockLengthsMm"; the cutting plan picks among them.
+  //
+  // Systems: a design in a system takes the system's profiles and glass. Bundles: parts that go with a profile's bars
+  // (e.g. the track rail on the bottom bar of a sliding frame) or with every opening of a type (hardware sets).
+  // "usedWith" says which systems an item belongs to; "reinforcement" is the steel inside a uPVC profile.
   "version": 1,
   "currency": "INR",
   "defaults": {
     "frameProfileId": "PRF-FRM-60",
     "mullionProfileId": "PRF-MUL-60",
     "transomProfileId": "PRF-MUL-60",
-    "glassId": "GLS-CLR-6"
+    "glassId": "GLS-CLR-6",
+    "systemId": "SYS-AL-S60C"
   },
   "profiles": [
     {
       "id": "PRF-FRM-50", "name": "50mm Frame", "code": "AL-5001", "manufacturer": "Sample Extrusions", "series": "Series 50",
       "roles": [ "frame" ], "faceWidthMm": 50, "depthMm": 50, "weightKgPerMetre": 0.95, "costPerMetre": 420.00,
       "stockLengthMm": 6000, "stockLengthsMm": [ 6500, 7000 ], "glazingBiteMm": 10,
+      "usedWith": { "systemIds": [ "SYS-AL-S60C" ] },
       "materials": [
         { "materialId": "MAT-GSK-FRM", "basis": "perMetre", "quantity": 1 },
         { "materialId": "MAT-CLEAT", "basis": "perPiece", "quantity": 1 },
@@ -26,6 +32,7 @@
       "id": "PRF-FRM-60", "name": "60mm Frame", "code": "AL-6001", "manufacturer": "Sample Extrusions", "series": "Series 60",
       "roles": [ "frame" ], "faceWidthMm": 60, "depthMm": 60, "weightKgPerMetre": 1.25, "costPerMetre": 540.00,
       "stockLengthMm": 6000, "stockLengthsMm": [ 6500, 7000 ], "glazingBiteMm": 12,
+      "usedWith": { "systemIds": [ "SYS-AL-S60C" ] },
       "materials": [
         { "materialId": "MAT-GSK-FRM", "basis": "perMetre", "quantity": 1 },
         { "materialId": "MAT-CLEAT", "basis": "perPiece", "quantity": 1 },
@@ -36,6 +43,8 @@
       "id": "PRF-UPVC-FRM-70", "name": "70mm uPVC Frame", "code": "PV-7001", "manufacturer": "Sample Polymers", "series": "uPVC 70",
       "roles": [ "frame" ], "faceWidthMm": 70, "depthMm": 70, "weightKgPerMetre": 1.40, "costPerMetre": 380.00,
       "stockLengthMm": 5800, "glazingBiteMm": 14,
+      "usedWith": { "systemIds": [ "SYS-UPVC-62C" ] },
+      "reinforcement": { "profileId": "PRF-RI-FRM-62", "cutDeductionMm": 100 },
       "materials": [
         { "materialId": "MAT-GSK-FRM", "basis": "perMetre", "quantity": 1 },
         { "materialId": "MAT-SCREW", "basis": "perPiece", "quantity": 6 }
@@ -45,6 +54,7 @@
       "id": "PRF-MUL-60", "name": "60mm Mullion/Transom", "code": "AL-6010", "manufacturer": "Sample Extrusions", "series": "Series 60",
       "roles": [ "mullion", "transom" ], "faceWidthMm": 60, "depthMm": 60, "weightKgPerMetre": 1.10, "costPerMetre": 480.00,
       "stockLengthMm": 6000, "cutAllowancePerEndMm": 5, "glazingBiteMm": 12,
+      "usedWith": { "systemIds": [ "SYS-AL-S60C", "SYS-AL-SL60" ] },
       "materials": [
         { "materialId": "MAT-TCON", "basis": "perPiece", "quantity": 2 },
         { "materialId": "MAT-SCREW", "basis": "perPiece", "quantity": 8 }
@@ -54,6 +64,7 @@
       "id": "PRF-SASH-55", "name": "55mm Casement Sash", "code": "AL-5520", "manufacturer": "Sample Extrusions", "series": "Series 60",
       "roles": [ "sash" ], "faceWidthMm": 55, "depthMm": 60, "weightKgPerMetre": 1.05, "costPerMetre": 460.00,
       "stockLengthMm": 6000, "glazingBiteMm": 10,
+      "usedWith": { "systemIds": [ "SYS-AL-S60C" ] },
       "materials": [
         { "materialId": "MAT-GSK-FRM", "basis": "perMetre", "quantity": 1 },
         { "materialId": "MAT-CLEAT", "basis": "perPiece", "quantity": 1 }
@@ -71,16 +82,116 @@
       "id": "PRF-MUL-80", "name": "80mm Heavy Mullion", "code": "AL-8010", "manufacturer": "Sample Extrusions", "series": "Series 60",
       "roles": [ "mullion", "transom" ], "faceWidthMm": 80, "depthMm": 60, "weightKgPerMetre": 1.65, "costPerMetre": 690.00,
       "stockLengthMm": 6000, "cutAllowancePerEndMm": 5, "glazingBiteMm": 12,
+      "usedWith": { "systemIds": [ "SYS-AL-S60C" ] },
       "materials": [
         { "materialId": "MAT-TCON", "basis": "perPiece", "quantity": 2 },
         { "materialId": "MAT-SCREW", "basis": "perPiece", "quantity": 8 }
       ]
+    },
+
+    {
+      "id": "PRF-UPVC-FRM-62", "name": "62mm uPVC Casement Frame", "code": "PV-6201", "manufacturer": "Sample Polymers", "series": "uPVC 62",
+      "roles": [ "frame" ], "faceWidthMm": 62, "depthMm": 62, "weightKgPerMetre": 1.20, "costPerMetre": 320.00,
+      "stockLengthMm": 5800, "glazingBiteMm": 16,
+      "usedWith": { "systemIds": [ "SYS-UPVC-62C" ] },
+      "reinforcement": { "profileId": "PRF-RI-FRM-62", "cutDeductionMm": 100 },
+      "materials": [
+        { "materialId": "MAT-SCREW", "basis": "perPiece", "quantity": 6 }
+      ]
+    },
+    {
+      "id": "PRF-UPVC-SASH-62", "name": "62mm uPVC Casement Sash", "code": "PV-6220", "manufacturer": "Sample Polymers", "series": "uPVC 62",
+      "roles": [ "sash" ], "faceWidthMm": 62, "depthMm": 70, "weightKgPerMetre": 1.30, "costPerMetre": 345.00,
+      "stockLengthMm": 5800, "glazingBiteMm": 16,
+      "usedWith": { "systemIds": [ "SYS-UPVC-62C" ] },
+      "reinforcement": { "profileId": "PRF-RI-SASH-62", "cutDeductionMm": 100 }
+    },
+    {
+      "id": "PRF-UPVC-MUL-62", "name": "62mm uPVC Mullion/Transom", "code": "PV-6210", "manufacturer": "Sample Polymers", "series": "uPVC 62",
+      "roles": [ "mullion", "transom" ], "faceWidthMm": 74, "depthMm": 62, "weightKgPerMetre": 1.35, "costPerMetre": 360.00,
+      "stockLengthMm": 5800, "cutAllowancePerEndMm": 3, "glazingBiteMm": 16,
+      "usedWith": { "systemIds": [ "SYS-UPVC-62C" ] },
+      "reinforcement": { "profileId": "PRF-RI-MUL-62", "minLengthMm": 600, "cutDeductionMm": 40 },
+      "materials": [
+        { "materialId": "MAT-TCON", "basis": "perPiece", "quantity": 2 }
+      ]
+    },
+    {
+      "id": "PRF-UPVC-BEAD-24", "name": "Glazing bead for 24mm glass", "code": "PV-6240", "manufacturer": "Sample Polymers", "series": "uPVC 62",
+      "roles": [ "glazingBead" ], "faceWidthMm": 20, "depthMm": 22, "weightKgPerMetre": 0.25, "costPerMetre": 55.00,
+      "stockLengthMm": 5800,
+      "usedWith": { "systemIds": [ "SYS-UPVC-62C" ] }
+    },
+    {
+      "id": "PRF-UPVC-COUPLER", "name": "uPVC Coupler", "code": "PV-6290", "manufacturer": "Sample Polymers", "series": "uPVC 62",
+      "roles": [ "coupler" ], "faceWidthMm": 10, "depthMm": 62, "weightKgPerMetre": 0.60, "costPerMetre": 140.00,
+      "stockLengthMm": 5800,
+      "usedWith": { "systemIds": [ "SYS-UPVC-62C" ] }
+    },
+    {
+      "id": "PRF-RI-FRM-62", "name": "Steel reinforcement 1.2 mm (frame)", "code": "RI-6201", "manufacturer": "Sample Steel", "series": "uPVC 62",
+      "roles": [ "reinforcement" ], "faceWidthMm": 30, "depthMm": 28, "weightKgPerMetre": 0.95, "costPerMetre": 95.00,
+      "stockLengthMm": 6000,
+      "usedWith": { "systemIds": [ "SYS-UPVC-62C" ] },
+      "materials": [
+        { "materialId": "MAT-RI-SCREW", "basis": "perMetre", "quantity": 4 }
+      ]
+    },
+    {
+      "id": "PRF-RI-SASH-62", "name": "Steel reinforcement 1.2 mm (sash)", "code": "RI-6220", "manufacturer": "Sample Steel", "series": "uPVC 62",
+      "roles": [ "reinforcement" ], "faceWidthMm": 28, "depthMm": 30, "weightKgPerMetre": 0.90, "costPerMetre": 90.00,
+      "stockLengthMm": 6000,
+      "usedWith": { "systemIds": [ "SYS-UPVC-62C" ] },
+      "materials": [
+        { "materialId": "MAT-RI-SCREW", "basis": "perMetre", "quantity": 4 }
+      ]
+    },
+    {
+      "id": "PRF-RI-MUL-62", "name": "Steel reinforcement 1.5 mm (mullion)", "code": "RI-6210", "manufacturer": "Sample Steel", "series": "uPVC 62",
+      "roles": [ "reinforcement" ], "faceWidthMm": 40, "depthMm": 30, "weightKgPerMetre": 1.45, "costPerMetre": 135.00,
+      "stockLengthMm": 6000,
+      "usedWith": { "systemIds": [ "SYS-UPVC-62C" ] },
+      "materials": [
+        { "materialId": "MAT-RI-SCREW", "basis": "perMetre", "quantity": 4 }
+      ]
+    },
+
+    {
+      "id": "PRF-SL-FRM-2T", "name": "60mm 2-Track Sliding Frame", "code": "AL-SL601", "manufacturer": "Sample Extrusions", "series": "Sliding 60",
+      "roles": [ "frame" ], "faceWidthMm": 60, "depthMm": 92, "weightKgPerMetre": 1.45, "costPerMetre": 590.00,
+      "stockLengthMm": 6000, "glazingBiteMm": 10,
+      "usedWith": { "systemIds": [ "SYS-AL-SL60" ] },
+      "materials": [
+        { "materialId": "MAT-SCREW", "basis": "perPiece", "quantity": 4 }
+      ]
+    },
+    {
+      "id": "PRF-SL-SASH-45", "name": "45mm Sliding Sash", "code": "AL-SL620", "manufacturer": "Sample Extrusions", "series": "Sliding 60",
+      "roles": [ "sash" ], "faceWidthMm": 45, "depthMm": 38, "weightKgPerMetre": 0.95, "costPerMetre": 430.00,
+      "stockLengthMm": 6000, "glazingBiteMm": 9,
+      "usedWith": { "systemIds": [ "SYS-AL-SL60" ] },
+      "materials": [
+        { "materialId": "MAT-CLEAT", "basis": "perPiece", "quantity": 1 }
+      ]
+    },
+    {
+      "id": "PRF-SL-TRACK", "name": "Sliding Track Rail", "code": "AL-SL640", "manufacturer": "Sample Extrusions", "series": "Sliding 60",
+      "roles": [ "track" ], "faceWidthMm": 10, "depthMm": 12, "weightKgPerMetre": 0.30, "costPerMetre": 140.00,
+      "stockLengthMm": 6000,
+      "usedWith": { "systemIds": [ "SYS-AL-SL60" ] }
+    },
+    {
+      "id": "PRF-SL-INTERLOCK", "name": "Sliding Interlock", "code": "AL-SL650", "manufacturer": "Sample Extrusions", "series": "Sliding 60",
+      "roles": [ "interlock" ], "faceWidthMm": 20, "depthMm": 30, "weightKgPerMetre": 0.55, "costPerMetre": 260.00,
+      "stockLengthMm": 6000,
+      "usedWith": { "systemIds": [ "SYS-AL-SL60" ] }
     }
   ],
   "glass": [
     {
       "id": "GLS-CLR-5", "name": "5mm Clear Float", "category": "Float", "thicknessMm": 5,
       "costPerSquareMetre": 650.00, "weightKgPerSquareMetre": 12.5, "minChargeableAreaM2": 0.25,
+      "usedWith": { "systemIds": [ "SYS-AL-S60C", "SYS-AL-SL60" ] },
       "materials": [
         { "materialId": "MAT-GSK-GLZ", "basis": "perMetre", "quantity": 1 },
         { "materialId": "MAT-SET-BLK", "basis": "perPiece", "quantity": 4 }
@@ -89,6 +200,7 @@
     {
       "id": "GLS-CLR-6", "name": "6mm Clear", "category": "Float", "thicknessMm": 6,
       "costPerSquareMetre": 780.00, "weightKgPerSquareMetre": 15.0, "minChargeableAreaM2": 0.25,
+      "usedWith": { "systemIds": [ "SYS-AL-S60C", "SYS-AL-SL60" ] },
       "materials": [
         { "materialId": "MAT-GSK-GLZ", "basis": "perMetre", "quantity": 1 },
         { "materialId": "MAT-SET-BLK", "basis": "perPiece", "quantity": 4 }
@@ -97,6 +209,7 @@
     {
       "id": "GLS-TGH-6", "name": "6mm Toughened Clear", "category": "Toughened", "thicknessMm": 6,
       "costPerSquareMetre": 1250.00, "weightKgPerSquareMetre": 15.0, "minChargeableAreaM2": 0.3,
+      "usedWith": { "systemIds": [ "SYS-AL-S60C", "SYS-AL-SL60" ] },
       "materials": [
         { "materialId": "MAT-GSK-GLZ", "basis": "perMetre", "quantity": 1 },
         { "materialId": "MAT-SET-BLK", "basis": "perPiece", "quantity": 4 }
@@ -105,6 +218,7 @@
     {
       "id": "GLS-TGH-8", "name": "8mm Toughened", "category": "Toughened", "thicknessMm": 8,
       "costPerSquareMetre": 1550.00, "weightKgPerSquareMetre": 20.0, "minChargeableAreaM2": 0.3,
+      "usedWith": { "systemIds": [ "SYS-AL-S60C", "SYS-AL-SL60" ] },
       "materials": [
         { "materialId": "MAT-GSK-GLZ", "basis": "perMetre", "quantity": 1 },
         { "materialId": "MAT-SET-BLK", "basis": "perPiece", "quantity": 4 }
@@ -113,6 +227,7 @@
     {
       "id": "GLS-TGH-10", "name": "10mm Toughened", "category": "Toughened", "thicknessMm": 10,
       "costPerSquareMetre": 1900.00, "weightKgPerSquareMetre": 25.0, "minChargeableAreaM2": 0.3,
+      "usedWith": { "systemIds": [ "SYS-AL-S60C" ] },
       "materials": [
         { "materialId": "MAT-GSK-GLZ", "basis": "perMetre", "quantity": 1 },
         { "materialId": "MAT-SET-BLK", "basis": "perPiece", "quantity": 4 }
@@ -121,6 +236,7 @@
     {
       "id": "GLS-LAM-638", "name": "6.38mm Laminated Clear", "category": "Laminated", "thicknessMm": 6.38,
       "costPerSquareMetre": 1850.00, "weightKgPerSquareMetre": 15.9, "minChargeableAreaM2": 0.3,
+      "usedWith": { "systemIds": [ "SYS-AL-S60C", "SYS-AL-SL60" ] },
       "materials": [
         { "materialId": "MAT-GSK-GLZ", "basis": "perMetre", "quantity": 1 },
         { "materialId": "MAT-SET-BLK", "basis": "perPiece", "quantity": 4 }
@@ -129,6 +245,7 @@
     {
       "id": "GLS-DGU-24", "name": "24mm DGU (6-12-6)", "category": "Insulated", "thicknessMm": 24,
       "costPerSquareMetre": 3400.00, "weightKgPerSquareMetre": 30.0, "minChargeableAreaM2": 0.5,
+      "usedWith": { "systemIds": [ "SYS-UPVC-62C" ] },
       "materials": [
         { "materialId": "MAT-GSK-GLZ", "basis": "perMetre", "quantity": 1 },
         { "materialId": "MAT-SET-BLK", "basis": "perPiece", "quantity": 6 }
@@ -141,6 +258,115 @@
     { "id": "MAT-SET-BLK", "name": "Glass setting block", "category": "accessory", "unit": "piece", "costPerUnit": 6.00 },
     { "id": "MAT-CLEAT", "name": "Corner cleat", "category": "hardware", "unit": "piece", "costPerUnit": 85.00 },
     { "id": "MAT-TCON", "name": "Mullion/transom T-connector", "category": "hardware", "unit": "piece", "costPerUnit": 120.00 },
-    { "id": "MAT-SCREW", "name": "Self-drilling screw 4.2 × 19", "category": "consumable", "unit": "piece", "costPerUnit": 1.50 }
+    { "id": "MAT-SCREW", "name": "Self-drilling screw 4.2 × 19", "category": "consumable", "unit": "piece", "costPerUnit": 1.50 },
+    { "id": "MAT-HINGE", "name": "Casement hinge", "category": "hardware", "unit": "piece", "costPerUnit": 180.00 },
+    { "id": "MAT-HANDLE", "name": "Window handle", "category": "hardware", "unit": "piece", "costPerUnit": 350.00 },
+    { "id": "MAT-MPLOCK", "name": "Multipoint lock", "category": "hardware", "unit": "piece", "costPerUnit": 650.00 },
+    { "id": "MAT-FSTAY", "name": "Friction stay (pair)", "category": "hardware", "unit": "piece", "costPerUnit": 420.00 },
+    { "id": "MAT-TT-SET", "name": "Tilt & turn gear set", "category": "hardware", "unit": "piece", "costPerUnit": 2400.00 },
+    { "id": "MAT-ROLLER", "name": "Sliding roller", "category": "hardware", "unit": "piece", "costPerUnit": 140.00 },
+    { "id": "MAT-SL-LOCK", "name": "Sliding crescent lock", "category": "hardware", "unit": "piece", "costPerUnit": 260.00 },
+    { "id": "MAT-BRUSH", "name": "Brush weather seal", "category": "gasket", "unit": "metre", "costPerUnit": 22.00 },
+    { "id": "MAT-UPVC-GSK", "name": "uPVC co-extruded gasket", "category": "gasket", "unit": "metre", "costPerUnit": 30.00 },
+    { "id": "MAT-DRAIN", "name": "Drainage cap", "category": "accessory", "unit": "piece", "costPerUnit": 12.00 },
+    { "id": "MAT-RI-SCREW", "name": "Reinforcement screw", "category": "consumable", "unit": "piece", "costPerUnit": 1.20 }
+  ],
+  "systems": [
+    {
+      "id": "SYS-AL-S60C", "name": "Series 60 Casement – Aluminium", "material": "aluminium", "use": "window",
+      "description": "60mm aluminium frame, 55mm casement sash, single glazing.",
+      "frameProfileId": "PRF-FRM-60", "mullionProfileId": "PRF-MUL-60", "transomProfileId": "PRF-MUL-60",
+      "sashProfileId": "PRF-SASH-55", "meshSashProfileId": "PRF-MESH-30", "glassId": "GLS-CLR-6",
+      "glassMinThicknessMm": 5, "glassMaxThicknessMm": 10
+    },
+    {
+      "id": "SYS-UPVC-62C", "name": "62mm Casement – uPVC", "material": "upvc", "use": "window",
+      "description": "62mm uPVC casement with steel reinforcement and double glazing.",
+      "frameProfileId": "PRF-UPVC-FRM-62", "mullionProfileId": "PRF-UPVC-MUL-62", "transomProfileId": "PRF-UPVC-MUL-62",
+      "sashProfileId": "PRF-UPVC-SASH-62", "meshSashProfileId": "PRF-MESH-30", "glassId": "GLS-DGU-24",
+      "glassMinThicknessMm": 20, "glassMaxThicknessMm": 28
+    },
+    {
+      "id": "SYS-AL-SL60", "name": "Series 60 Sliding – Aluminium", "material": "aluminium", "use": "windowAndDoor",
+      "description": "2-track aluminium sliding windows and doors.",
+      "frameProfileId": "PRF-SL-FRM-2T", "mullionProfileId": "PRF-MUL-60", "transomProfileId": "PRF-MUL-60",
+      "sashProfileId": "PRF-SL-SASH-45", "meshSashProfileId": "PRF-MESH-30", "glassId": "GLS-TGH-6",
+      "glassMinThicknessMm": 5, "glassMaxThicknessMm": 8
+    }
+  ],
+  "bundles": [
+    {
+      "id": "BND-AL-CASE-HW", "name": "Casement hardware (aluminium)", "systemId": "SYS-AL-S60C",
+      "openingTypes": [ "sideHungLeft", "sideHungRight" ],
+      "parts": [
+        { "itemId": "MAT-HINGE", "basis": "bySize", "measure": "height", "steps": [ { "upToMm": 1200, "quantity": 2 }, { "upToMm": 9999, "quantity": 3 } ] },
+        { "itemId": "MAT-HANDLE", "quantity": 1 }
+      ]
+    },
+    {
+      "id": "BND-UPVC-FRM", "name": "62mm uPVC frame parts", "systemId": "SYS-UPVC-62C", "profileId": "PRF-UPVC-FRM-62",
+      "description": "Glazing bead, gasket and drainage with every frame bar.",
+      "parts": [
+        { "itemId": "PRF-UPVC-BEAD-24", "quantity": 1 },
+        { "itemId": "MAT-UPVC-GSK", "basis": "perMetre", "quantity": 1 },
+        { "itemId": "MAT-DRAIN", "quantity": 2, "side": "bottom" }
+      ]
+    },
+    {
+      "id": "BND-UPVC-SASH", "name": "62mm uPVC sash parts", "systemId": "SYS-UPVC-62C", "profileId": "PRF-UPVC-SASH-62",
+      "parts": [
+        { "itemId": "PRF-UPVC-BEAD-24", "quantity": 1 },
+        { "itemId": "MAT-UPVC-GSK", "basis": "perMetre", "quantity": 2 }
+      ]
+    },
+    {
+      "id": "BND-UPVC-CASE-HW", "name": "Casement hardware (uPVC)", "systemId": "SYS-UPVC-62C",
+      "openingTypes": [ "sideHungLeft", "sideHungRight" ],
+      "parts": [
+        { "itemId": "MAT-HINGE", "basis": "bySize", "measure": "height", "steps": [ { "upToMm": 1200, "quantity": 2 }, { "upToMm": 9999, "quantity": 3 } ] },
+        { "itemId": "MAT-HANDLE", "quantity": 1 },
+        { "itemId": "MAT-MPLOCK", "quantity": 1 }
+      ]
+    },
+    {
+      "id": "BND-UPVC-HUNG-HW", "name": "Top / bottom hung hardware (uPVC)", "systemId": "SYS-UPVC-62C",
+      "openingTypes": [ "topHung", "bottomHung" ],
+      "parts": [
+        { "itemId": "MAT-FSTAY", "basis": "bySize", "measure": "width", "steps": [ { "upToMm": 900, "quantity": 1 }, { "upToMm": 9999, "quantity": 2 } ] },
+        { "itemId": "MAT-HANDLE", "quantity": 1 }
+      ]
+    },
+    {
+      "id": "BND-UPVC-TT-HW", "name": "Tilt & turn hardware (uPVC)", "systemId": "SYS-UPVC-62C",
+      "openingTypes": [ "tiltTurnLeft", "tiltTurnRight" ],
+      "parts": [
+        { "itemId": "MAT-TT-SET", "quantity": 1 },
+        { "itemId": "MAT-HANDLE", "quantity": 1 }
+      ]
+    },
+    {
+      "id": "BND-SL-FRM", "name": "Sliding 2-track frame", "systemId": "SYS-AL-SL60", "profileId": "PRF-SL-FRM-2T",
+      "description": "Track rail and drainage on the bottom bar, brush seal on every bar.",
+      "parts": [
+        { "itemId": "PRF-SL-TRACK", "quantity": 1, "side": "bottom" },
+        { "itemId": "MAT-DRAIN", "quantity": 2, "side": "bottom" },
+        { "itemId": "MAT-BRUSH", "basis": "perMetre", "quantity": 1 }
+      ]
+    },
+    {
+      "id": "BND-SL-SASH", "name": "Sliding sash seals", "systemId": "SYS-AL-SL60", "profileId": "PRF-SL-SASH-45",
+      "parts": [
+        { "itemId": "MAT-BRUSH", "basis": "perMetre", "quantity": 2 }
+      ]
+    },
+    {
+      "id": "BND-SL-HW", "name": "Sliding sash hardware", "systemId": "SYS-AL-SL60",
+      "openingTypes": [ "slidingLeft", "slidingRight" ],
+      "parts": [
+        { "itemId": "MAT-ROLLER", "quantity": 2 },
+        { "itemId": "MAT-SL-LOCK", "quantity": 1 },
+        { "itemId": "PRF-SL-INTERLOCK", "quantity": 1, "measure": "height" }
+      ]
+    }
   ]
 }

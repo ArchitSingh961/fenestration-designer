@@ -185,13 +185,16 @@ public sealed class CompanyTypesViewModel : OwnerPage
 {
     private readonly Func<IReadOnlyList<PackageInfo>> _packages;
     private readonly Action<IReadOnlyList<CompanyTypeInfo>> _loaded;
+    private readonly Func<Mark.Core.Library.ProductLibrary?> _catalogue;
 
     public CompanyTypesViewModel(OwnerApiClient api, IOwnerDialogs dialogs, Action sessionEnded,
-        Func<IReadOnlyList<PackageInfo>> packages, Action<IReadOnlyList<CompanyTypeInfo>> loaded)
+        Func<IReadOnlyList<PackageInfo>> packages, Action<IReadOnlyList<CompanyTypeInfo>> loaded,
+        Func<Mark.Core.Library.ProductLibrary?>? catalogue = null)
         : base(api, dialogs, sessionEnded)
     {
         _packages = packages;
         _loaded = loaded;
+        _catalogue = catalogue ?? (() => null);
         NewCommand = new RelayCommand(() => Edit(null));
         SaveCommand = new AsyncCommand(SaveAsync, () => HasEditor);
         DeleteCommand = new AsyncCommand(DeleteAsync, () => _editing is { Id: var id } && id != Guid.Empty);
@@ -243,6 +246,11 @@ public sealed class CompanyTypesViewModel : OwnerPage
 
     public bool HasEditor { get; private set; }
 
+    /// <summary>What a new account of this type gets from the catalogue; null when no catalogue is published.</summary>
+    public CatalogueChoiceViewModel? CatalogueChoice { get; private set; }
+
+    public bool HasCatalogue => CatalogueChoice is not null;
+
     public string EditorTitle => _editing is { Id: var id } && id != Guid.Empty ? _editing.Name : "New company type";
 
     public override async Task LoadAsync()
@@ -264,6 +272,9 @@ public sealed class CompanyTypesViewModel : OwnerPage
         Products = Licensing.Products.All.Select(p => new ProductChoiceRow(p, _editing.Products.Contains(p))).ToList();
         Package = _packages().FirstOrDefault(p => p.Id == _editing.PackageId);
         ValidityDaysText = _editing.ValidityDays.ToString();
+        CatalogueChoice = _catalogue() is { } master ? new CatalogueChoiceViewModel(master, _editing.Catalogue) : null;
+        OnPropertyChanged(nameof(CatalogueChoice));
+        OnPropertyChanged(nameof(HasCatalogue));
         HasEditor = true;
         if (type is null)
         {
@@ -287,7 +298,8 @@ public sealed class CompanyTypesViewModel : OwnerPage
             Show("Enter the number of days a new account is valid (e.g. 365, or 14 for a trial).", true);
             return;
         }
-        var type = new CompanyTypeInfo(_editing.Id, Name, Products.Where(p => p.IsChecked).Select(p => p.Product).ToList(), Package?.Id, days);
+        var type = new CompanyTypeInfo(_editing.Id, Name, Products.Where(p => p.IsChecked).Select(p => p.Product).ToList(), Package?.Id, days,
+            Catalogue: CatalogueChoice?.ToCatalogue() ?? _editing.Catalogue);
         CompanyTypeInfo? saved = null;
         if (!await RunAsync(async () => saved = await Api.SaveCompanyTypeAsync(type))) return;
         await LoadAsync();

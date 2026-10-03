@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Mark.Core.Library;
 using Mark.Core.Models;
 using Microsoft.Data.Sqlite;
@@ -14,6 +15,15 @@ namespace Mark.Data;
 public sealed class SqliteLibraryRepository : ILibraryRepository
 {
     private readonly SqliteDatabase _database;
+
+    /// <summary>JSON of systems, bundles, "used with" and reinforcement: camelCase, enums as names (the library file format).</summary>
+    private static readonly JsonSerializerOptions DocumentOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+    };
 
     public SqliteLibraryRepository(SqliteDatabase database)
         => _database = database ?? throw new ArgumentNullException(nameof(database));
@@ -37,7 +47,7 @@ public sealed class SqliteLibraryRepository : ILibraryRepository
             "SELECT glass_id, material_id, basis, quantity FROM glass_material_usages ORDER BY glass_id, position", ReadUsage);
 
         var materials = ReadRows(connection,
-            "SELECT id, name, code, manufacturer, category, unit, cost_per_unit, properties_json, is_active " +
+            "SELECT id, name, code, manufacturer, category, unit, cost_per_unit, properties_json, is_active, used_with_json " +
             "FROM materials ORDER BY sort_order, id",
             r => new MaterialDefinition
             {
@@ -49,12 +59,13 @@ public sealed class SqliteLibraryRepository : ILibraryRepository
                 Unit = Enum.Parse<MaterialUnit>(r.GetString(5)),
                 CostPerUnit = ParseMoney(r.GetString(6)),
                 Properties = ReadProperties(r.GetString(7)),
-                IsActive = r.GetInt64(8) != 0
+                IsActive = r.GetInt64(8) != 0,
+                UsedWith = Document<UsedWith>(r, 9)
             });
 
         var profiles = ReadRows(connection,
             "SELECT id, name, code, manufacturer, series, face_width_mm, depth_mm, weight_kg_per_m, cost_per_m, " +
-            "stock_length_mm, cut_allowance_per_end_mm, glazing_bite_mm, properties_json, is_active " +
+            "stock_length_mm, cut_allowance_per_end_mm, glazing_bite_mm, properties_json, is_active, used_with_json, reinforcement_json " +
             "FROM profiles ORDER BY sort_order, id",
             r =>
             {
@@ -75,6 +86,8 @@ public sealed class SqliteLibraryRepository : ILibraryRepository
                     GlazingBiteMm = r.GetDouble(11),
                     Properties = ReadProperties(r.GetString(12)),
                     IsActive = r.GetInt64(13) != 0,
+                    UsedWith = Document<UsedWith>(r, 14),
+                    Reinforcement = Document<ReinforcementRule>(r, 15),
                     Roles = ChildrenOf(roles, id),
                     StockLengthsMm = ChildrenOf(stock, id),
                     Materials = ChildrenOf(profileUsages, id)
@@ -83,7 +96,7 @@ public sealed class SqliteLibraryRepository : ILibraryRepository
 
         var glass = ReadRows(connection,
             "SELECT id, name, code, manufacturer, category, thickness_mm, cost_per_m2, weight_kg_per_m2, " +
-            "min_chargeable_area_m2, properties_json, is_active FROM glass ORDER BY sort_order, id",
+            "min_chargeable_area_m2, properties_json, is_active, used_with_json FROM glass ORDER BY sort_order, id",
             r =>
             {
                 string id = r.GetString(0);
@@ -100,14 +113,20 @@ public sealed class SqliteLibraryRepository : ILibraryRepository
                     MinChargeableAreaM2 = r.GetDouble(8),
                     Properties = ReadProperties(r.GetString(9)),
                     IsActive = r.GetInt64(10) != 0,
+                    UsedWith = Document<UsedWith>(r, 11),
                     Materials = ChildrenOf(glassUsages, id)
                 };
             });
 
+        var systems = ReadRows(connection, "SELECT definition_json FROM systems ORDER BY sort_order, id",
+            r => JsonSerializer.Deserialize<ProductSystem>(r.GetString(0), DocumentOptions)!);
+        var bundles = ReadRows(connection, "SELECT definition_json FROM bundles ORDER BY sort_order, id",
+            r => JsonSerializer.Deserialize<Bundle>(r.GetString(0), DocumentOptions)!);
+
         var (currency, defaults) = ReadSettings(connection);
         try
         {
-            return new ProductLibrary(profiles, glass, materials, defaults, currency);
+            return new ProductLibrary(profiles, glass, materials, defaults, currency, systems, bundles);
         }
         catch (LibraryValidationException ex)
         {
@@ -119,7 +138,8 @@ public sealed class SqliteLibraryRepository : ILibraryRepository
     {
         using var connection = _database.Connect();
         using var command = connection.CreateCommand();
-        command.CommandText = "SELECT (SELECT COUNT(*) FROM profiles) + (SELECT COUNT(*) FROM glass) + (SELECT COUNT(*) FROM materials)";
+        command.CommandText = "SELECT (SELECT COUNT(*) FROM profiles) + (SELECT COUNT(*) FROM glass) + (SELECT COUNT(*) FROM materials) " +
+                              "+ (SELECT COUNT(*) FROM systems) + (SELECT COUNT(*) FROM bundles)";
         return Convert.ToInt64(command.ExecuteScalar()) == 0;
     }
 
@@ -143,6 +163,32 @@ public sealed class SqliteLibraryRepository : ILibraryRepository
         InTransaction((c, t) => WriteMaterial(c, t, material));
     }
 
+    public void SaveSystem(ProductSystem system)
+    {
+        ArgumentNullException.ThrowIfNull(system);
+        InTransaction((c, t) => WriteDocument(c, t, "systems", system.Id, system));
+    }
+
+    public void SaveBundle(Bundle bundle)
+    {
+        ArgumentNullException.ThrowIfNull(bundle);
+        InTransaction((c, t) => WriteDocument(c, t, "bundles", bundle.Id, bundle));
+    }
+
+    public void SaveAll(ProductLibrary library)
+    {
+        ArgumentNullException.ThrowIfNull(library);
+        InTransaction((c, t) =>
+        {
+            foreach (var m in library.Materials) WriteMaterial(c, t, m);
+            foreach (var p in library.Profiles) WriteProfile(c, t, p);
+            foreach (var g in library.Glass) WriteGlass(c, t, g);
+            foreach (var x in library.Systems) WriteDocument(c, t, "systems", x.Id, x);
+            foreach (var b in library.Bundles) WriteDocument(c, t, "bundles", b.Id, b);
+            WriteSettings(c, t, library.Currency, library.Defaults);
+        });
+    }
+
     public void Delete(LibraryItemKind kind, string id)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
@@ -150,6 +196,8 @@ public sealed class SqliteLibraryRepository : ILibraryRepository
         {
             LibraryItemKind.Profile => "profiles",
             LibraryItemKind.Glass => "glass",
+            LibraryItemKind.System => "systems",
+            LibraryItemKind.Bundle => "bundles",
             _ => "materials"
         };
         InTransaction((c, t) =>
@@ -166,7 +214,8 @@ public sealed class SqliteLibraryRepository : ILibraryRepository
     }
 
     public void Insert(IReadOnlyList<MaterialDefinition> materials, IReadOnlyList<ProfileDefinition> profiles,
-        IReadOnlyList<GlassDefinition> glass, (string Currency, LibraryDefaults Defaults)? settings)
+        IReadOnlyList<GlassDefinition> glass, (string Currency, LibraryDefaults Defaults)? settings,
+        IReadOnlyList<ProductSystem>? systems = null, IReadOnlyList<Bundle>? bundles = null)
     {
         ArgumentNullException.ThrowIfNull(materials);
         ArgumentNullException.ThrowIfNull(profiles);
@@ -176,38 +225,58 @@ public sealed class SqliteLibraryRepository : ILibraryRepository
             foreach (var m in materials) WriteMaterial(c, t, m);
             foreach (var p in profiles) WriteProfile(c, t, p);
             foreach (var g in glass) WriteGlass(c, t, g);
+            foreach (var x in systems ?? Array.Empty<ProductSystem>()) WriteDocument(c, t, "systems", x.Id, x);
+            foreach (var b in bundles ?? Array.Empty<Bundle>()) WriteDocument(c, t, "bundles", b.Id, b);
             if (settings is { } s) WriteSettings(c, t, s.Currency, s.Defaults);
         });
     }
 
+    /// <summary>A system or bundle row: its definition as JSON, keeping its place in the library order.</summary>
+    private static void WriteDocument<T>(SqliteConnection c, SqliteTransaction t, string table, string id, T definition)
+        => Run(c, t, $"""
+            INSERT INTO {table} (id, sort_order, definition_json)
+            VALUES ($id, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM {table}), $json)
+            ON CONFLICT (id) DO UPDATE SET definition_json = excluded.definition_json
+            """, ("$id", id), ("$json", JsonSerializer.Serialize(definition, DocumentOptions)));
+
+    private static string? DocumentJson<T>(T? value) where T : class
+        => value is null ? null : JsonSerializer.Serialize(value, DocumentOptions);
+
+    private static T? Document<T>(SqliteDataReader r, int ordinal) where T : class
+        => r.IsDBNull(ordinal) ? null : JsonSerializer.Deserialize<T>(r.GetString(ordinal), DocumentOptions);
+
     private static void WriteMaterial(SqliteConnection c, SqliteTransaction t, MaterialDefinition m)
     {
         Run(c, t, """
-            INSERT INTO materials (id, sort_order, name, code, manufacturer, category, unit, cost_per_unit, properties_json, is_active)
+            INSERT INTO materials (id, sort_order, name, code, manufacturer, category, unit, cost_per_unit, properties_json, is_active,
+                                   used_with_json)
             VALUES ($id, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM materials), $name, $code, $manufacturer, $category,
-                    $unit, $cost, $properties, $active)
+                    $unit, $cost, $properties, $active, $usedWith)
             ON CONFLICT (id) DO UPDATE SET name = excluded.name, code = excluded.code, manufacturer = excluded.manufacturer,
                 category = excluded.category, unit = excluded.unit, cost_per_unit = excluded.cost_per_unit,
-                properties_json = excluded.properties_json, is_active = excluded.is_active
+                properties_json = excluded.properties_json, is_active = excluded.is_active, used_with_json = excluded.used_with_json
             """,
             ("$id", m.Id), ("$name", m.Name), ("$code", m.Code), ("$manufacturer", m.Manufacturer),
             ("$category", m.Category.ToString()), ("$unit", m.Unit.ToString()), ("$cost", Money(m.CostPerUnit)),
-            ("$properties", WriteProperties(m.Properties)), ("$active", m.IsActive ? 1 : 0));
+            ("$properties", WriteProperties(m.Properties)), ("$active", m.IsActive ? 1 : 0), ("$usedWith", DocumentJson(m.UsedWith)));
     }
 
     private static void WriteProfile(SqliteConnection c, SqliteTransaction t, ProfileDefinition p)
     {
         Run(c, t, """
             INSERT INTO profiles (id, sort_order, name, code, manufacturer, series, face_width_mm, depth_mm, weight_kg_per_m,
-                                  cost_per_m, stock_length_mm, cut_allowance_per_end_mm, glazing_bite_mm, properties_json, is_active)
+                                  cost_per_m, stock_length_mm, cut_allowance_per_end_mm, glazing_bite_mm, properties_json, is_active,
+                                  used_with_json, reinforcement_json)
             VALUES ($id, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM profiles), $name, $code, $manufacturer, $series, $face,
-                    $depth, $weight, $cost, $stock, $allowance, $bite, $properties, $active)
+                    $depth, $weight, $cost, $stock, $allowance, $bite, $properties, $active, $usedWith, $reinforcement)
             ON CONFLICT (id) DO UPDATE SET name = excluded.name, code = excluded.code, manufacturer = excluded.manufacturer,
                 series = excluded.series, face_width_mm = excluded.face_width_mm, depth_mm = excluded.depth_mm,
                 weight_kg_per_m = excluded.weight_kg_per_m, cost_per_m = excluded.cost_per_m,
                 stock_length_mm = excluded.stock_length_mm, cut_allowance_per_end_mm = excluded.cut_allowance_per_end_mm,
-                glazing_bite_mm = excluded.glazing_bite_mm, properties_json = excluded.properties_json, is_active = excluded.is_active
+                glazing_bite_mm = excluded.glazing_bite_mm, properties_json = excluded.properties_json, is_active = excluded.is_active,
+                used_with_json = excluded.used_with_json, reinforcement_json = excluded.reinforcement_json
             """,
+            ("$usedWith", DocumentJson(p.UsedWith)), ("$reinforcement", DocumentJson(p.Reinforcement)),
             ("$id", p.Id), ("$name", p.Name), ("$code", p.Code), ("$manufacturer", p.Manufacturer), ("$series", p.Series),
             ("$face", p.FaceWidthMm), ("$depth", p.DepthMm), ("$weight", p.WeightKgPerMetre), ("$cost", Money(p.CostPerMetre)),
             ("$stock", p.StockLengthMm), ("$allowance", p.CutAllowancePerEndMm), ("$bite", p.GlazingBiteMm),
@@ -230,14 +299,15 @@ public sealed class SqliteLibraryRepository : ILibraryRepository
     {
         Run(c, t, """
             INSERT INTO glass (id, sort_order, name, code, manufacturer, category, thickness_mm, cost_per_m2, weight_kg_per_m2,
-                               min_chargeable_area_m2, properties_json, is_active)
+                               min_chargeable_area_m2, properties_json, is_active, used_with_json)
             VALUES ($id, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM glass), $name, $code, $manufacturer, $category,
-                    $thickness, $cost, $weight, $minArea, $properties, $active)
+                    $thickness, $cost, $weight, $minArea, $properties, $active, $usedWith)
             ON CONFLICT (id) DO UPDATE SET name = excluded.name, code = excluded.code, manufacturer = excluded.manufacturer,
                 category = excluded.category, thickness_mm = excluded.thickness_mm, cost_per_m2 = excluded.cost_per_m2,
                 weight_kg_per_m2 = excluded.weight_kg_per_m2, min_chargeable_area_m2 = excluded.min_chargeable_area_m2,
-                properties_json = excluded.properties_json, is_active = excluded.is_active
+                properties_json = excluded.properties_json, is_active = excluded.is_active, used_with_json = excluded.used_with_json
             """,
+            ("$usedWith", DocumentJson(g.UsedWith)),
             ("$id", g.Id), ("$name", g.Name), ("$code", g.Code), ("$manufacturer", g.Manufacturer), ("$category", g.Category),
             ("$thickness", g.ThicknessMm), ("$cost", Money(g.CostPerSquareMetre)), ("$weight", g.WeightKgPerSquareMetre),
             ("$minArea", g.MinChargeableAreaM2), ("$properties", WriteProperties(g.Properties)), ("$active", g.IsActive ? 1 : 0));
@@ -256,11 +326,12 @@ public sealed class SqliteLibraryRepository : ILibraryRepository
     private static void WriteSettings(SqliteConnection c, SqliteTransaction t, string currency, LibraryDefaults d)
         => Run(c, t, """
             UPDATE library_settings SET currency = $currency, default_frame_profile_id = $frame,
-                default_mullion_profile_id = $mullion, default_transom_profile_id = $transom, default_glass_id = $glass
+                default_mullion_profile_id = $mullion, default_transom_profile_id = $transom, default_glass_id = $glass,
+                default_system_id = $system
             WHERE id = 1
             """,
             ("$currency", currency ?? ""), ("$frame", d.FrameProfileId), ("$mullion", d.MullionProfileId),
-            ("$transom", d.TransomProfileId), ("$glass", d.GlassId));
+            ("$transom", d.TransomProfileId), ("$glass", d.GlassId), ("$system", d.SystemId));
 
     // ── Helpers ─────────────────────────────────────────────────────
 
@@ -288,7 +359,7 @@ public sealed class SqliteLibraryRepository : ILibraryRepository
     {
         using var command = connection.CreateCommand();
         command.CommandText = "SELECT currency, default_frame_profile_id, default_mullion_profile_id, default_transom_profile_id, " +
-                              "default_glass_id FROM library_settings WHERE id = 1";
+                              "default_glass_id, default_system_id FROM library_settings WHERE id = 1";
         using var r = command.ExecuteReader();
         if (!r.Read())
             throw new DataStoreException("The database has no library settings row.");
@@ -297,7 +368,8 @@ public sealed class SqliteLibraryRepository : ILibraryRepository
             FrameProfileId = NullableString(r, 1),
             MullionProfileId = NullableString(r, 2),
             TransomProfileId = NullableString(r, 3),
-            GlassId = NullableString(r, 4)
+            GlassId = NullableString(r, 4),
+            SystemId = NullableString(r, 5)
         });
     }
 

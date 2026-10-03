@@ -109,9 +109,37 @@ public sealed class LocalStore
         {
             if (AddMissingSashProfiles(library, seedLibraryPath) is { } added)
                 messages.Add(added);
+            if (AddSeedSystems(library, seedLibraryPath) is { } systems)
+                messages.Add(systems);
         }
 
         return new LocalStore(database, library, projects, new SettingsRepository(database), messages);
+    }
+
+    /// <summary>
+    /// Libraries created before product systems (Milestone 13) have none. Adds the seed file's systems with their bundles
+    /// and every item they need that the library does not have yet; existing items are never overwritten. Returns a
+    /// message for the user when something was added.
+    /// </summary>
+    private static string? AddSeedSystems(LibraryService library, string seedLibraryPath)
+    {
+        try
+        {
+            if (library.Current.Systems.Count > 0) return null;
+            var seed = LibrarySerializer.Load(seedLibraryPath);
+            if (seed.Systems.Count == 0) return null;
+            var systems = CatalogueSelector.Select(seed, new CatalogueSelection { SystemIds = seed.Systems.Select(x => x.Id).ToList() });
+            var result = library.Import(systems);
+            if (library.Current.Defaults.SystemId is null && seed.Defaults.SystemId is { } defaultSystem
+                                                          && library.Current.FindSystem(defaultSystem) is not null)
+                library.UpdateSettings(library.Current.Currency, library.Current.Defaults with { SystemId = defaultSystem });
+            return result.Added.Count == 0 ? null
+                : $"Added the product systems {string.Join(", ", systems.Systems.Select(x => x.Name))} to the library.";
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException or DataStoreException)
+        {
+            return $"The product systems could not be added to the library: {ex.Message}";
+        }
     }
 
     /// <summary>

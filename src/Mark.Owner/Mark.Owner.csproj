@@ -12,6 +12,11 @@
     <AssemblyName>MARK.Owner</AssemblyName>
   </PropertyGroup>
 
+  <!-- The sample catalogue a new licence server can start from (the library MARK ships with). -->
+  <ItemGroup>
+    <None Include="..\Mark.App\Library\library.json" Link="Library\sample-catalogue.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Mark.Licensing\Mark.Licensing.csproj" />
     <ProjectReference Include="..\Mark.Designer\Mark.Designer.csproj" />

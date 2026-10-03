@@ -28,10 +28,12 @@ public sealed partial class LicenceService
         while (reader.Read())
         {
             var c = ReadCompany(reader);
-            list.Add(new CompanySummary(c.Id, c.Name, c.Logo is not null, reader.IsDBNull(13) ? null : reader.GetString(13),
-                reader.IsDBNull(15) ? "" : reader.GetString(15), c.Products, reader.IsDBNull(14) ? null : reader.GetString(14),
-                c.ValidUntilUtc, c.Suspended, reader.GetInt32(16), c.MaxComputers,
-                reader.IsDBNull(17) ? null : ParseTime(reader.GetString(17))));
+            const int extra = 14;                                 // the columns after CompanyColumns
+            list.Add(new CompanySummary(c.Id, c.Name, c.Logo is not null, reader.IsDBNull(extra) ? null : reader.GetString(extra),
+                reader.IsDBNull(extra + 2) ? "" : reader.GetString(extra + 2), c.Products,
+                reader.IsDBNull(extra + 1) ? null : reader.GetString(extra + 1),
+                c.ValidUntilUtc, c.Suspended, reader.GetInt32(extra + 3), c.MaxComputers,
+                reader.IsDBNull(extra + 4) ? null : ParseTime(reader.GetString(extra + 4))));
         }
         return list;
     }
@@ -69,7 +71,7 @@ public sealed partial class LicenceService
         }
 
         return new CompanyDetail(c.Id, c.Name, c.Logo, c.TypeId, ownerName, ownerUserId, c.Products, c.PackageId, c.ValidUntilUtc,
-            c.MaxComputers, c.AddOns, c.RemovedFeatures, c.Suspended, c.Notes, c.CreatedUtc, computers);
+            c.MaxComputers, c.AddOns, c.RemovedFeatures, c.Suspended, c.Notes, c.CreatedUtc, computers, c.Catalogue);
     }
 
     /// <summary>A new company account with its owner login (User ID and password set by the admin).</summary>
@@ -79,7 +81,7 @@ public sealed partial class LicenceService
         CheckPassword(edit.OwnerPassword);
         using var connection = Connect();
         using var transaction = connection.BeginTransaction();
-        var company = Validated(connection, edit, Guid.NewGuid(), Now, suspended: false, transaction);
+        var company = Validated(connection, edit, Guid.NewGuid(), Now, suspended: false, transaction, CompanyCatalogue.Empty);
         string userId = CheckUserId(edit.OwnerUserId);
         EnsureUserIdFree(connection, userId, exceptCompany: null, transaction);
 
@@ -105,7 +107,7 @@ public sealed partial class LicenceService
         using var connection = Connect();
         using var transaction = connection.BeginTransaction();
         var existing = GetCompany(connection, id, transaction);
-        var company = Validated(connection, edit, id, existing.CreatedUtc, existing.Suspended, transaction);
+        var company = Validated(connection, edit, id, existing.CreatedUtc, existing.Suspended, transaction, existing.Catalogue);
         string userId = CheckUserId(edit.OwnerUserId);
         EnsureUserIdFree(connection, userId, exceptCompany: id, transaction);
 
@@ -167,8 +169,9 @@ public sealed partial class LicenceService
         if (taken > 0) throw ApiException.Conflict($"The User ID \"{userId}\" is already used by another company. Choose another.");
     }
 
+    /// <param name="currentCatalogue">Kept when the edit does not say what the company gets.</param>
     private static CompanyRow Validated(SqliteConnection connection, CompanyEdit edit, Guid id, DateTime createdUtc, bool suspended,
-        SqliteTransaction transaction)
+        SqliteTransaction transaction, CompanyCatalogue currentCatalogue)
     {
         string name = Required(edit.Name, "company name");
         if (edit.MaxComputers is < 1 or > 1000) throw ApiException.Invalid("The number of computers must be between 1 and 1000.");
@@ -192,7 +195,10 @@ public sealed partial class LicenceService
             throw ApiException.Invalid("Quotes and the frame designer are always included and cannot be removed.");
 
         string? notes = string.IsNullOrWhiteSpace(edit.Notes) ? null : edit.Notes.Trim();
+        var catalogue = edit.Catalogue is { } chosen
+            ? new CompanyCatalogue(chosen.SystemIds.Distinct().ToList(), chosen.ItemIds.Distinct().ToList())
+            : currentCatalogue;
         return new CompanyRow(id, name, CheckLogo(edit.LogoBase64), edit.CompanyTypeId, packageId, edit.ValidUntilUtc, edit.MaxComputers,
-            suspended, products, addOns, removed, notes, createdUtc);
+            suspended, products, addOns, removed, notes, createdUtc, catalogue);
     }
 }

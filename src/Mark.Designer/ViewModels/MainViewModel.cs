@@ -109,6 +109,7 @@ public partial class MainViewModel : ViewModelBase, IDesignService
         CreateQuoteFeatures();
         CreatePricingFeatures();
         CreateLicenceFeatures();
+        CreateAreaFeatures();
 
         Selection.Changed += OnSelectionChanged;
 
@@ -424,6 +425,7 @@ public partial class MainViewModel : ViewModelBase, IDesignService
         Details.Load(project);
         Pricing.Load(project.Pricing);
         RefreshQuoteViews();
+        RefreshHistory();
         Canvas.InvalidateContent();
         Canvas.FitToContent();
     }

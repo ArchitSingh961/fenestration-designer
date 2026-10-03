@@ -25,7 +25,7 @@ public sealed class ProjectListViewModel : ViewModelBase
         _projects = projects ?? throw new ArgumentNullException(nameof(projects));
         _openProjectId = openProjectId;
         _dialogs = dialogs;
-        DeleteCommand = new RelayCommand(Delete, () => SelectedProject is not null);
+        DeleteCommand = new RelayCommand(Delete, () => SelectedProject is not null && Blocked?.Invoke() is null);
         Reload();
     }
 
@@ -82,10 +82,18 @@ public sealed class ProjectListViewModel : ViewModelBase
         SelectedProject = Projects.FirstOrDefault();
     }
 
+    /// <summary>Why projects cannot be deleted now (read-only, or a login that cannot change quotes), or null.</summary>
+    public Func<string?>? Blocked { get; set; }
+
     private void Delete()
     {
         if (SelectedProject is not { } row)
             return;
+        if (Blocked?.Invoke() is { } blocked)
+        {
+            Message = blocked;
+            return;
+        }
         if (row.Id == _openProjectId)
         {
             Message = "This project is open in the designer. Open another project first to delete it.";

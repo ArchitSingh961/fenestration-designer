@@ -366,7 +366,9 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="12" />
-                                        <ColumnDefinition Width="110" />
+                                        <ColumnDefinition Width="90" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="90" />
                                     </Grid.ColumnDefinitions>
                                     <StackPanel>
                                         <TextBlock Text="Package *" Style="{StaticResource FormLabel}" />
@@ -375,6 +377,10 @@
                                     <StackPanel Grid.Column="2">
                                         <TextBlock Text="Computers *" Style="{StaticResource FormLabel}" />
                                         <TextBox Style="{StaticResource FormBox}" Margin="0" Text="{Binding MaxComputersText, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4" ToolTip="How many people may sign in: the account owner and the staff they add in MARK">
+                                        <TextBlock Text="Users *" Style="{StaticResource FormLabel}" />
+                                        <TextBox Style="{StaticResource FormBox}" Margin="0" Text="{Binding MaxUsersText, UpdateSourceTrigger=PropertyChanged}" />
                                     </StackPanel>
                                 </Grid>
                                 <TextBlock Text="Account valid until *" Style="{StaticResource FormLabel}" Margin="0,10,0,3" />
@@ -455,6 +461,32 @@
                                                             <TextBlock FontSize="11" Foreground="{StaticResource MutedTextBrush}">
                                                                 <Run Text="{Binding UserId, Mode=OneWay}" /><Run Text=" · last check-in " /><Run Text="{Binding LastCheckInUtc, Mode=OneWay, StringFormat={}{0:d MMM yyyy HH:mm} UTC}" />
                                                             </TextBlock>
+                                                        </StackPanel>
+                                                    </DockPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+
+                                <!-- Staff logins (the account owner adds them in MARK) -->
+                                <StackPanel Visibility="{Binding IsNew, Converter={StaticResource InverseBoolToVisibility}}">
+                                    <TextBlock Text="STAFF LOGINS" Style="{StaticResource SectionTitle}" Margin="0,18,0,2" />
+                                    <TextBlock Text="{Binding UsersInUseText}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,4" />
+                                    <TextBlock Text="None. The account owner adds staff in MARK (Account › Staff logins)." TextWrapping="Wrap"
+                                               Foreground="{StaticResource MutedTextBrush}"
+                                               Visibility="{Binding HasStaff, Converter={StaticResource InverseBoolToVisibility}}" />
+                                    <ItemsControl ItemsSource="{Binding Staff}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border BorderBrush="#E3E6EA" BorderThickness="0,0,0,1" Padding="0,6">
+                                                    <DockPanel>
+                                                        <Button DockPanel.Dock="Right" Style="{StaticResource SmallButton}" Content="Remove" CommandParameter="{Binding}"
+                                                                ToolTip="Remove this staff login (MARK on their computers is signed out)"
+                                                                Command="{Binding DataContext.RemoveStaffCommand, ElementName=CompaniesPage}" />
+                                                        <StackPanel>
+                                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                                            <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
                                                         </StackPanel>
                                                     </DockPanel>
                                                 </Border>

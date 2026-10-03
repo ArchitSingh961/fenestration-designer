@@ -59,9 +59,24 @@ public sealed class CuttingPlanViewModel : ViewModelBase
 
     public bool HasStatus => !string.IsNullOrEmpty(_statusText);
 
+    private CuttingPlan _plan = CuttingPlan.Empty;
+    private bool _showsCosts = true;
+
+    /// <summary>False for a login that does not see prices (e.g. a cutter): the plan is shown without costs.</summary>
+    public bool ShowsCosts
+    {
+        get => _showsCosts;
+        set
+        {
+            if (SetProperty(ref _showsCosts, value))
+                Show(_plan);
+        }
+    }
+
     public void Show(CuttingPlan plan)
     {
         ArgumentNullException.ThrowIfNull(plan);
+        _plan = plan;
         Profiles.Clear();
         foreach (var profile in plan.Profiles)
         {
@@ -72,14 +87,15 @@ public sealed class CuttingPlanViewModel : ViewModelBase
             string stock = string.Join(", ", profile.Stock.Select(s => $"{s.Quantity} × {Mm(s.StockLengthMm)}"));
             string summary = profile.Bars.Count == 0
                 ? $"{profile.Unplaced.Count} {(profile.Unplaced.Count == 1 ? "piece" : "pieces")} not planned"
-                : $"{stock} · utilisation {Percent(profile.Utilization)} · {Money(profile.StockCost)} {plan.Currency}".TrimEnd();
+                : _showsCosts ? $"{stock} · utilisation {Percent(profile.Utilization)} · {Money(profile.StockCost)} {plan.Currency}".TrimEnd()
+                : $"{stock} · utilisation {Percent(profile.Utilization)}";
             Profiles.Add(new CuttingProfileRow(profile.Name, summary, bars));
         }
 
         SummaryText = plan.Profiles.Count == 0 ? ""
             : $"{plan.BarCount} {(plan.BarCount == 1 ? "bar" : "bars")} · {Mm(plan.TotalStockMm)} · " +
               $"utilisation {Percent(plan.Utilization)} · waste {Percent(plan.WasteFraction)}";
-        CostText = plan.Profiles.Count == 0 ? ""
+        CostText = plan.Profiles.Count == 0 || !_showsCosts ? ""
             : $"Bars {Money(plan.StockCost)} {plan.Currency} · remnants {Money(plan.RemnantValue)} · net {Money(plan.NetCost)}";
         var rules = plan.Rules;
         RulesText = $"Kerf {Number(rules.KerfMm)} mm · trim {Number(rules.TrimAllowanceMm)} mm · remnant ≥ {Number(rules.MinUsableOffcutMm)} mm";

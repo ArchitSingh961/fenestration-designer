@@ -153,6 +153,9 @@ public class CatalogueTests : IDisposable
         public Task<LicenceResponse> CheckInAsync(CheckInRequest r, CancellationToken c = default) => _inner.CheckInAsync(r, c);
         public Task<RedeemKeyResponse> RedeemKeyAsync(RedeemKeyRequest r, CancellationToken c = default) => _inner.RedeemKeyAsync(r, c);
         public Task SignOutAsync(SignOutRequest r, CancellationToken c = default) => _inner.SignOutAsync(r, c);
+        public Task<StaffList> StaffAsync(StaffRequest r, CancellationToken c = default) => _inner.StaffAsync(r, c);
+        public Task<StaffList> SaveStaffAsync(SaveStaffRequest r, CancellationToken c = default) => _inner.SaveStaffAsync(r, c);
+        public Task<StaffList> DeleteStaffAsync(DeleteStaffRequest r, CancellationToken c = default) => _inner.DeleteStaffAsync(r, c);
 
         public async Task<CatalogueResponse> CatalogueAsync(CatalogueRequest r, CancellationToken c = default)
         {

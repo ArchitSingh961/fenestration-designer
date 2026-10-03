@@ -44,6 +44,9 @@ public sealed class AccountViewModel : ViewModelBase
     public string PackageName { get; private set; } = "";
     public string ValidUntilText { get; private set; } = "";
     public string ComputersText { get; private set; } = "";
+
+    /// <summary>"What your package includes", or for a staff login "What your login includes".</summary>
+    public string FeaturesTitle { get; private set; } = "What your package includes";
     public string LastCheckText { get; private set; } = "";
     public string ServerText { get; private set; } = "";
 
@@ -115,10 +118,14 @@ public sealed class AccountViewModel : ViewModelBase
         var now = _utcNow();
         CompanyName = licence?.CompanyName ?? "";
         CompanyType = licence?.CompanyType ?? "";
-        UserText = licence is null ? "" : $"{licence.UserName} ({licence.UserId})";
+        UserText = licence is null ? "" : $"{licence.UserName} ({licence.UserId}) · {(licence.IsStaff ? "staff login" : "account owner")}";
+        FeaturesTitle = licence?.IsStaff == true ? "What your login includes" : "What your package includes";
         PackageName = licence?.PackageName is { Length: > 0 } package ? package : "—";
         ValidUntilText = licence is null ? "" : LicenceDates.Format(licence.ValidUntilUtc);
-        ComputersText = licence is null ? "" : $"Up to {licence.MaxComputers} computer{(licence.MaxComputers == 1 ? "" : "s")} · {_manager.MachineName}";
+        ComputersText = licence is null ? ""
+            : $"Up to {licence.MaxComputers} computer{(licence.MaxComputers == 1 ? "" : "s")}"
+              + (licence.MaxUsers > 0 ? $" and {licence.MaxUsers} user{(licence.MaxUsers == 1 ? "" : "s")}" : "")
+              + $" · this is {_manager.MachineName}";
         LastCheckText = licence is null ? "" : $"Licence checked on {licence.IssuedUtc.ToLocalTime():d MMM yyyy, HH:mm}";
         ServerText = _manager.ServerUrl.TrimEnd('/');
         IsReadOnly = status?.IsReadOnly ?? true;
@@ -139,7 +146,9 @@ public sealed class AccountViewModel : ViewModelBase
             .Select(area => new AccountFeatureGroup(area, FeatureCatalog.All.Where(f => f.Area == area).Select(f =>
             {
                 bool included = grants.TryGetValue(f.Id, out var grant) && (status?.Allows(f.Id) ?? false);
-                string state = !f.IsBuilt ? (grants.ContainsKey(f.Id) ? "Included — coming in a later version" : "Coming in a later version")
+                bool withheld = grant is not null && licence!.Permissions is { } given && !given.Contains(f.Id);
+                string state = withheld ? "Not part of your login"
+                    : !f.IsBuilt ? (grants.ContainsKey(f.Id) ? "Included — coming in a later version" : "Coming in a later version")
                     : included ? (grant!.ValidUntilUtc.Date == licence!.ValidUntilUtc.Date ? "Included" : $"Included until {LicenceDates.Format(grant.ValidUntilUtc)}")
                     : grant is not null ? $"Ended on {LicenceDates.Format(grant.ValidUntilUtc)}"
                     : "Not in your package";

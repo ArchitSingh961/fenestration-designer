@@ -8,7 +8,11 @@ namespace Mark.Designer.ViewModels;
 
 /// <summary>A saved quote as a row of the quote list.</summary>
 public sealed record QuoteRow(Guid Id, string Number, string Name, string Client, QuoteStatus Status, int Designs,
-    int Quantity, string Area, string Value, string Modified, bool IsOpen);
+    int Quantity, string Area, string Value, string Modified, bool IsOpen, string ModifiedBy = "", string CreatedBy = "")
+{
+    /// <summary>"Created by Ravi · last saved by Amit" for the tooltip of the Saved by column.</summary>
+    public string AuthorsText => CreatedBy.Length == 0 ? "" : $"Created by {CreatedBy} · last saved by {ModifiedBy}";
+}
 
 /// <summary>Which quotes the list shows.</summary>
 public enum QuoteFilter { Active, Won, Lost, All }
@@ -138,7 +142,7 @@ public sealed class QuoteListViewModel : ViewModelBase
         foreach (var q in _all)
         {
             if (Filter != QuoteFilter.All && q.Status.ToString() != Filter.ToString()) continue;
-            string haystack = $"{q.QuoteNumber} {q.Name} {q.ClientName}";
+            string haystack = $"{q.QuoteNumber} {q.Name} {q.ClientName} {q.CreatedBy} {q.ModifiedBy}";
             if (!words.All(w => haystack.Contains(w, StringComparison.OrdinalIgnoreCase))) continue;
             Quotes.Add(ToRow(q, q.Id == openId));
         }
@@ -156,7 +160,9 @@ public sealed class QuoteListViewModel : ViewModelBase
         q.AreaM2.ToString("0.##", CultureInfo.InvariantCulture) + " m²",
         q.Value is { } v ? $"{v.ToString("N2", CultureInfo.InvariantCulture)} {q.Currency}".TrimEnd() : "—",
         q.ModifiedUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm", CultureInfo.InvariantCulture),
-        isOpen);
+        isOpen,
+        q.ModifiedBy,
+        q.CreatedBy);
 
     private void OpenRow(QuoteRow? row)
     {

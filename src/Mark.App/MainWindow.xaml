@@ -147,6 +147,243 @@
                 </Border>
             </StackPanel>
         </DataTemplate>
+        <!-- Bill of materials for the whole project (with the costing feature): properties panel and Pricing › Bill of materials. -->
+        <DataTemplate x:Key="BillOfMaterialsPanel">
+            <StackPanel>
+                                    <!-- Bill of materials for the whole project (with the costing feature) -->
+                                    <ContentControl Style="{StaticResource LockNotice}" Margin="10,18,10,6" Content="{Binding Access.CostingLock}"
+                                                    Visibility="{Binding Access.CanSeeCosting, Converter={StaticResource InverseBoolToVisibility}}" />
+                                    <StackPanel Visibility="{Binding Access.CanSeeCosting, Converter={StaticResource BoolToVisibility}}">
+                                    <!-- Bill of materials: total with a cost bar, then colour-coded groups -->
+                                    <Border Margin="10,18,10,6" Padding="14,12" CornerRadius="8" Background="White"
+                                            BorderBrush="#DDE1E6" BorderThickness="1"
+                                            Visibility="{Binding BomGroups.Count, Converter={StaticResource CountToVisibility}}">
+                                        <StackPanel>
+                                            <TextBlock Text="BILL OF MATERIALS" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource HeaderTextBrush}" />
+                                            <TextBlock Text="{Binding CostText}" FontSize="18" FontWeight="SemiBold" Margin="0,4,0,0"
+                                                       Foreground="#1F2A37" />
+                                            <TextBlock Text="{Binding BomSummaryText}" FontSize="10" TextWrapping="Wrap"
+                                                       Foreground="{StaticResource MutedTextBrush}" />
+                                            <!-- Share of each group in the cost -->
+                                            <Border x:Name="BomBar" Margin="0,10,0,4" Height="8" CornerRadius="4" Background="#EEF0F3" ClipToBounds="True">
+                                                <ItemsControl ItemsSource="{Binding BomGroups}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <StackPanel Orientation="Horizontal" />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Rectangle Height="8" Fill="{Binding Accent}" ToolTip="{Binding Title}">
+                                                                <Rectangle.Width>
+                                                                    <MultiBinding Converter="{StaticResource FractionToWidth}">
+                                                                        <Binding Path="Share" />
+                                                                        <Binding Path="ActualWidth" ElementName="BomBar" />
+                                                                    </MultiBinding>
+                                                                </Rectangle.Width>
+                                                            </Rectangle>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </Border>
+                                            <!-- Legend -->
+                                            <ItemsControl ItemsSource="{Binding BomGroups}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <WrapPanel />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,2,10,0">
+                                                            <Ellipse Width="7" Height="7" Fill="{Binding Accent}" VerticalAlignment="Center" />
+                                                            <TextBlock Margin="4,0,0,0" FontSize="10" Foreground="{StaticResource MutedTextBrush}">
+                                                                <Run Text="{Binding Title, Mode=OneWay}" /><Run Text=" " /><Run Text="{Binding ShareText, Mode=OneWay}" />
+                                                            </TextBlock>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+                                    <TextBlock Margin="12,18,12,4" Style="{StaticResource PanelHeader}" Text="BILL OF MATERIALS"
+                                               Visibility="{Binding BomGroups.Count, Converter={StaticResource CountToCollapsed}}" />
+                                    <Border Margin="10,0,10,6" Padding="8" CornerRadius="6" Background="{StaticResource ErrorBackgroundBrush}"
+                                            Visibility="{Binding HasCalculationStatus, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock Text="{Binding CalculationStatus}" TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource ErrorBrush}" />
+                                    </Border>
+
+                                    <ItemsControl ItemsSource="{Binding BomGroups}" Margin="10,0,10,10">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Margin="0,0,0,8" CornerRadius="8" Background="White" BorderBrush="#E3E6EA" BorderThickness="1"
+                                                        ClipToBounds="True">
+                                                    <StackPanel>
+                                                        <ToggleButton IsChecked="{Binding IsExpanded}" Style="{StaticResource BomGroupHeader}" />
+                                                        <ItemsControl ItemsSource="{Binding Items}"
+                                                                      Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVisibility}}">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <Border BorderBrush="#F0F2F5" BorderThickness="0,1,0,0" Padding="12,7,12,7">
+                                                                        <StackPanel>
+                                                                            <DockPanel>
+                                                                                <TextBlock DockPanel.Dock="Right" Text="{Binding Cost}" FontWeight="SemiBold"
+                                                                                           Foreground="#1F2A37" Margin="8,0,0,0" />
+                                                                                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                                                                                           Foreground="#1F2A37" ToolTip="{Binding Name}" />
+                                                                            </DockPanel>
+                                                                            <TextBlock Text="{Binding Detail}" FontSize="10" Foreground="{StaticResource MutedTextBrush}"
+                                                                                       Margin="0,1,0,0" />
+                                                                            <ItemsControl ItemsSource="{Binding SubLines}" Margin="2,4,0,0"
+                                                                                          Visibility="{Binding HasSubLines, Converter={StaticResource BoolToVisibility}}">
+                                                                                <ItemsControl.ItemTemplate>
+                                                                                    <DataTemplate>
+                                                                                        <Border BorderBrush="#BFE7EC" BorderThickness="2,0,0,0" Padding="7,1,0,1">
+                                                                                            <DockPanel>
+                                                                                                <TextBlock DockPanel.Dock="Right" Text="{Binding Cost}" FontSize="10"
+                                                                                                           Foreground="#4B5563" />
+                                                                                                <TextBlock Text="{Binding Text}" FontSize="10" Foreground="#4B5563"
+                                                                                                           TextTrimming="CharacterEllipsis" />
+                                                                                            </DockPanel>
+                                                                                        </Border>
+                                                                                    </DataTemplate>
+                                                                                </ItemsControl.ItemTemplate>
+                                                                            </ItemsControl>
+                                                                        </StackPanel>
+                                                                    </Border>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    </StackPanel>
+
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- Cutting plan for the whole project (with the cutting-plans feature): properties panel and Production › Cutting plan. -->
+        <DataTemplate x:Key="CuttingPlanPanel">
+            <StackPanel>
+                                    <!-- Cutting plan (stock bars, remnants, waste) for the whole project (with the cutting-plans feature) -->
+                                    <ContentControl Style="{StaticResource LockNotice}" Margin="10,8,10,12" Content="{Binding Access.CuttingPlansLock}"
+                                                    Visibility="{Binding Access.CanSeeCuttingPlans, Converter={StaticResource InverseBoolToVisibility}}" />
+                                    <StackPanel DataContext="{Binding Cutting}"
+                                                Visibility="{Binding DataContext.Access.CanSeeCuttingPlans, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock Style="{StaticResource PanelHeader}" Text="CUTTING PLAN" Margin="12,8,12,4" />
+                                        <TextBlock Margin="12,0,12,2" FontWeight="SemiBold" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}"
+                                                   Text="{Binding SummaryText}" />
+                                        <TextBlock Margin="12,0,12,2" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" Text="{Binding CostText}"
+                                                   Visibility="{Binding ShowsCosts, Converter={StaticResource BoolToVisibility}}" />
+                                        <TextBlock Margin="12,0,12,6" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding RulesText}" />
+                                        <Border Margin="12,0,12,6" Padding="8" Background="{StaticResource ErrorBackgroundBrush}"
+                                                Visibility="{Binding HasStatus, Converter={StaticResource BoolToVisibility}}">
+                                            <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" />
+                                        </Border>
+                                        <ItemsControl ItemsSource="{Binding Profiles}" Margin="12,0,12,12">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Margin="0,4">
+                                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" />
+                                                        <TextBlock Text="{Binding Summary}" FontSize="10" TextWrapping="Wrap"
+                                                                   Foreground="{StaticResource MutedTextBrush}" />
+                                                        <ItemsControl ItemsSource="{Binding Bars}" Margin="8,2,0,0">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <StackPanel Margin="0,2">
+                                                                        <!-- Runs on one line: XAML whitespace between them would show as a space. -->
+                                                                        <TextBlock Foreground="{StaticResource TextBrush}" TextWrapping="Wrap"><Run Text="{Binding Stock, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=": " /><Run Text="{Binding Cuts, Mode=OneWay}" /></TextBlock>
+                                                                        <TextBlock Text="{Binding Leftover}" FontSize="10" Foreground="{StaticResource MutedTextBrush}" />
+                                                                    </StackPanel>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- A tab of the current area in the header (lock: not in the package). -->
+        <Style x:Key="AreaTabButton" TargetType="Button">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="#374151" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="4" Padding="14,6" Margin="2,0">
+                            <ContentPresenter VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#F1F5FB" />
+                            </Trigger>
+                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#E3EDFB" />
+                                <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- An area in the area bar on the left. -->
+        <Style x:Key="AreaRailButton" TargetType="Button">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="#C9D1DC" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border x:Name="Bd" Background="Transparent" Margin="6,2" CornerRadius="6" Padding="2,8">
+                                <ContentPresenter HorizontalAlignment="Center" />
+                            </Border>
+                            <Rectangle x:Name="Marker" Width="3" HorizontalAlignment="Left" Margin="0,10" Fill="#6AA6F5" Visibility="Collapsed" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#2B3A4D" />
+                            </Trigger>
+                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#33465E" />
+                                <Setter TargetName="Marker" Property="Visibility" Value="Visible" />
+                                <Setter Property="Foreground" Value="White" />
+                            </DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- A line of quote history (Client tab, dashboard). -->
+        <DataTemplate x:Key="HistoryLine">
+            <Border BorderBrush="#F0F2F5" BorderThickness="0,1,0,0" Padding="0,7">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="140" />
+                        <ColumnDefinition Width="140" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding When}" Foreground="{StaticResource MutedTextBrush}" />
+                    <TextBlock Grid.Column="1" Text="{Binding Who}" FontWeight="SemiBold" Foreground="#1F2A37" TextTrimming="CharacterEllipsis" />
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Foreground="#1F2A37" TextTrimming="CharacterEllipsis"><Run Text="{Binding What, Mode=OneWay}" /><Run Text=" " /><Run Text="{Binding Quote, Mode=OneWay}" /></TextBlock>
+                        <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap"
+                                   Visibility="{Binding HasDetail, Converter={StaticResource BoolToVisibility}}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
     </Window.Resources>
 
     <Window.InputBindings>
@@ -174,19 +411,21 @@
                 <Separator />
                 <MenuItem Header="_Account" Command="{Binding ShowPageCommand}" CommandParameter="Account"
                           Visibility="{Binding HasAccount, Converter={StaticResource BoolToVisibility}}" />
+                <MenuItem Header="S_taff Logins" Command="{Binding ShowViewCommand}" CommandParameter="Staff"
+                          Visibility="{Binding HasStaff, Converter={StaticResource BoolToVisibility}}" />
                 <MenuItem Header="Sign _Out" Command="{Binding Account.SignOutCommand}"
                           Visibility="{Binding HasAccount, Converter={StaticResource BoolToVisibility}}" />
                 <Separator Visibility="{Binding HasAccount, Converter={StaticResource BoolToVisibility}}" />
                 <MenuItem Header="E_xit" Click="Exit_Click" />
             </MenuItem>
-            <MenuItem Header="_Edit">
+            <MenuItem Header="_Edit" Visibility="{Binding Access.CanUseDrawing, Converter={StaticResource BoolToVisibility}}">
                 <MenuItem Header="_Undo" InputGestureText="Ctrl+Z" Command="{Binding UndoCommand}" />
                 <MenuItem Header="_Redo" InputGestureText="Ctrl+Y" Command="{Binding RedoCommand}" />
                 <Separator />
                 <MenuItem Header="Select _All" InputGestureText="Ctrl+A" Command="{Binding SelectAllCommand}" />
                 <MenuItem Header="_Delete" InputGestureText="Del" Command="{Binding DeleteSelectedCommand}" />
             </MenuItem>
-            <MenuItem Header="_View">
+            <MenuItem Header="_View" Visibility="{Binding Access.CanUseDrawing, Converter={StaticResource BoolToVisibility}}">
                 <MenuItem Header="Zoom _In" Command="{Binding Canvas.ZoomInCommand}" />
                 <MenuItem Header="Zoom _Out" Command="{Binding Canvas.ZoomOutCommand}" />
                 <MenuItem Header="_Fit to Screen" InputGestureText="F" Command="{Binding Canvas.FitCommand}" />
@@ -198,20 +437,23 @@
                 <MenuItem Header="_Inside View" IsCheckable="True" IsChecked="{Binding IsInsideView}" />
                 <MenuItem Header="_Outside View" IsCheckable="True" IsChecked="{Binding IsOutsideView}" />
             </MenuItem>
-            <MenuItem Header="_Go">
-                <MenuItem Header="_Dashboard" Command="{Binding ShowPageCommand}" CommandParameter="Dashboard" />
-                <MenuItem Header="_Quotes" Command="{Binding ShowPageCommand}" CommandParameter="Quotes" />
-                <Separator />
-                <MenuItem Header="_Client" Command="{Binding ShowSectionCommand}" CommandParameter="Client" />
-                <MenuItem Header="D_esigns" Command="{Binding ShowSectionCommand}" CommandParameter="Designs" />
-                <MenuItem Header="Dra_wing" Command="{Binding ShowSectionCommand}" CommandParameter="Drawing" />
+            <!-- The areas this login may see. -->
+            <MenuItem Header="_Go" ItemsSource="{Binding Areas}">
+                <MenuItem.ItemContainerStyle>
+                    <Style TargetType="MenuItem">
+                        <Setter Property="Header" Value="{Binding Name}" />
+                        <Setter Property="Command" Value="{Binding ShowCommand}" />
+                        <Setter Property="CommandParameter" Value="{Binding Area}" />
+                        <Setter Property="Visibility" Value="{Binding IsVisible, Converter={StaticResource BoolToVisibility}}" />
+                    </Style>
+                </MenuItem.ItemContainerStyle>
             </MenuItem>
-            <MenuItem Header="_Design">
+            <MenuItem Header="_Design" Visibility="{Binding Access.CanUseDrawing, Converter={StaticResource BoolToVisibility}}">
                 <MenuItem Header="Create _Frame (typed size)" Command="{Binding CreateFrameCommand}" />
                 <MenuItem Header="Add _Mullion (centred)" Command="{Binding AddMullionCommand}" />
                 <MenuItem Header="Add _Transom (centred)" Command="{Binding AddTransomCommand}" />
             </MenuItem>
-            <MenuItem Header="_Tools">
+            <MenuItem Header="_Tools" Visibility="{Binding Access.CanUseDrawing, Converter={StaticResource BoolToVisibility}}">
                 <MenuItem Header="_Select" Command="{Binding SetModeCommand}" CommandParameter="Select" />
                 <MenuItem Header="_Pan" Command="{Binding SetModeCommand}" CommandParameter="Pan" />
                 <MenuItem Header="Draw _Frame" Command="{Binding SetModeCommand}" CommandParameter="CreateFrame" />
@@ -250,21 +492,38 @@
                     <TextBlock Text="{Binding QuoteTotalText}" VerticalAlignment="Center" Margin="0,0,14,0"
                                FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" />
                     <Button Style="{StaticResource SecondaryButton}" Content="New quote" Command="{Binding NewProjectCommand}"
-                            ToolTip="Start a new quote (Ctrl+N)" />
+                            ToolTip="Start a new quote (Ctrl+N)"
+                            Visibility="{Binding Access.CanEditQuotes, Converter={StaticResource BoolToVisibility}}" />
                     <Button Style="{StaticResource PrimaryButton}" Content="Save" Command="{Binding SaveProjectCommand}"
                             ToolTip="Save the quote (Ctrl+S)" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="MARK" FontSize="20" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"
-                               VerticalAlignment="Center" Margin="6,0,18,0" />
-                    <RadioButton Style="{StaticResource NavTab}" Content="Dashboard"
-                                 IsChecked="{Binding Page, Converter={StaticResource EnumToBool}, ConverterParameter=Dashboard}" />
-                    <RadioButton Style="{StaticResource NavTab}" Content="Quotes"
-                                 IsChecked="{Binding Page, Converter={StaticResource EnumToBool}, ConverterParameter=Quotes}" />
-                    <RadioButton Style="{StaticResource NavTab}"
-                                 IsChecked="{Binding Page, Converter={StaticResource EnumToBool}, ConverterParameter=Quote}">
-                        <TextBlock Text="{Binding QuoteHeader}" MaxWidth="320" TextTrimming="CharacterEllipsis" />
-                    </RadioButton>
+                               VerticalAlignment="Center" Margin="6,0,14,0" />
+                    <Rectangle Width="1" Height="22" Fill="{StaticResource BorderBrush}" Margin="0,0,14,0" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding HeaderTitle}" FontSize="15" FontWeight="SemiBold" Foreground="#1F2A37"
+                               VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <!-- The tabs of the current area (only those this login may see; locked: not in the package). -->
+                    <ItemsControl ItemsSource="{Binding Tabs}" VerticalAlignment="Center" Focusable="False"
+                                  Visibility="{Binding ShowsTabs, Converter={StaticResource BoolToVisibility}}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource AreaTabButton}" Command="{Binding ShowCommand}" CommandParameter="{Binding View}"
+                                        AutomationProperties.Name="{Binding Title}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" FontSize="11" Margin="0,0,6,0" VerticalAlignment="Center"
+                                                   Foreground="#B7791F" Visibility="{Binding IsLocked, Converter={StaticResource BoolToVisibility}}" />
+                                        <TextBlock Text="{Binding Title}" />
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -321,6 +580,40 @@
                     </TextBlock>
                 </StackPanel>
             </DockPanel>
+        </Border>
+
+        <!-- ── Area bar: the areas this login may see (lock: not in the package; dim: coming later) ── -->
+        <Border DockPanel.Dock="Left" Background="#1F2A37" Width="80">
+            <ScrollViewer VerticalScrollBarVisibility="Hidden" Focusable="False">
+                <ItemsControl ItemsSource="{Binding Areas}" Margin="0,8" Focusable="False">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Style="{StaticResource AreaRailButton}" Command="{Binding ShowCommand}" CommandParameter="{Binding Area}"
+                                    ToolTip="{Binding ToolTip}" AutomationProperties.Name="{Binding Name}"
+                                    Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibility}}">
+                                <StackPanel Width="62">
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsComingLater}" Value="True">
+                                                    <Setter Property="Opacity" Value="0.55" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
+                                    <Grid HorizontalAlignment="Center">
+                                        <TextBlock Text="{Binding Glyph}" FontFamily="Segoe MDL2 Assets" FontSize="19" HorizontalAlignment="Center" />
+                                        <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" FontSize="9" Margin="0,-3,-13,0"
+                                                   HorizontalAlignment="Right" VerticalAlignment="Top" Foreground="#F2C14E"
+                                                   Visibility="{Binding IsLocked, Converter={StaticResource BoolToVisibility}}" />
+                                    </Grid>
+                                    <TextBlock Text="{Binding Name}" FontSize="10.5" HorizontalAlignment="Center" Margin="0,5,0,0" />
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
         </Border>
 
         <!-- ── Pages ──────────────────────────────────────────────── -->
@@ -435,6 +728,17 @@
                             </StackPanel>
                         </Border>
                     </Grid>
+
+                    <!-- Who did what: the latest changes to all quotes -->
+                    <Border Style="{StaticResource Card}" Padding="16" Margin="0,16,0,0"
+                            Visibility="{Binding HasRecentActivity, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel>
+                            <TextBlock Text="Recent activity" Style="{StaticResource CardTitle}" />
+                            <TextBlock Text="Who created, saved or deleted which quote, and what changed." FontSize="11"
+                                       Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,6" />
+                            <ItemsControl ItemsSource="{Binding RecentActivity}" ItemTemplate="{StaticResource HistoryLine}" />
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </ScrollViewer>
 
@@ -497,6 +801,13 @@
                                 <GridViewColumn Header="Qty" Width="50" DisplayMemberBinding="{Binding Quantity}" />
                                 <GridViewColumn Header="Area" Width="80" DisplayMemberBinding="{Binding Area}" />
                                 <GridViewColumn Header="Value" Width="140" DisplayMemberBinding="{Binding Value}" />
+                                <GridViewColumn Header="Saved by" Width="120">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding ModifiedBy}" ToolTip="{Binding AuthorsText}" TextTrimming="CharacterEllipsis" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
                                 <GridViewColumn Header="Last change" Width="130" DisplayMemberBinding="{Binding Modified}" />
                             </GridView>
                         </ListView.View>
@@ -511,6 +822,10 @@
                 <StackPanel Margin="24,18,24,24" MaxWidth="1100">
                     <DockPanel Margin="0,0,0,14">
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button Style="{StaticResource SecondaryButton}" Content="Staff logins"
+                                    Command="{Binding DataContext.ShowViewCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="Staff"
+                                    ToolTip="Give your staff their own sign-in, with only the parts of MARK they need"
+                                    Visibility="{Binding DataContext.HasStaff, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
                             <Button Style="{StaticResource SecondaryButton}" Content="Check now" Command="{Binding CheckNowCommand}"
                                     ToolTip="Ask the licence server for your current licence" />
                             <Button Style="{StaticResource SecondaryButton}" Content="Sign out" Command="{Binding SignOutCommand}"
@@ -676,7 +991,7 @@
                     <!-- Package features by area -->
                     <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,16,0,0">
                         <StackPanel>
-                            <TextBlock Text="What your package includes" Style="{StaticResource CardTitle}" Margin="0,0,0,6" />
+                            <TextBlock Text="{Binding FeaturesTitle}" Style="{StaticResource CardTitle}" Margin="0,0,0,6" />
                             <ItemsControl ItemsSource="{Binding FeatureGroups}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
@@ -724,25 +1039,259 @@
                 </StackPanel>
             </ScrollViewer>
 
+            <!-- ══ Library: the company's systems and products; the Library Manager ══ -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False" Background="{StaticResource PageBackgroundBrush}"
+                          Visibility="{Binding Page, Converter={StaticResource EnumToVisibility}, ConverterParameter=Library}">
+                <StackPanel Margin="24,18,24,24" MaxWidth="1100">
+                    <DockPanel Margin="0,0,0,14">
+                        <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Content="Open Library Manager"
+                                Command="{Binding OpenLibraryManagerCommand}" />
+                        <TextBlock Text="Library" Style="{StaticResource PageTitle}" />
+                    </DockPanel>
+                    <ContentControl Style="{StaticResource LockNotice}" Content="{Binding Access.LibraryLock}" Margin="0,0,0,12"
+                                    MaxWidth="560" HorizontalAlignment="Left"
+                                    Visibility="{Binding Access.CanUseLibrary, Converter={StaticResource InverseBoolToVisibility}}" />
+                    <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,0,0,14">
+                        <StackPanel>
+                            <TextBlock Text="{Binding LibraryModeText}" TextWrapping="Wrap" Foreground="#1F2A37" />
+                            <TextBlock Text="{Binding LibraryCountsText}" Margin="0,8,0,0" Foreground="{StaticResource MutedTextBrush}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}" Padding="20,16">
+                        <StackPanel>
+                            <TextBlock Text="Systems" Style="{StaticResource CardTitle}" Margin="0,0,0,6" />
+                            <TextBlock Text="A window is made in a system: its profiles, glass, steel and hardware come from it." FontSize="11"
+                                       Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,6" />
+                            <ItemsControl ItemsSource="{Binding LibrarySystems}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="#F0F2F5" BorderThickness="0,1,0,0" Padding="0,7">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#1F2A37" />
+                                                <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ══ An area still to come (Orders, Purchasing, Inventory, Accounts): what it will do ══ -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False" Background="{StaticResource PageBackgroundBrush}"
+                          Visibility="{Binding Page, Converter={StaticResource EnumToVisibility}, ConverterParameter=Overview}">
+                <StackPanel Margin="24,18,24,24" MaxWidth="900" HorizontalAlignment="Left">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock Text="{Binding AreaInfo.Glyph}" FontFamily="Segoe MDL2 Assets" FontSize="24" Foreground="{StaticResource AccentBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <TextBlock Text="{Binding AreaInfo.Name}" Style="{StaticResource PageTitle}" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding AreaInfo.Description}" Foreground="#4B5563" Margin="0,0,0,14" />
+                    <Border Style="{StaticResource Card}" Padding="20,16">
+                        <StackPanel>
+                            <TextBlock Text="Coming in a later version of MARK" Style="{StaticResource CardTitle}" />
+                            <TextBlock Text="This area is being built. When it is released it opens here, for everyone whose package includes it."
+                                       TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,8" />
+                            <ItemsControl ItemsSource="{Binding OverviewFeatures}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="#F0F2F5" BorderThickness="0,1,0,0" Padding="0,8">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#1F2A37" />
+                                                <TextBlock Text="{Binding Description}" Foreground="#4B5563" TextWrapping="Wrap" />
+                                                <TextBlock Text="{Binding State}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ══ Staff: logins for the company's people (the account owner only) ══ -->
+            <ScrollViewer x:Name="StaffPage" DataContext="{Binding Staff}" VerticalScrollBarVisibility="Auto" Focusable="False"
+                          Background="{StaticResource PageBackgroundBrush}"
+                          Visibility="{Binding DataContext.Page, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=Staff}">
+                <StackPanel Margin="24,18,24,24" MaxWidth="1150">
+                    <DockPanel Margin="0,0,0,4">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button Style="{StaticResource SecondaryButton}" Content="Refresh" Command="{Binding RefreshCommand}" />
+                            <Button Style="{StaticResource PrimaryButton}" Content="Add staff login" Command="{Binding AddCommand}" />
+                        </StackPanel>
+                        <TextBlock Text="Staff logins" Style="{StaticResource PageTitle}" />
+                    </DockPanel>
+                    <TextBlock Text="{Binding UsersText}" FontWeight="SemiBold" Foreground="#4B5563" Margin="0,0,0,4" />
+                    <TextBlock TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,12"
+                               Text="Give each person their own User ID and password, and only the parts of MARK they need: a cutter can see only Production, a salesperson Sales, Design and Pricing. Changes reach their MARK at its next check-in, or when they sign in." />
+
+                    <Border Padding="10" Margin="0,0,0,12" CornerRadius="6" Visibility="{Binding HasMessage, Converter={StaticResource BoolToVisibility}}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#E8F6EE" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MessageIsError}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="{Binding Message}" TextWrapping="Wrap">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="#1D6B3A" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding MessageIsError}" Value="True">
+                                            <Setter Property="Foreground" Value="{StaticResource ErrorBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Border>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="5*" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="6*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- The staff logins -->
+                        <Border Style="{StaticResource Card}" Padding="16,12" VerticalAlignment="Top">
+                            <StackPanel>
+                                <TextBlock Text="No staff logins yet. Add one for each person who works in MARK." TextWrapping="Wrap"
+                                           Foreground="{StaticResource MutedTextBrush}" Margin="0,4"
+                                           Visibility="{Binding HasStaff, Converter={StaticResource InverseBoolToVisibility}}" />
+                                <ItemsControl ItemsSource="{Binding Staff}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Style="{StaticResource RowButton}" Command="{Binding DataContext.EditCommand, ElementName=StaffPage}"
+                                                    CommandParameter="{Binding}" ToolTip="Change this login" AutomationProperties.Name="{Binding Name}">
+                                                <DockPanel>
+                                                    <Border DockPanel.Dock="Left" Width="34" Height="34" CornerRadius="17" Background="#E8EEF7" Margin="0,0,12,0">
+                                                        <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource AccentBrush}"
+                                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                    </Border>
+                                                    <StackPanel>
+                                                        <StackPanel.Style>
+                                                            <Style TargetType="StackPanel">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsDisabled}" Value="True">
+                                                                        <Setter Property="Opacity" Value="0.55" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </StackPanel.Style>
+                                                        <TextBlock Foreground="#1F2A37"><Run Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold" /><Run Text="  " /><Run Text="{Binding UserId, Mode=OneWay}" Foreground="#6B7280" /></TextBlock>
+                                                        <TextBlock Text="{Binding AreasText}" Foreground="#374151" />
+                                                        <TextBlock Text="{Binding StateText}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
+                                                    </StackPanel>
+                                                </DockPanel>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- The login being added or changed -->
+                        <Border Grid.Column="2" Style="{StaticResource Card}" Padding="20,16" VerticalAlignment="Top" DataContext="{Binding Editor}"
+                                Visibility="{Binding DataContext.HasEditor, ElementName=StaffPage, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding Title}" Style="{StaticResource CardTitle}" Margin="0,0,0,8" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="Name *" Style="{StaticResource FormLabel}" />
+                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="User ID *" Style="{StaticResource FormLabel}" />
+                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding UserId, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                </Grid>
+                                <TextBlock Text="{Binding PasswordLabel}" Style="{StaticResource FormLabel}" />
+                                <TextBox Style="{StaticResource FormBox}" FontFamily="Consolas" Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}"
+                                         ToolTip="At least 6 characters. Tell the person their User ID and password." />
+                                <CheckBox Content="Turned off (cannot sign in, does not count towards your logins)" IsChecked="{Binding IsDisabled}"
+                                          Margin="0,0,0,10" Foreground="#374151" />
+
+                                <TextBlock Text="What this person may use" FontWeight="SemiBold" Foreground="#1F2A37" Margin="0,4,0,2" />
+                                <DockPanel Margin="0,0,0,6">
+                                    <TextBlock Text="Quick choice:" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,2,0" />
+                                    <ItemsControl ItemsSource="{Binding DataContext.Presets, ElementName=StaffPage}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource SecondaryButton}" Content="{Binding Name}" ToolTip="{Binding Description}"
+                                                        Padding="10,3" Margin="6,2,0,2" AutomationProperties.Name="{Binding Name, StringFormat=Quick choice {0}}"
+                                                        Command="{Binding DataContext.PresetCommand, ElementName=StaffPage}" CommandParameter="{Binding}" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </DockPanel>
+                                <ItemsControl ItemsSource="{Binding Groups}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <UniformGrid Columns="2" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="0,6,12,4">
+                                                <TextBlock Text="{Binding Area}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource HeaderTextBrush}" Margin="0,0,0,2" />
+                                                <ItemsControl ItemsSource="{Binding Features}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" ToolTip="{Binding Description}"
+                                                                      Margin="0,2" Foreground="#1F2A37" />
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <DockPanel Margin="0,12,0,0">
+                                    <Button DockPanel.Dock="Left" Style="{StaticResource SecondaryButton}" Content="Remove login" Margin="0"
+                                            Command="{Binding DataContext.DeleteCommand, ElementName=StaffPage}"
+                                            Visibility="{Binding IsNew, Converter={StaticResource InverseBoolToVisibility}}" />
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <Button Style="{StaticResource SecondaryButton}" Content="Cancel" Command="{Binding DataContext.CancelCommand, ElementName=StaffPage}" />
+                                        <Button Style="{StaticResource PrimaryButton}" Content="Save login" Command="{Binding DataContext.SaveCommand, ElementName=StaffPage}" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </StackPanel>
+            </ScrollViewer>
+
             <!-- ══ The open quote: Client | Designs | Drawing ═══════════ -->
             <DockPanel Background="{StaticResource PageBackgroundBrush}"
                        Visibility="{Binding Page, Converter={StaticResource EnumToVisibility}, ConverterParameter=Quote}">
                 <Border DockPanel.Dock="Top" Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1"
                         Padding="18,6">
                     <DockPanel>
-                        <StackPanel DockPanel.Dock="Left" Margin="0,0,28,0" VerticalAlignment="Center" MinWidth="200">
-                            <TextBlock Text="{Binding QuoteHeader}" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextBrush}" />
-                            <TextBlock Text="{Binding QuoteSubHeader}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <RadioButton Style="{StaticResource SectionTab}" Content="Client"
-                                         IsChecked="{Binding Section, Converter={StaticResource EnumToBool}, ConverterParameter=Client}" />
-                            <RadioButton Style="{StaticResource SectionTab}" Content="Designs"
-                                         IsChecked="{Binding Section, Converter={StaticResource EnumToBool}, ConverterParameter=Designs}" />
-                            <RadioButton Style="{StaticResource SectionTab}" Content="Drawing"
-                                         IsChecked="{Binding Section, Converter={StaticResource EnumToBool}, ConverterParameter=Drawing}" />
-                            <RadioButton Style="{StaticResource SectionTab}" Content="Pricing"
-                                         IsChecked="{Binding Section, Converter={StaticResource EnumToBool}, ConverterParameter=Pricing}" />
+                        <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Content="Open quote…" VerticalAlignment="Center"
+                                Command="{Binding OpenProjectCommand}" ToolTip="Open a saved quote (Ctrl+O)" />
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding QuoteHeader}" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextBrush}"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextTrimming="CharacterEllipsis"><Run Text="{Binding QuoteSubHeader, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding QuoteAuthorsText, Mode=OneWay}" /></TextBlock>
                         </StackPanel>
                     </DockPanel>
                 </Border>
@@ -883,6 +1432,16 @@
                                     </Style>
                                 </Border.Style>
                                 <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" />
+                            </Border>
+
+                            <!-- Who did what: the quote's history -->
+                            <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,14,0,0"
+                                    DataContext="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}">
+                                <StackPanel>
+                                    <TextBlock Text="History" Style="{StaticResource CardTitle}" />
+                                    <TextBlock Text="{Binding QuoteAuthorsText}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,6" />
+                                    <ItemsControl ItemsSource="{Binding QuoteHistory}" ItemTemplate="{StaticResource HistoryLine}" />
+                                </StackPanel>
                             </Border>
                         </StackPanel>
                     </ScrollViewer>
@@ -1283,6 +1842,30 @@
                         </ScrollViewer>
                     </Grid>
 
+                    <!-- Bill of materials (Pricing area) -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False"
+                                  Visibility="{Binding Section, Converter={StaticResource EnumToVisibility}, ConverterParameter=Materials}">
+                        <StackPanel Margin="14,16,24,24" MaxWidth="780" HorizontalAlignment="Left">
+                            <TextBlock Text="Bill of materials" Style="{StaticResource PageTitle}" Margin="10,0,0,2" />
+                            <TextBlock Text="Everything the quote's designs need: profiles, steel, glass, hardware and accessories, with their cost."
+                                       Foreground="{StaticResource MutedTextBrush}" Margin="10,0,0,0" TextWrapping="Wrap" />
+                            <ContentControl Content="{Binding}" ContentTemplate="{StaticResource BillOfMaterialsPanel}" Focusable="False" />
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- Cutting plan (Production area) -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False"
+                                  Visibility="{Binding Section, Converter={StaticResource EnumToVisibility}, ConverterParameter=Cutting}">
+                        <StackPanel Margin="14,16,24,24" MaxWidth="780" HorizontalAlignment="Left">
+                            <TextBlock Text="Cutting plan" Style="{StaticResource PageTitle}" Margin="10,0,0,2" />
+                            <TextBlock Text="How to cut the quote's profiles and steel from stock bars: cuts per bar, offcuts kept and waste. To see another quote, use Open quote…"
+                                       Foreground="{StaticResource MutedTextBrush}" Margin="10,0,0,0" TextWrapping="Wrap" />
+                            <Border Style="{StaticResource Card}" Margin="10,12,0,0" Padding="0,4">
+                                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CuttingPlanPanel}" Focusable="False" />
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+
                     <!-- Drawing: the designer (toolbar, library, canvas, properties) -->
                     <DockPanel Visibility="{Binding Section, Converter={StaticResource EnumToVisibility}, ConverterParameter=Drawing}">
                         <!-- ── Toolbar ──────────────────────────────────────────── -->
@@ -1567,155 +2150,9 @@
                                     </Border>
                                 </StackPanel>
 
-                                    <!-- Bill of materials for the whole project (with the costing feature) -->
-                                    <ContentControl Style="{StaticResource LockNotice}" Margin="10,18,10,6" Content="{Binding Access.CostingLock}"
-                                                    Visibility="{Binding Access.CanSeeCosting, Converter={StaticResource InverseBoolToVisibility}}" />
-                                    <StackPanel Visibility="{Binding Access.CanSeeCosting, Converter={StaticResource BoolToVisibility}}">
-                                    <!-- Bill of materials: total with a cost bar, then colour-coded groups -->
-                                    <Border Margin="10,18,10,6" Padding="14,12" CornerRadius="8" Background="White"
-                                            BorderBrush="#DDE1E6" BorderThickness="1"
-                                            Visibility="{Binding BomGroups.Count, Converter={StaticResource CountToVisibility}}">
-                                        <StackPanel>
-                                            <TextBlock Text="BILL OF MATERIALS" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource HeaderTextBrush}" />
-                                            <TextBlock Text="{Binding CostText}" FontSize="18" FontWeight="SemiBold" Margin="0,4,0,0"
-                                                       Foreground="#1F2A37" />
-                                            <TextBlock Text="{Binding BomSummaryText}" FontSize="10" TextWrapping="Wrap"
-                                                       Foreground="{StaticResource MutedTextBrush}" />
-                                            <!-- Share of each group in the cost -->
-                                            <Border x:Name="BomBar" Margin="0,10,0,4" Height="8" CornerRadius="4" Background="#EEF0F3" ClipToBounds="True">
-                                                <ItemsControl ItemsSource="{Binding BomGroups}">
-                                                    <ItemsControl.ItemsPanel>
-                                                        <ItemsPanelTemplate>
-                                                            <StackPanel Orientation="Horizontal" />
-                                                        </ItemsPanelTemplate>
-                                                    </ItemsControl.ItemsPanel>
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <Rectangle Height="8" Fill="{Binding Accent}" ToolTip="{Binding Title}">
-                                                                <Rectangle.Width>
-                                                                    <MultiBinding Converter="{StaticResource FractionToWidth}">
-                                                                        <Binding Path="Share" />
-                                                                        <Binding Path="ActualWidth" ElementName="BomBar" />
-                                                                    </MultiBinding>
-                                                                </Rectangle.Width>
-                                                            </Rectangle>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </Border>
-                                            <!-- Legend -->
-                                            <ItemsControl ItemsSource="{Binding BomGroups}">
-                                                <ItemsControl.ItemsPanel>
-                                                    <ItemsPanelTemplate>
-                                                        <WrapPanel />
-                                                    </ItemsPanelTemplate>
-                                                </ItemsControl.ItemsPanel>
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal" Margin="0,2,10,0">
-                                                            <Ellipse Width="7" Height="7" Fill="{Binding Accent}" VerticalAlignment="Center" />
-                                                            <TextBlock Margin="4,0,0,0" FontSize="10" Foreground="{StaticResource MutedTextBrush}">
-                                                                <Run Text="{Binding Title, Mode=OneWay}" /><Run Text=" " /><Run Text="{Binding ShareText, Mode=OneWay}" />
-                                                            </TextBlock>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </StackPanel>
-                                    </Border>
-                                    <TextBlock Margin="12,18,12,4" Style="{StaticResource PanelHeader}" Text="BILL OF MATERIALS"
-                                               Visibility="{Binding BomGroups.Count, Converter={StaticResource CountToCollapsed}}" />
-                                    <Border Margin="10,0,10,6" Padding="8" CornerRadius="6" Background="{StaticResource ErrorBackgroundBrush}"
-                                            Visibility="{Binding HasCalculationStatus, Converter={StaticResource BoolToVisibility}}">
-                                        <TextBlock Text="{Binding CalculationStatus}" TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource ErrorBrush}" />
-                                    </Border>
-
-                                    <ItemsControl ItemsSource="{Binding BomGroups}" Margin="10,0,10,10">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border Margin="0,0,0,8" CornerRadius="8" Background="White" BorderBrush="#E3E6EA" BorderThickness="1"
-                                                        ClipToBounds="True">
-                                                    <StackPanel>
-                                                        <ToggleButton IsChecked="{Binding IsExpanded}" Style="{StaticResource BomGroupHeader}" />
-                                                        <ItemsControl ItemsSource="{Binding Items}"
-                                                                      Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVisibility}}">
-                                                            <ItemsControl.ItemTemplate>
-                                                                <DataTemplate>
-                                                                    <Border BorderBrush="#F0F2F5" BorderThickness="0,1,0,0" Padding="12,7,12,7">
-                                                                        <StackPanel>
-                                                                            <DockPanel>
-                                                                                <TextBlock DockPanel.Dock="Right" Text="{Binding Cost}" FontWeight="SemiBold"
-                                                                                           Foreground="#1F2A37" Margin="8,0,0,0" />
-                                                                                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"
-                                                                                           Foreground="#1F2A37" ToolTip="{Binding Name}" />
-                                                                            </DockPanel>
-                                                                            <TextBlock Text="{Binding Detail}" FontSize="10" Foreground="{StaticResource MutedTextBrush}"
-                                                                                       Margin="0,1,0,0" />
-                                                                            <ItemsControl ItemsSource="{Binding SubLines}" Margin="2,4,0,0"
-                                                                                          Visibility="{Binding HasSubLines, Converter={StaticResource BoolToVisibility}}">
-                                                                                <ItemsControl.ItemTemplate>
-                                                                                    <DataTemplate>
-                                                                                        <Border BorderBrush="#BFE7EC" BorderThickness="2,0,0,0" Padding="7,1,0,1">
-                                                                                            <DockPanel>
-                                                                                                <TextBlock DockPanel.Dock="Right" Text="{Binding Cost}" FontSize="10"
-                                                                                                           Foreground="#4B5563" />
-                                                                                                <TextBlock Text="{Binding Text}" FontSize="10" Foreground="#4B5563"
-                                                                                                           TextTrimming="CharacterEllipsis" />
-                                                                                            </DockPanel>
-                                                                                        </Border>
-                                                                                    </DataTemplate>
-                                                                                </ItemsControl.ItemTemplate>
-                                                                            </ItemsControl>
-                                                                        </StackPanel>
-                                                                    </Border>
-                                                                </DataTemplate>
-                                                            </ItemsControl.ItemTemplate>
-                                                        </ItemsControl>
-                                                    </StackPanel>
-                                                </Border>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-
-                                    </StackPanel>
-
-                                    <!-- Cutting plan (stock bars, remnants, waste) for the whole project (with the cutting-plans feature) -->
-                                    <ContentControl Style="{StaticResource LockNotice}" Margin="10,8,10,12" Content="{Binding Access.CuttingPlansLock}"
-                                                    Visibility="{Binding Access.CanSeeCuttingPlans, Converter={StaticResource InverseBoolToVisibility}}" />
-                                    <StackPanel DataContext="{Binding Cutting}"
-                                                Visibility="{Binding DataContext.Access.CanSeeCuttingPlans, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}">
-                                        <TextBlock Style="{StaticResource PanelHeader}" Text="CUTTING PLAN" Margin="12,8,12,4" />
-                                        <TextBlock Margin="12,0,12,2" FontWeight="SemiBold" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}"
-                                                   Text="{Binding SummaryText}" />
-                                        <TextBlock Margin="12,0,12,2" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" Text="{Binding CostText}" />
-                                        <TextBlock Margin="12,0,12,6" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding RulesText}" />
-                                        <Border Margin="12,0,12,6" Padding="8" Background="{StaticResource ErrorBackgroundBrush}"
-                                                Visibility="{Binding HasStatus, Converter={StaticResource BoolToVisibility}}">
-                                            <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" />
-                                        </Border>
-                                        <ItemsControl ItemsSource="{Binding Profiles}" Margin="12,0,12,12">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <StackPanel Margin="0,4">
-                                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" />
-                                                        <TextBlock Text="{Binding Summary}" FontSize="10" TextWrapping="Wrap"
-                                                                   Foreground="{StaticResource MutedTextBrush}" />
-                                                        <ItemsControl ItemsSource="{Binding Bars}" Margin="8,2,0,0">
-                                                            <ItemsControl.ItemTemplate>
-                                                                <DataTemplate>
-                                                                    <StackPanel Margin="0,2">
-                                                                        <!-- Runs on one line: XAML whitespace between them would show as a space. -->
-                                                                        <TextBlock Foreground="{StaticResource TextBrush}" TextWrapping="Wrap"><Run Text="{Binding Stock, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=": " /><Run Text="{Binding Cuts, Mode=OneWay}" /></TextBlock>
-                                                                        <TextBlock Text="{Binding Leftover}" FontSize="10" Foreground="{StaticResource MutedTextBrush}" />
-                                                                    </StackPanel>
-                                                                </DataTemplate>
-                                                            </ItemsControl.ItemTemplate>
-                                                        </ItemsControl>
-                                                    </StackPanel>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </StackPanel>
+                                    <!-- Bill of materials and cutting plan for the whole project (also pages of Pricing and Production) -->
+                                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource BillOfMaterialsPanel}" Focusable="False" />
+                                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CuttingPlanPanel}" Focusable="False" />
                                 </StackPanel>
                                 </ScrollViewer>
                             </Border>

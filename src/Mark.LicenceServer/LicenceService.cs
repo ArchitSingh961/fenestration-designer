@@ -81,10 +81,14 @@ public sealed partial class LicenceService
         List<string> RemovedFeatures,
         string? Notes,
         DateTime CreatedUtc,
-        CompanyCatalogue Catalogue);
+        CompanyCatalogue Catalogue,
+        int MaxUsers);
 
     private const string CompanyColumns =
-        "id, name, logo, company_type_id, package_id, valid_until_utc, max_computers, suspended, products, add_ons, removed_features, notes, created_utc, catalogue";
+        "id, name, logo, company_type_id, package_id, valid_until_utc, max_computers, suspended, products, add_ons, removed_features, notes, created_utc, catalogue, max_users";
+
+    /// <summary>The number of columns in <see cref="CompanyColumns"/> (queries that add columns read them from here on).</summary>
+    private const int CompanyColumnCount = 15;
 
     private static CompanyRow ReadCompany(SqliteDataReader r) => new(
         Guid.Parse(r.GetString(0)),
@@ -100,7 +104,8 @@ public sealed partial class LicenceService
         FromJson<List<string>>(r.GetString(10)),
         r.IsDBNull(11) ? null : r.GetString(11),
         ParseTime(r.GetString(12)),
-        ReadCatalogue(r.IsDBNull(13) ? null : r.GetString(13)));
+        ReadCatalogue(r.IsDBNull(13) ? null : r.GetString(13)),
+        r.GetInt32(14));
 
     private static CompanyCatalogue ReadCatalogue(string? json)
         => string.IsNullOrEmpty(json) ? CompanyCatalogue.Empty
@@ -119,27 +124,31 @@ public sealed partial class LicenceService
     private static void WriteCompany(SqliteConnection connection, CompanyRow c, SqliteTransaction transaction, bool insert)
     {
         string sql = insert
-            ? $"INSERT INTO companies ({CompanyColumns}) VALUES ($id, $name, $logo, $type, $package, $until, $max, $suspended, $products, $addOns, $removed, $notes, $created, $catalogue)"
+            ? $"INSERT INTO companies ({CompanyColumns}) VALUES ($id, $name, $logo, $type, $package, $until, $max, $suspended, $products, $addOns, $removed, $notes, $created, $catalogue, $maxUsers)"
             : """
               UPDATE companies SET name = $name, logo = $logo, company_type_id = $type, package_id = $package, valid_until_utc = $until,
                   max_computers = $max, suspended = $suspended, products = $products, add_ons = $addOns, removed_features = $removed,
-                  notes = $notes, catalogue = $catalogue WHERE id = $id
+                  notes = $notes, catalogue = $catalogue, max_users = $maxUsers WHERE id = $id
               """;
         Execute(connection, sql, transaction,
             ("$id", c.Id.ToString()), ("$name", c.Name), ("$logo", c.Logo), ("$type", c.TypeId?.ToString()),
             ("$package", c.PackageId?.ToString()), ("$until", Time(c.ValidUntilUtc)), ("$max", c.MaxComputers),
             ("$suspended", c.Suspended ? 1 : 0), ("$products", ToJson(c.Products)), ("$addOns", ToJson(c.AddOns)),
             ("$removed", ToJson(c.RemovedFeatures)), ("$notes", c.Notes), ("$created", Time(c.CreatedUtc)),
-            ("$catalogue", ToJson(c.Catalogue)));
+            ("$catalogue", ToJson(c.Catalogue)), ("$maxUsers", c.MaxUsers));
     }
 
     // ── Licences ────────────────────────────────────────────────────
 
+    /// <summary>Who a licence is for: the account owner (<see cref="Permissions"/> null) or a staff login.</summary>
+    private sealed record LicenceUser(string UserId, string Name, string Role, IReadOnlyList<string>? Permissions);
+
     /// <summary>
     /// The licence of one computer: the package's features (and the core features) valid until the account date, add-ons
-    /// with their own dates, minus the removed features; the products that are not suspended.
+    /// with their own dates, minus the removed features; the products that are not suspended. A staff login's licence
+    /// also carries the features its account owner gave it.
     /// </summary>
-    private SignedLicence IssueLicence(SqliteConnection connection, CompanyRow company, string userId, string userName, string machineId,
+    private SignedLicence IssueLicence(SqliteConnection connection, CompanyRow company, LicenceUser user, string machineId,
         SqliteTransaction? transaction = null)
     {
         var package = company.PackageId is { } packageId ? FindPackage(connection, packageId, transaction) : null;
@@ -162,8 +171,11 @@ public sealed partial class LicenceService
             CompanyName = company.Name,
             CompanyType = typeName,
             LogoBase64 = company.Logo,
-            UserId = userId,
-            UserName = userName,
+            UserId = user.UserId,
+            UserName = user.Name,
+            Role = user.Role,
+            Permissions = user.Role == UserRoles.Staff ? user.Permissions ?? Array.Empty<string>() : null,
+            MaxUsers = company.MaxUsers,
             MachineId = machineId,
             IssuedUtc = Now,
             ValidUntilUtc = company.ValidUntilUtc,

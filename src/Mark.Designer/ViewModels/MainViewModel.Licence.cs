@@ -40,7 +40,37 @@ public partial class MainViewModel
     {
         RaisePersistenceCanExecute();
         Canvas.InvalidateContent();
+        if (Store is not null) Store.Projects.User = CurrentUser;
+        OnPropertyChanged(nameof(HasStaff));
+        OnPropertyChanged(nameof(QuoteTotalText));
+        Cutting.ShowsCosts = Access.CanSeeQuoteValues;
+        OnViewChanged();
+        RefreshNavigation();
     }
+
+    /// <summary>Who is working: the signed-in login, or the Windows user without a licence.</summary>
+    public Mark.Data.ProjectUser CurrentUser => Access.IsLicensed
+        ? new Mark.Data.ProjectUser(Access.UserId, Access.UserName)
+        : new Mark.Data.ProjectUser(Environment.UserName, Environment.UserName);
+
+    private StaffViewModel? _staff;
+
+    /// <summary>The Staff page (set by the app when the account owner is signed in).</summary>
+    public StaffViewModel? Staff
+    {
+        get => _staff;
+        set
+        {
+            if (SetProperty(ref _staff, value))
+            {
+                OnPropertyChanged(nameof(HasStaff));
+                RefreshNavigation();
+            }
+        }
+    }
+
+    /// <summary>The account owner can open the Staff page.</summary>
+    public bool HasStaff => _staff is not null && Access.CanManageStaff;
 
     // ── Product systems (Milestone 13) ─────────────────────────────
 

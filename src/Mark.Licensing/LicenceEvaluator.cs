@@ -22,8 +22,14 @@ public sealed record LicenceStatus
     /// <summary>Something the user should know soon, e.g. "Your licence ends on 12 Oct 2026 (9 days)."</summary>
     public string? Warning { get; init; }
 
-    /// <summary>Features that work now. In read-only mode: every feature of the licence, for viewing.</summary>
+    /// <summary>
+    /// Features that work now for the signed-in login: the account's features, and for a staff login only those the
+    /// account owner gave it. In read-only mode: every such feature of the licence, for viewing.
+    /// </summary>
     public IReadOnlySet<string> Features { get; init; } = new HashSet<string>();
+
+    /// <summary>The account's features that work now, whoever signed in (a staff login may have fewer, see <see cref="Features"/>).</summary>
+    public IReadOnlySet<string> CompanyFeatures { get; init; } = new HashSet<string>();
 
     /// <summary>Product lines that are valid now.</summary>
     public IReadOnlySet<Product> Products { get; init; } = new HashSet<Product>();
@@ -31,6 +37,9 @@ public sealed record LicenceStatus
     public bool IsReadOnly => Mode == LicenceMode.ReadOnly;
 
     public bool Allows(string featureId) => Features.Contains(featureId);
+
+    /// <summary>True when the account has the feature but this staff login was not given it.</summary>
+    public bool IsWithheld(string featureId) => CompanyFeatures.Contains(featureId) && !Features.Contains(featureId);
 }
 
 /// <summary>
@@ -56,24 +65,36 @@ public static class LicenceEvaluator
         string? reason = ReadOnlyReason(licence, nowUtc, lastSeenUtc, validProducts);
         if (reason is not null)
         {
+            var all = licence.Features.Select(f => f.FeatureId).ToHashSet();
             return new LicenceStatus
             {
                 Licence = licence,
                 Mode = LicenceMode.ReadOnly,
                 Reason = reason,
-                Features = licence.Features.Select(f => f.FeatureId).ToHashSet(),
+                Features = ForLogin(licence, all),
+                CompanyFeatures = all,
                 Products = licence.Products.Select(p => p.Product).ToHashSet()
             };
         }
 
+        var valid = licence.Features.Where(f => f.ValidUntilUtc >= nowUtc).Select(f => f.FeatureId).ToHashSet();
         return new LicenceStatus
         {
             Licence = licence,
             Mode = LicenceMode.Full,
             Warning = Warning(licence, nowUtc),
-            Features = licence.Features.Where(f => f.ValidUntilUtc >= nowUtc).Select(f => f.FeatureId).ToHashSet(),
+            Features = ForLogin(licence, valid),
+            CompanyFeatures = valid,
             Products = validProducts
         };
+    }
+
+    /// <summary>The account's features that the signed-in login may use: all of them for the account owner, the given ones for staff.</summary>
+    public static IReadOnlySet<string> ForLogin(Licence licence, IReadOnlySet<string> companyFeatures)
+    {
+        ArgumentNullException.ThrowIfNull(licence);
+        if (licence.Permissions is not { } permissions) return companyFeatures;
+        return companyFeatures.Where(permissions.Contains).ToHashSet();
     }
 
     private static string? ReadOnlyReason(Licence licence, DateTime nowUtc, DateTime? lastSeenUtc, IReadOnlySet<Product> validProducts)

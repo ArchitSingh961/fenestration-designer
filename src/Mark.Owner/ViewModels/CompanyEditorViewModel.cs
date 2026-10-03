@@ -130,6 +130,9 @@ public sealed record FeatureEditGroup(string Area, IReadOnlyList<FeatureEditRow>
 /// password, products with their validity, package and account validity, features (removed or added on), the number
 /// of computers and notes. <see cref="ToEdit"/> turns it into the request for the server.
 /// </summary>
+/// <summary>A staff login of the company, as the admin sees it: "Amit Kumar (amit)" · "Production".</summary>
+public sealed record OwnerStaffRow(StaffInfo Info, string Name, string Detail);
+
 public sealed class CompanyEditorViewModel : ViewModelBase
 {
     private readonly Func<DateTime> _today;
@@ -163,6 +166,7 @@ public sealed class CompanyEditorViewModel : ViewModelBase
         if (existing is null)
         {
             _maxComputersText = "1";
+            _maxUsersText = "3";
             ApplyType(types.FirstOrDefault());
             _companyType = types.FirstOrDefault();
         }
@@ -207,6 +211,25 @@ public sealed class CompanyEditorViewModel : ViewModelBase
     public IReadOnlyList<ComputerInfo> Computers => Existing?.Computers ?? Array.Empty<ComputerInfo>();
 
     public bool HasComputers => Computers.Count > 0;
+
+    /// <summary>The company's staff logins (added by its account owner in MARK).</summary>
+    public IReadOnlyList<OwnerStaffRow> Staff => (Existing?.Staff ?? Array.Empty<StaffInfo>())
+        .Select(s => new OwnerStaffRow(s, $"{s.Name} ({s.UserId})",
+            Mark.Designer.ViewModels.StaffViewModel.AreasOf(s.Permissions) + (s.Disabled ? " · turned off" : "")))
+        .ToList();
+
+    public bool HasStaff => Existing?.Staff is { Count: > 0 };
+
+    /// <summary>"2 of 3 logins in use: the account owner and 1 staff."</summary>
+    public string UsersInUseText
+    {
+        get
+        {
+            if (Existing is null) return "";
+            int staff = Existing.Staff?.Count(s => !s.Disabled) ?? 0;
+            return $"{staff + 1} of {Existing.MaxUsers} logins in use: the account owner and {staff} staff.";
+        }
+    }
 
     public bool IsSuspended => Existing?.Suspended ?? false;
 
@@ -312,6 +335,14 @@ public sealed class CompanyEditorViewModel : ViewModelBase
         set => SetProperty(ref _maxComputersText, value);
     }
 
+    private string _maxUsersText = "1";
+    /// <summary>How many people may have a login: the account owner and the staff they add.</summary>
+    public string MaxUsersText
+    {
+        get => _maxUsersText;
+        set => SetProperty(ref _maxUsersText, value);
+    }
+
     // ── Loading and saving ──────────────────────────────────────────
 
     private void ApplyType(CompanyTypeInfo? type)
@@ -340,6 +371,7 @@ public sealed class CompanyEditorViewModel : ViewModelBase
         _ownerUserId = c.OwnerUserId;
         _validUntil = LicenceDates.LocalDate(c.ValidUntilUtc);
         _maxComputersText = c.MaxComputers.ToString();
+        _maxUsersText = c.MaxUsers.ToString();
         foreach (var row in Products)
         {
             var product = c.Products.FirstOrDefault(p => p.Product == row.Product);
@@ -393,6 +425,7 @@ public sealed class CompanyEditorViewModel : ViewModelBase
         else if (Package is null) error = "Choose a package.";
         else if (ValidUntil is null) error = "Choose until when the account is valid.";
         else if (!int.TryParse(MaxComputersText, out int max) || max is < 1 or > 1000) error = "Enter the number of computers (1 to 1000).";
+        else if (!int.TryParse(MaxUsersText, out int users) || users is < 1 or > 1000) error = "Enter the number of users (1 to 1000).";
         if (error is not null) return null;
 
         var accountUntil = LicenceDates.EndOfLocalDayUtc(ValidUntil!.Value);
@@ -414,7 +447,8 @@ public sealed class CompanyEditorViewModel : ViewModelBase
                 .ToList(),
             _features.Where(f => f.IsRemoved && f.CanChange).Select(f => f.Feature.Id).ToList(),
             string.IsNullOrWhiteSpace(Notes) ? null : Notes.Trim(),
-            CatalogueChoice?.ToCatalogue() ?? Existing?.Catalogue);
+            CatalogueChoice?.ToCatalogue() ?? Existing?.Catalogue,
+            int.Parse(MaxUsersText));
     }
 
     /// <summary>Reads an image file for the logo; returns an error message, or null.</summary>

@@ -7,11 +7,11 @@ using Mark.Data;
 
 namespace Mark.Designer.ViewModels;
 
-/// <summary>The application's main pages.</summary>
-public enum AppPage { Dashboard, Quotes, Quote, Account }
+/// <summary>The application's main pages (Milestone 14: grouped into areas, see <see cref="AppArea"/>).</summary>
+public enum AppPage { Dashboard, Quotes, Quote, Account, Library, Overview, Staff }
 
-/// <summary>The tabs of the open quote.</summary>
-public enum QuoteSection { Client, Designs, Drawing, Pricing }
+/// <summary>The parts of the open quote: Client, Designs (Sales); Drawing (Design); Pricing, Materials (Pricing); Cutting (Production).</summary>
+public enum QuoteSection { Client, Designs, Drawing, Pricing, Materials, Cutting }
 
 /// <summary>
 /// Milestone 10: the open project is a quote. Navigation (Dashboard, Quotes, the open quote with its Client, Designs
@@ -67,7 +67,9 @@ public partial class MainViewModel
             if (value == AppPage.Dashboard) Dashboard.Reload();
             if (value == AppPage.Quotes) Quotes.Reload();
             if (value == AppPage.Account) Account?.Refresh();
+            if (value == AppPage.Staff) Staff?.Reload();
             Designs.IsVisible = value == AppPage.Quote && _section == QuoteSection.Designs;
+            OnViewChanged();
         }
     }
 
@@ -87,6 +89,7 @@ public partial class MainViewModel
             Designs.IsVisible = _page == AppPage.Quote && value == QuoteSection.Designs;
             if (value == QuoteSection.Client) Details.SyncFromModel();
             if (value == QuoteSection.Pricing) Pricing.SyncFromModel();
+            OnViewChanged();
         }
     }
 
@@ -111,6 +114,7 @@ public partial class MainViewModel
         {
             var totals = QuoteTotals.Of(Project);
             if (totals.Designs == 0) return "No designs";
+            if (!Access.CanSeeQuoteValues) return $"Qty {totals.Quantity}";
             var value = QuoteValueOf();
             return $"Qty {totals.Quantity} · {value.Amount.ToString("N2", CultureInfo.InvariantCulture)} {value.Currency}".TrimEnd();
         }

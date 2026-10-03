@@ -19,6 +19,43 @@ public sealed record ProjectSummary(Guid Id, string Name, DateTime CreatedUtc, D
     public decimal? Value { get; init; }
 
     public string Currency { get; init; } = "";
+
+    /// <summary>Who saved the quote first ("" before Milestone 14).</summary>
+    public string CreatedBy { get; init; } = "";
+
+    /// <summary>Who saved it last ("" before Milestone 14).</summary>
+    public string ModifiedBy { get; init; } = "";
+}
+
+/// <summary>Who is working in MARK: recorded with every saved quote and in its history.</summary>
+public sealed record ProjectUser(string UserId, string Name)
+{
+    public static ProjectUser Unknown { get; } = new("", "");
+
+    /// <summary>The name, or the User ID when there is no name.</summary>
+    public string DisplayName => Name.Length > 0 ? Name : UserId;
+}
+
+/// <summary>What happened to a quote.</summary>
+public enum ProjectAction
+{
+    Created,
+    Saved,
+    Deleted
+}
+
+/// <summary>One line of a quote's history: when, who, what, and what changed (e.g. "Status Active → Won").</summary>
+public sealed record ProjectHistoryEntry(
+    Guid ProjectId,
+    string QuoteNumber,
+    string ProjectName,
+    DateTime TimeUtc,
+    string UserId,
+    string UserName,
+    ProjectAction Action,
+    string Detail)
+{
+    public string Who => UserName.Length > 0 ? UserName : UserId.Length > 0 ? UserId : "Someone";
 }
 
 /// <summary>The priced value of a quote, stored with it for the quote list (computed by the caller's calculation).</summary>
@@ -31,6 +68,15 @@ public readonly record struct QuoteValue(decimal Amount, string Currency);
 /// </summary>
 public interface IProjectRepository
 {
+    /// <summary>Who saves and deletes from now on (recorded with the quote and in its history).</summary>
+    ProjectUser User { get; set; }
+
+    /// <summary>A quote's history, newest first.</summary>
+    IReadOnlyList<ProjectHistoryEntry> History(Guid projectId);
+
+    /// <summary>The latest history of all quotes, newest first (at most <paramref name="count"/> lines).</summary>
+    IReadOnlyList<ProjectHistoryEntry> RecentHistory(int count);
+
     /// <summary>Inserts the project, or replaces the saved version with the same <see cref="Project.Id"/> (one transaction).</summary>
     void Save(Project project) => Save(project, null);
 

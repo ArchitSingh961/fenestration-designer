@@ -132,7 +132,7 @@ public class AccessTests
         Assert.Equal("Shree Windows", account.CompanyName);
         Assert.Equal("Basic", account.PackageName);
         Assert.Equal("Active", account.StateText);
-        Assert.Equal("Ravi Shah (shree)", account.UserText);
+        Assert.Equal("Ravi Shah (shree) · account owner", account.UserText);
         Assert.True(account.Products.Single(p => p.Name == "uPVC").IsValid);
         Assert.Equal("Not included", account.Products.Single(p => p.Name == "Aluminium").Detail);
         var features = account.FeatureGroups.SelectMany(g => g.Features).ToDictionary(f => f.Name);

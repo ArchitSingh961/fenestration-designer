@@ -29,6 +29,7 @@ used unless changed before that milestone starts.
 | 11 | Pricing | Price structure per quote (cost lines, rates, discount, charges, GST), live summary, saved default; sash and mesh priced; quantities everywhere |
 | 12 | Accounts, sign-in and licensing | Licence server, MARK Owner (companies, company types, packages, keys), sign-in, signed licences with daily check-in and 7-day grace, read-only when suspended or expired, features locked by package (see licensing.md) |
 | 13 | Product catalogue, systems and bundles | Owner's master catalogue in MARK Owner; systems (uPVC / Aluminium) with default profiles and glass range; "used with"; steel reinforcement; bundles per profile and hardware sets per opening type (by size); per-company and per-type selection; delivered at check-in; prices-only library in MARK (see catalogue.md) |
+| 14 | Areas, staff logins and who did what | Area bar (Sales, Design, Pricing, Library, Production, Orders, Purchasing, Inventory, Accounts) with tabs; staff logins with their own features, up to the account's users; staff see only what they were given; quotes record who created and saved them, with a history (see areas.md) |
 | — | Along the way | Product renamed to MARK; colour-coded bill of materials; rail and drop-down fixes |
 
 ---
@@ -111,7 +112,14 @@ cannot be chosen.
 
 ---
 
-## 14 — Separate areas and permissions
+## 14 — Separate areas and permissions — done
+
+Built as planned; see [areas.md](areas.md). Decisions taken: the account owner adds staff in MARK (Account › Staff
+logins) up to the account's **Users** (set in MARK Owner; the owner counts as one, turned-off logins do not); staff see
+only the areas they were given (the account owner sees locked areas); logins without anything to edit with can view
+quotes only, and without sales or costing see no prices; Bill of materials and Cutting plan became pages of Pricing and
+Production; two logins on one PC count it once. The quote history is per computer until Orders brings a shared
+database.
 
 **Goal:** MARK is organised into areas, and each user sees only what they may use.
 

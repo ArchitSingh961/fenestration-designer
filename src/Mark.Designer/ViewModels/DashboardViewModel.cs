@@ -34,6 +34,11 @@ public sealed class DashboardViewModel : ViewModelBase
     public ObservableCollection<DashboardBar> ValueByStatus { get; } = new();
     public ObservableCollection<QuoteRow> RecentQuotes { get; } = new();
 
+    /// <summary>The latest changes to all quotes: who created, saved or deleted which quote, and what changed.</summary>
+    public ObservableCollection<HistoryRow> RecentActivity { get; } = new();
+
+    public bool HasRecentActivity => RecentActivity.Count > 0;
+
     public ICommand OpenCommand { get; }
     public ICommand NewQuoteCommand { get; }
 
@@ -102,12 +107,27 @@ public sealed class DashboardViewModel : ViewModelBase
                     _ => "#E07B00"
                 }));
 
+        RecentActivity.Clear();
+        if (_projects() is { } history)
+        {
+            try
+            {
+                foreach (var entry in history.RecentHistory(8))
+                    RecentActivity.Add(HistoryRow.Of(entry));
+            }
+            catch (DataStoreException ex)
+            {
+                Message = ex.Message;
+            }
+        }
+        OnPropertyChanged(nameof(HasRecentActivity));
+
         RecentQuotes.Clear();
         foreach (var q in quotes.Take(8))
             RecentQuotes.Add(new QuoteRow(q.Id, string.IsNullOrEmpty(q.QuoteNumber) ? "—" : q.QuoteNumber, q.Name, q.ClientName,
                 q.Status, q.DesignCount, q.Quantity, q.AreaM2.ToString("0.##", CultureInfo.InvariantCulture) + " m²",
                 q.Value is { } v ? $"{Money(v)} {q.Currency}".TrimEnd() : "—",
-                q.ModifiedUtc.ToLocalTime().ToString("dd MMM yyyy", CultureInfo.InvariantCulture), false));
+                q.ModifiedUtc.ToLocalTime().ToString("dd MMM yyyy", CultureInfo.InvariantCulture), false, q.ModifiedBy, q.CreatedBy));
     }
 
     private static DashboardTile Tile(string title, IReadOnlyList<ProjectSummary> quotes, string currency, string accent)

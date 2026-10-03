@@ -30,6 +30,8 @@ public sealed class SqliteProjectRepository : IProjectRepository
     /// <summary>Written to <c>summary_version</c> by this build; older rows are recomputed when the store opens.</summary>
     private const int SummaryVersion = 1;
 
+    public ProjectUser User { get; set; } = ProjectUser.Unknown;
+
     public void Save(Project project) => Save(project, null);
 
     public void Save(Project project, QuoteValue? value)
@@ -51,23 +53,31 @@ public sealed class SqliteProjectRepository : IProjectRepository
 
                 string document = ProjectSerializer.Serialize(project);
                 var totals = QuoteTotals.Of(project);
+                var before = ReadSummaryOf(connection, transaction, project.Id);
+                string user = User.DisplayName;
                 Run(connection, transaction, """
                     INSERT INTO projects (id, name, format_version, document_json, created_utc, modified_utc, quote_number,
-                        client_name, status, design_count, quantity, area_m2, value, currency, summary_version)
+                        client_name, status, design_count, quantity, area_m2, value, currency, summary_version, created_by, modified_by)
                     VALUES ($id, $name, $version, $document, $now, $now, $number, $client, $status, $designs, $quantity,
-                        $area, $value, $currency, $summary)
+                        $area, $value, $currency, $summary, $user, $user)
                     ON CONFLICT (id) DO UPDATE SET name = excluded.name, format_version = excluded.format_version,
                         document_json = excluded.document_json, modified_utc = excluded.modified_utc,
                         quote_number = excluded.quote_number, client_name = excluded.client_name, status = excluded.status,
                         design_count = excluded.design_count, quantity = excluded.quantity, area_m2 = excluded.area_m2,
-                        value = excluded.value, currency = excluded.currency, summary_version = excluded.summary_version
+                        value = excluded.value, currency = excluded.currency, summary_version = excluded.summary_version,
+                        modified_by = excluded.modified_by
                     """,
                     ("$id", Key(project.Id)), ("$name", project.Name), ("$version", ProjectFormatVersion.Current),
                     ("$document", document), ("$now", now), ("$number", project.Quote.Number),
                     ("$client", project.Quote.Client.DisplayName), ("$status", project.Quote.Status.ToString()),
                     ("$designs", totals.Designs), ("$quantity", totals.Quantity), ("$area", totals.AreaM2),
                     ("$value", value?.Amount.ToString(CultureInfo.InvariantCulture)), ("$currency", value?.Currency ?? ""),
-                    ("$summary", SummaryVersion));
+                    ("$summary", SummaryVersion), ("$user", user));
+
+                var after = new SavedSummary(project.Name, project.Quote.Client.DisplayName, project.Quote.Status.ToString(), totals.Designs,
+                    value?.Amount, value?.Currency ?? "");
+                AddHistory(connection, transaction, project.Id, project.Quote.Number, project.Name, now,
+                    before is null ? ProjectAction.Created : ProjectAction.Saved, before is null ? "" : Changes(before, after));
 
                 Run(connection, transaction, "DELETE FROM project_references WHERE project_id = $id", ("$id", Key(project.Id)));
                 foreach (var (kind, definitionId) in References(project))
@@ -84,6 +94,73 @@ public sealed class SqliteProjectRepository : IProjectRepository
             throw;
         }
     }
+
+    /// <summary>What the quote list showed for a saved quote, to say what a save changed.</summary>
+    private sealed record SavedSummary(string Name, string Client, string Status, int Designs, decimal? Value, string Currency);
+
+    private static SavedSummary? ReadSummaryOf(SqliteConnection connection, SqliteTransaction transaction, Guid id)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = "SELECT name, client_name, status, design_count, value, currency FROM projects WHERE id = $id";
+        command.Parameters.AddWithValue("$id", Key(id));
+        using var r = command.ExecuteReader();
+        return r.Read()
+            ? new SavedSummary(r.GetString(0), r.GetString(1), r.GetString(2), r.GetInt32(3),
+                r.IsDBNull(4) ? null : decimal.Parse(r.GetString(4), NumberStyles.Number, CultureInfo.InvariantCulture), r.GetString(5))
+            : null;
+    }
+
+    /// <summary>"Status Active → Won · 3 → 4 designs · Value 1,20,000.00 → 1,35,000.00 INR", or "" when none of these changed.</summary>
+    private static string Changes(SavedSummary before, SavedSummary after)
+    {
+        var parts = new List<string>();
+        if (before.Name != after.Name) parts.Add($"Renamed \"{before.Name}\" → \"{after.Name}\"");
+        if (before.Client != after.Client)
+            parts.Add(before.Client.Length == 0 ? $"Client {after.Client}" : $"Client {before.Client} → {(after.Client.Length == 0 ? "none" : after.Client)}");
+        if (before.Status != after.Status) parts.Add($"Status {before.Status} → {after.Status}");
+        if (before.Designs != after.Designs) parts.Add($"{before.Designs} → {after.Designs} design{(after.Designs == 1 ? "" : "s")}");
+        if (after.Value is { } value && before.Value != value)
+            parts.Add(before.Value is { } old
+                ? $"Value {Money(old)} → {Money(value)} {after.Currency}".TrimEnd()
+                : $"Value {Money(value)} {after.Currency}".TrimEnd());
+        return string.Join(" · ", parts);
+    }
+
+    private static string Money(decimal amount) => amount.ToString("N2", CultureInfo.InvariantCulture);
+
+    private void AddHistory(SqliteConnection connection, SqliteTransaction transaction, Guid id, string number, string name, string time,
+        ProjectAction action, string detail)
+        => Run(connection, transaction, """
+            INSERT INTO project_history (project_id, quote_number, project_name, time_utc, user_id, user_name, action, detail)
+            VALUES ($id, $number, $name, $time, $userId, $userName, $action, $detail)
+            """,
+            ("$id", Key(id)), ("$number", number), ("$name", name), ("$time", time), ("$userId", User.UserId), ("$userName", User.Name),
+            ("$action", action.ToString()), ("$detail", detail));
+
+    public IReadOnlyList<ProjectHistoryEntry> History(Guid projectId)
+        => HistoryRows("WHERE project_id = $id ORDER BY time_utc DESC, id DESC", ("$id", Key(projectId)));
+
+    public IReadOnlyList<ProjectHistoryEntry> RecentHistory(int count)
+        => HistoryRows("ORDER BY time_utc DESC, id DESC LIMIT $count", ("$count", Math.Max(0, count)));
+
+    private IReadOnlyList<ProjectHistoryEntry> HistoryRows(string where, params (string Name, object? Value)[] parameters)
+        => _database.Guard("read the quote history", () =>
+        {
+            using var connection = _database.Connect();
+            using var command = connection.CreateCommand();
+            command.CommandText =
+                $"SELECT project_id, quote_number, project_name, time_utc, user_id, user_name, action, detail FROM project_history {where}";
+            foreach (var (name, value) in parameters)
+                command.Parameters.AddWithValue(name, value ?? DBNull.Value);
+            using var r = command.ExecuteReader();
+            var list = new List<ProjectHistoryEntry>();
+            while (r.Read())
+                list.Add(new ProjectHistoryEntry(Guid.Parse(r.GetString(0)), r.GetString(1), r.GetString(2), ParseTimestamp(r.GetString(3)),
+                    r.GetString(4), r.GetString(5), Enum.TryParse<ProjectAction>(r.GetString(6), out var action) ? action : ProjectAction.Saved,
+                    r.GetString(7)));
+            return (IReadOnlyList<ProjectHistoryEntry>)list.AsReadOnly();
+        });
 
     /// <summary>The number already stored for this project (a quote saved before it had a number in its document).</summary>
     private static string? ReadNumberOf(SqliteConnection connection, SqliteTransaction transaction, Guid id)
@@ -200,7 +277,7 @@ public sealed class SqliteProjectRepository : IProjectRepository
 
     private const string SummaryColumns = """
         p.id, p.name, p.created_utc, p.modified_utc, p.quote_number, p.client_name, p.status, p.design_count, p.quantity,
-        p.area_m2, p.value, p.currency
+        p.area_m2, p.value, p.currency, p.created_by, p.modified_by
         """;
 
     public IReadOnlyList<ProjectSummary> List()
@@ -210,8 +287,22 @@ public sealed class SqliteProjectRepository : IProjectRepository
     {
         using var connection = _database.Connect();
         using var transaction = connection.BeginTransaction();
+        string number = "", name = "";
+        using (var command = connection.CreateCommand())
+        {
+            command.Transaction = transaction;
+            command.CommandText = "SELECT quote_number, name FROM projects WHERE id = $id";
+            command.Parameters.AddWithValue("$id", Key(id));
+            using var reader = command.ExecuteReader();
+            if (reader.Read())
+            {
+                number = reader.GetString(0);
+                name = reader.GetString(1);
+            }
+        }
         if (Run(connection, transaction, "DELETE FROM projects WHERE id = $id", ("$id", Key(id))) == 0)
             throw new DataStoreException("The project is not in the database (it may have been deleted).");
+        AddHistory(connection, transaction, id, number, name, Timestamp(_utcNow()), ProjectAction.Deleted, "");
         transaction.Commit();
     });
 
@@ -265,7 +356,9 @@ public sealed class SqliteProjectRepository : IProjectRepository
                     Quantity = r.GetInt32(8),
                     AreaM2 = r.GetDouble(9),
                     Value = r.IsDBNull(10) ? null : decimal.Parse(r.GetString(10), NumberStyles.Number, CultureInfo.InvariantCulture),
-                    Currency = r.GetString(11)
+                    Currency = r.GetString(11),
+                    CreatedBy = r.GetString(12),
+                    ModifiedBy = r.GetString(13)
                 });
             return (IReadOnlyList<ProjectSummary>)list.AsReadOnly();
         });

@@ -13,15 +13,38 @@ internal static class DatabaseSchema
     public const int ApplicationId = 0x46454E31;
 
     /// <summary>The schema version written by this build.</summary>
-    public const int CurrentVersion = 4;
+    public const int CurrentVersion = 5;
 
     /// <summary>Upgrade scripts keyed by the version they upgrade FROM.</summary>
     public static readonly IReadOnlyDictionary<int, string> Upgrades = new Dictionary<int, string>
     {
         [1] = Version2,
         [2] = Version3,
-        [3] = Version4
+        [3] = Version4,
+        [4] = Version5
     };
+
+    /// <summary>
+    /// Version 5 (Milestone 14, who did what): who created and last saved each quote, and the history of every quote
+    /// (created, saved with what changed, deleted). History has no foreign key, so it outlives a deleted quote.
+    /// </summary>
+    public const string Version5 = """
+        ALTER TABLE projects ADD COLUMN created_by  TEXT NOT NULL DEFAULT '';
+        ALTER TABLE projects ADD COLUMN modified_by TEXT NOT NULL DEFAULT '';
+        CREATE TABLE project_history (
+            id            INTEGER PRIMARY KEY,
+            project_id    TEXT NOT NULL,
+            quote_number  TEXT NOT NULL,
+            project_name  TEXT NOT NULL,
+            time_utc      TEXT NOT NULL,
+            user_id       TEXT NOT NULL,
+            user_name     TEXT NOT NULL,
+            action        TEXT NOT NULL,
+            detail        TEXT NOT NULL
+        );
+        CREATE INDEX ix_project_history_project ON project_history (project_id, time_utc);
+        CREATE INDEX ix_project_history_time ON project_history (time_utc);
+        """;
 
     /// <summary>
     /// Version 4 (Milestone 13, product systems): systems and bundles as JSON documents in library order; what each

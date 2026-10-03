@@ -24,6 +24,7 @@ public partial class MainViewModel
     {
         Store = store;
         Dialogs = dialogs;
+        store.Projects.User = CurrentUser;
         store.Library.Changed += ReplaceLibrary;
         // The first new quote was created before the store was known: give it the company's default pricing.
         Project.Pricing = DefaultPricing();
@@ -60,8 +61,8 @@ public partial class MainViewModel
 
     private void CreatePersistenceCommands()
     {
-        SaveProjectCommand = new RelayCommand(() => Report(SaveProject()), () => HasStore && !Access.IsReadOnly);
-        SaveProjectAsCommand = new RelayCommand(SaveProjectAsInteractive, () => HasStore && !Access.IsReadOnly);
+        SaveProjectCommand = new RelayCommand(() => Report(SaveProject()), () => HasStore && Access.ReadOnlyMessage is null);
+        SaveProjectAsCommand = new RelayCommand(SaveProjectAsInteractive, () => HasStore && Access.ReadOnlyMessage is null);
         OpenProjectCommand = new RelayCommand(OpenProjectInteractive, () => HasStore);
         ImportProjectFileCommand = new RelayCommand(ImportProjectFileInteractive, () => Access.CanUseProjectFiles);
         ExportProjectFileCommand = new RelayCommand(ExportProjectFileInteractive, () => Access.CanUseProjectFiles);
@@ -72,7 +73,7 @@ public partial class MainViewModel
     /// The Library Manager changes the library, so it needs a licence that is not read-only, and the feature, unless the
     /// library follows the owner's catalogue (then it only sets the company's own prices, which every company needs).
     /// </summary>
-    private bool CanOpenLibraryManager() => HasStore && !Access.IsReadOnly && (Access.CanManageLibrary || Access.IsCatalogueManaged);
+    private bool CanOpenLibraryManager() => HasStore && !Access.IsReadOnly && Access.CanUseLibrary;
 
     private void RaisePersistenceCanExecute()
     {
@@ -147,6 +148,7 @@ public partial class MainViewModel
             IsDirty = false;
             OnPropertyChanged(nameof(Title));
             RefreshQuoteViews();
+            RefreshHistory();
             Hint = success;
             HintIsError = false;
             return null;
@@ -192,7 +194,7 @@ public partial class MainViewModel
         ProjectListViewModel list;
         try
         {
-            list = new ProjectListViewModel(Store.Projects, Project.Id, Dialogs);
+            list = new ProjectListViewModel(Store.Projects, Project.Id, Dialogs) { Blocked = () => Access.ReadOnlyMessage };
         }
         catch (DataStoreException ex)
         {

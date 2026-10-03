@@ -8,8 +8,8 @@ namespace Mark.LicenceServer;
 /// <summary>Company accounts: their owner login, products, package, add-ons, computers and suspension.</summary>
 public sealed partial class LicenceService
 {
-    /// <summary>The role of the person who signs in for a company (staff roles follow in Milestone 14).</summary>
-    public const string OwnerRole = "owner";
+    /// <summary>The role of the account owner, the login the admin sets up (staff logins are <see cref="UserRoles.Staff"/>).</summary>
+    public const string OwnerRole = UserRoles.Owner;
 
     public IReadOnlyList<CompanySummary> Companies()
     {
@@ -19,8 +19,9 @@ public sealed partial class LicenceService
                 (SELECT name FROM company_types t WHERE t.id = c.company_type_id),
                 (SELECT name FROM packages p WHERE p.id = c.package_id),
                 (SELECT user_id FROM users u WHERE u.company_id = c.id AND u.role = '{OwnerRole}' LIMIT 1),
-                (SELECT COUNT(*) FROM computers m WHERE m.company_id = c.id),
-                (SELECT MAX(last_check_in_utc) FROM computers m WHERE m.company_id = c.id)
+                (SELECT COUNT(DISTINCT machine_id) FROM computers m WHERE m.company_id = c.id),
+                (SELECT MAX(last_check_in_utc) FROM computers m WHERE m.company_id = c.id),
+                (SELECT COUNT(*) FROM users u WHERE u.company_id = c.id AND u.disabled = 0)
             FROM companies c ORDER BY c.name COLLATE NOCASE
             """, null);
         using var reader = command.ExecuteReader();
@@ -28,12 +29,13 @@ public sealed partial class LicenceService
         while (reader.Read())
         {
             var c = ReadCompany(reader);
-            const int extra = 14;                                 // the columns after CompanyColumns
+            const int extra = CompanyColumnCount;                 // the columns after CompanyColumns
             list.Add(new CompanySummary(c.Id, c.Name, c.Logo is not null, reader.IsDBNull(extra) ? null : reader.GetString(extra),
                 reader.IsDBNull(extra + 2) ? "" : reader.GetString(extra + 2), c.Products,
                 reader.IsDBNull(extra + 1) ? null : reader.GetString(extra + 1),
                 c.ValidUntilUtc, c.Suspended, reader.GetInt32(extra + 3), c.MaxComputers,
-                reader.IsDBNull(extra + 4) ? null : ParseTime(reader.GetString(extra + 4))));
+                reader.IsDBNull(extra + 4) ? null : ParseTime(reader.GetString(extra + 4)),
+                reader.GetInt32(extra + 5), c.MaxUsers));
         }
         return list;
     }
@@ -71,7 +73,8 @@ public sealed partial class LicenceService
         }
 
         return new CompanyDetail(c.Id, c.Name, c.Logo, c.TypeId, ownerName, ownerUserId, c.Products, c.PackageId, c.ValidUntilUtc,
-            c.MaxComputers, c.AddOns, c.RemovedFeatures, c.Suspended, c.Notes, c.CreatedUtc, computers, c.Catalogue);
+            c.MaxComputers, c.AddOns, c.RemovedFeatures, c.Suspended, c.Notes, c.CreatedUtc, computers, c.Catalogue, c.MaxUsers,
+            StaffOf(connection, c.Id, transaction));
     }
 
     /// <summary>A new company account with its owner login (User ID and password set by the admin).</summary>
@@ -81,7 +84,8 @@ public sealed partial class LicenceService
         CheckPassword(edit.OwnerPassword);
         using var connection = Connect();
         using var transaction = connection.BeginTransaction();
-        var company = Validated(connection, edit, Guid.NewGuid(), Now, suspended: false, transaction, CompanyCatalogue.Empty);
+        var company = Validated(connection, edit, Guid.NewGuid(), Now, suspended: false, transaction, CompanyCatalogue.Empty,
+            currentMaxUsers: Math.Max(1, edit.MaxComputers));
         string userId = CheckUserId(edit.OwnerUserId);
         EnsureUserIdFree(connection, userId, exceptCompany: null, transaction);
 
@@ -107,7 +111,12 @@ public sealed partial class LicenceService
         using var connection = Connect();
         using var transaction = connection.BeginTransaction();
         var existing = GetCompany(connection, id, transaction);
-        var company = Validated(connection, edit, id, existing.CreatedUtc, existing.Suspended, transaction, existing.Catalogue);
+        var company = Validated(connection, edit, id, existing.CreatedUtc, existing.Suspended, transaction, existing.Catalogue,
+            existing.MaxUsers);
+        int inUse = UsersInUse(connection, id, transaction);
+        if (company.MaxUsers < inUse)
+            throw ApiException.Invalid($"This account has {inUse} logins in use (the account owner and {inUse - 1} staff). " +
+                                       $"Allow at least {inUse}, or remove staff logins first.");
         string userId = CheckUserId(edit.OwnerUserId);
         EnsureUserIdFree(connection, userId, exceptCompany: id, transaction);
 
@@ -162,19 +171,24 @@ public sealed partial class LicenceService
     private static string OwnerName(CompanyEdit edit, string companyName)
         => string.IsNullOrWhiteSpace(edit.OwnerName) ? companyName : edit.OwnerName.Trim();
 
+    /// <summary>The User ID must not belong to anyone else (another company, or a staff login) than the account owner of <paramref name="exceptCompany"/>.</summary>
     private static void EnsureUserIdFree(SqliteConnection connection, string userId, Guid? exceptCompany, SqliteTransaction transaction)
     {
-        long taken = Scalar<long>(connection, "SELECT COUNT(*) FROM users WHERE user_id = $user AND company_id <> $company", transaction,
+        long taken = Scalar<long>(connection,
+            $"SELECT COUNT(*) FROM users WHERE user_id = $user AND NOT (company_id = $company AND role = '{OwnerRole}')", transaction,
             ("$user", userId), ("$company", (exceptCompany ?? Guid.Empty).ToString()));
-        if (taken > 0) throw ApiException.Conflict($"The User ID \"{userId}\" is already used by another company. Choose another.");
+        if (taken > 0) throw ApiException.Conflict($"The User ID \"{userId}\" is already in use. Choose another.");
     }
 
     /// <param name="currentCatalogue">Kept when the edit does not say what the company gets.</param>
+    /// <param name="currentMaxUsers">Kept when the edit does not say how many logins the company may have.</param>
     private static CompanyRow Validated(SqliteConnection connection, CompanyEdit edit, Guid id, DateTime createdUtc, bool suspended,
-        SqliteTransaction transaction, CompanyCatalogue currentCatalogue)
+        SqliteTransaction transaction, CompanyCatalogue currentCatalogue, int currentMaxUsers)
     {
         string name = Required(edit.Name, "company name");
         if (edit.MaxComputers is < 1 or > 1000) throw ApiException.Invalid("The number of computers must be between 1 and 1000.");
+        int maxUsers = edit.MaxUsers ?? currentMaxUsers;
+        if (maxUsers is < 1 or > 1000) throw ApiException.Invalid("The number of users must be between 1 and 1000.");
 
         var products = (edit.Products ?? Array.Empty<ProductLicence>()).ToList();
         if (products.Count == 0) throw ApiException.Invalid("Choose at least one product (uPVC or Aluminium).");
@@ -199,6 +213,6 @@ public sealed partial class LicenceService
             ? new CompanyCatalogue(chosen.SystemIds.Distinct().ToList(), chosen.ItemIds.Distinct().ToList())
             : currentCatalogue;
         return new CompanyRow(id, name, CheckLogo(edit.LogoBase64), edit.CompanyTypeId, packageId, edit.ValidUntilUtc, edit.MaxComputers,
-            suspended, products, addOns, removed, notes, createdUtc, catalogue);
+            suspended, products, addOns, removed, notes, createdUtc, catalogue, maxUsers);
     }
 }

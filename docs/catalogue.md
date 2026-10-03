@@ -77,7 +77,7 @@ A company with nothing ticked keeps its own library (as before Milestone 13).
 | `Mark.Core/Library/CatalogueSelector.cs` | A company's part of the master (closure of everything needed, licensed materials only) |
 | `Mark.Core/Design/FrameEditor.Systems.cs` | `TrySetSystem`; `SetFrameSystemCommand` |
 | `Mark.Calculation/CalculationEngine.cs` | System defaults, member bundles, opening sets, reinforcement |
-| `Mark.Data` | Schema 4 (systems, bundles, JSON columns), `LibraryService.ApplyCatalogue` |
+| `Mark.Data` | Schema 4 (systems, bundles, JSON columns; schema 5 adds quote history, see areas.md), `LibraryService.ApplyCatalogue` |
 | `Mark.LicenceServer` | Schema 2 (catalogue, selections), `PublishCatalogue`, `ClientCatalogue`, catalogue hash in licences |
 | `Mark.Designer` | `CatalogueSync`, system picker, Library Manager (shared with MARK Owner) |
 | `Mark.Owner` | Catalogue page, `CatalogueChoiceViewModel` in the account and company-type editors |

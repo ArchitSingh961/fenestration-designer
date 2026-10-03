@@ -12,7 +12,7 @@ namespace Mark.LicenceServer;
 /// </summary>
 public sealed class LicenceDatabase
 {
-    public const int SchemaVersion = 2;
+    public const int SchemaVersion = 3;
 
     private readonly string _connectionString;
 
@@ -58,11 +58,48 @@ public sealed class LicenceDatabase
         if (version > SchemaVersion)
             throw new InvalidOperationException($"The licence database {Path} is from a newer version of the server (schema {version}).");
         if (version == 0) CreateVersion1(connection);
-        Upgrade(connection);
+        if (version < 2) UpgradeToVersion2(connection);
+        if (version < 3) UpgradeToVersion3(connection);
+    }
+
+    /// <summary>
+    /// Version 3 (Milestone 14): staff logins. How many logins a company may have (existing accounts: as many as
+    /// computers), each staff login's features, turned-off logins and the last sign-in. A computer is now registered
+    /// once per login (two people sharing a PC each keep their sign-in); the limit counts distinct computers.
+    /// </summary>
+    private static void UpgradeToVersion3(SqliteConnection connection)
+    {
+        using var transaction = connection.BeginTransaction();
+        Execute(connection, """
+            ALTER TABLE companies ADD COLUMN max_users INTEGER NOT NULL DEFAULT 1;
+            UPDATE companies SET max_users = MAX(max_computers, 1);
+            ALTER TABLE users ADD COLUMN permissions TEXT NULL;
+            ALTER TABLE users ADD COLUMN disabled INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE users ADD COLUMN last_sign_in_utc TEXT NULL;
+            CREATE INDEX ix_users_company ON users (company_id);
+            CREATE TABLE computers_v3 (
+                id TEXT PRIMARY KEY,
+                company_id TEXT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+                user_ref TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                machine_id TEXT NOT NULL,
+                machine_name TEXT NOT NULL,
+                app_version TEXT,
+                device_token_hash TEXT NOT NULL UNIQUE,
+                first_seen_utc TEXT NOT NULL,
+                last_check_in_utc TEXT,
+                UNIQUE (company_id, machine_id, user_ref));
+            INSERT INTO computers_v3 (id, company_id, user_ref, machine_id, machine_name, app_version, device_token_hash, first_seen_utc, last_check_in_utc)
+                SELECT id, company_id, user_ref, machine_id, machine_name, app_version, device_token_hash, first_seen_utc, last_check_in_utc FROM computers;
+            DROP TABLE computers;
+            ALTER TABLE computers_v3 RENAME TO computers;
+            CREATE INDEX ix_computers_company_machine ON computers (company_id, machine_id);
+            """, transaction);
+        Execute(connection, "PRAGMA user_version = 3", transaction);
+        transaction.Commit();
     }
 
     /// <summary>Version 2 (Milestone 13): the owner's catalogue, and what each company and company type gets from it.</summary>
-    private static void Upgrade(SqliteConnection connection)
+    private static void UpgradeToVersion2(SqliteConnection connection)
     {
         using var transaction = connection.BeginTransaction();
         Execute(connection, """
@@ -74,7 +111,7 @@ public sealed class LicenceDatabase
             ALTER TABLE companies ADD COLUMN catalogue TEXT NULL;
             ALTER TABLE company_types ADD COLUMN catalogue TEXT NULL;
             """, transaction);
-        Execute(connection, $"PRAGMA user_version = {SchemaVersion}", transaction);
+        Execute(connection, "PRAGMA user_version = 2", transaction);
         transaction.Commit();
     }
 

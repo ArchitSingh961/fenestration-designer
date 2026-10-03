@@ -74,6 +74,7 @@ public sealed class CompaniesViewModel : OwnerPage
         ToggleSuspendCommand = new AsyncCommand(ToggleSuspendAsync, () => Editor is { IsNew: false });
         DeleteCommand = new AsyncCommand(DeleteAsync, () => Editor is { IsNew: false });
         FreeComputerCommand = new RelayCommand(async p => await FreeComputerAsync(p as ComputerInfo));
+        RemoveStaffCommand = new RelayCommand(async p => await RemoveStaffAsync(p as OwnerStaffRow));
         ChooseLogoCommand = new RelayCommand(ChooseLogo, () => Editor is not null);
         RemoveLogoCommand = new RelayCommand(() => Editor!.LogoBase64 = null, () => Editor?.HasLogo ?? false);
     }
@@ -87,6 +88,7 @@ public sealed class CompaniesViewModel : OwnerPage
     public ICommand ToggleSuspendCommand { get; }
     public ICommand DeleteCommand { get; }
     public ICommand FreeComputerCommand { get; }
+    public ICommand RemoveStaffCommand { get; }
     public ICommand ChooseLogoCommand { get; }
     public ICommand RemoveLogoCommand { get; }
 
@@ -254,6 +256,24 @@ public sealed class CompaniesViewModel : OwnerPage
             return;
         CompanyDetail? updated = null;
         if (await RunAsync(async () => updated = await Api.FreeComputerAsync(company.Id, computer.Id), $"Freed \"{computer.Name}\"."))
+        {
+            string message = Message ?? "";
+            await LoadAsync();
+            Editor = new CompanyEditorViewModel(updated!, _packages(), _types(), catalogue: _catalogue());
+            Show(message);
+        }
+    }
+
+    /// <summary>Removes a staff login of the company (its account owner adds them in MARK).</summary>
+    private async Task RemoveStaffAsync(OwnerStaffRow? row)
+    {
+        if (row is null || Editor?.Existing is not { } company) return;
+        if (!Dialogs.Confirm("Remove staff login",
+                $"Remove the login of {row.Info.Name} ({row.Info.UserId}) from {company.Name}? MARK on their computers is signed out at its " +
+                "next check-in."))
+            return;
+        CompanyDetail? updated = null;
+        if (await RunAsync(async () => updated = await Api.RemoveStaffAsync(company.Id, row.Info.Id), $"Removed the login of {row.Info.Name}."))
         {
             string message = Message ?? "";
             await LoadAsync();

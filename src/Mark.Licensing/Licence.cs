@@ -35,6 +35,24 @@ public sealed record Licence
 
     public string UserName { get; init; } = "";
 
+    /// <summary>
+    /// <see cref="UserRoles.Owner"/> for the account owner (the login the MARK supplier set up), or
+    /// <see cref="UserRoles.Staff"/> for a staff login the account owner added.
+    /// </summary>
+    public string Role { get; init; } = UserRoles.Owner;
+
+    /// <summary>
+    /// For a staff login: the features the account owner gave it (only those of the account's features work). Null for
+    /// the account owner, who has every feature of the account.
+    /// </summary>
+    public IReadOnlyList<string>? Permissions { get; init; }
+
+    /// <summary>How many people may have a login (the account owner and staff).</summary>
+    public int MaxUsers { get; init; }
+
+    [JsonIgnore]
+    public bool IsStaff => Role == UserRoles.Staff;
+
     /// <summary>The computer this licence is for (see <c>MachineIdentity</c> in MARK).</summary>
     public string MachineId { get; init; } = "";
 
@@ -63,6 +81,13 @@ public sealed record Licence
     /// it none and the company keeps its own library. MARK downloads the catalogue when this changes and checks it.
     /// </summary>
     public string? CatalogueHash { get; init; }
+}
+
+/// <summary>Who signed in: the account owner or a staff login.</summary>
+public static class UserRoles
+{
+    public const string Owner = "owner";
+    public const string Staff = "staff";
 }
 
 /// <summary>The fingerprint of a catalogue as the licence carries it.</summary>

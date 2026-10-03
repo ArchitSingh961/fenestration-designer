@@ -118,6 +118,9 @@ public static class LicenceServerApp
         app.MapPost("/api/client/check-in", (CheckInRequest r) => service.CheckIn(r));
         app.MapPost("/api/client/redeem-key", (RedeemKeyRequest r) => service.RedeemKey(r));
         app.MapPost("/api/client/catalogue", (CatalogueRequest r) => service.ClientCatalogue(r));
+        app.MapPost("/api/client/staff", (StaffRequest r) => service.ClientStaff(r));
+        app.MapPost("/api/client/staff/save", (SaveStaffRequest r) => service.ClientSaveStaff(r));
+        app.MapPost("/api/client/staff/delete", (DeleteStaffRequest r) => service.ClientDeleteStaff(r));
         app.MapPost("/api/client/sign-out", (SignOutRequest r) =>
         {
             service.ClientSignOut(r);
@@ -153,6 +156,7 @@ public static class LicenceServerApp
         admin.MapPut("/companies/{id:guid}", (Guid id, CompanyEdit e) => service.UpdateCompany(id, e));
         admin.MapPost("/companies/{id:guid}/suspended", (Guid id, SetSuspendedRequest r) => service.SetSuspended(id, r.Suspended));
         admin.MapDelete("/companies/{id:guid}/computers/{computer:guid}", (Guid id, Guid computer) => service.FreeComputer(id, computer));
+        admin.MapDelete("/companies/{id:guid}/staff/{staff:guid}", (Guid id, Guid staff) => service.RemoveStaff(id, staff));
         admin.MapDelete("/companies/{id:guid}", (Guid id) =>
         {
             service.DeleteCompany(id);

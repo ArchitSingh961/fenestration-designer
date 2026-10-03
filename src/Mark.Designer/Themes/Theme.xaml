@@ -172,7 +172,7 @@
 
     <SolidColorBrush x:Key="PageBackgroundBrush" Color="#EEF0F3" />
 
-    <!-- Shown in place of a feature the company's package does not include; the content is the message. -->
+    <!-- Shown in place of a feature the login cannot use (not in the package, or not given to a staff login); the content is the message. -->
     <Style x:Key="LockNotice" TargetType="ContentControl">
         <Setter Property="Focusable" Value="False" />
         <Setter Property="Template">
@@ -183,7 +183,7 @@
                             <TextBlock DockPanel.Dock="Left" Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" FontSize="16"
                                        Foreground="#B7791F" VerticalAlignment="Top" Margin="0,1,10,0" />
                             <StackPanel>
-                                <TextBlock Text="Not in your package" FontWeight="SemiBold" Foreground="#7C4A03" />
+                                <TextBlock Text="Not available" FontWeight="SemiBold" Foreground="#7C4A03" />
                                 <TextBlock Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}" TextWrapping="Wrap"
                                            Foreground="#7C4A03" FontSize="11" Margin="0,2,0,0" />
                             </StackPanel>

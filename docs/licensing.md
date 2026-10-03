@@ -85,6 +85,13 @@ this key (its public half is built into MARK, `LicenceKeys.PublicKey`). It is ne
 - The server stores **only salted PBKDF2 hashes** of passwords and SHA-256 hashes of device and session tokens.
 - Admin calls need an admin session (12 hours). The first admin can only be created on the server's own computer.
 
+## Staff logins (Milestone 14)
+
+The account owner adds staff logins in MARK (**Account → Staff logins**) up to the account's **Users**, which the admin
+sets in the account editor next to **Computers**. Each staff login has its own User ID and password and only the
+features its account owner ticked; its licence says so, and MARK shows it only those areas. The admin sees each
+company's staff in the account editor and can remove them. See [areas.md](areas.md).
+
 ## Running the server for client companies
 
 For companies on other computers the server must be reachable from the internet, for example on a small cloud server:
@@ -113,4 +120,4 @@ gate it in MARK with `Access.Allows(...)`.
 
 - Product licences (uPVC / Aluminium) decide which systems of the owner's catalogue a company receives (Milestone 13,
   see catalogue.md); a company needs at least one valid product to work.
-- Staff logins and per-person permissions: Milestone 14.
+- Staff logins and per-person permissions: done in Milestone 14 (see areas.md).

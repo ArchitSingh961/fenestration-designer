@@ -19,6 +19,10 @@ public static class ErrorCodes
     public const string Unauthorized = "unauthorized";
     public const string Forbidden = "forbidden";
     public const string KeyInvalid = "key-invalid";
+    /// <summary>The account owner turned this staff login off.</summary>
+    public const string LoginDisabled = "login-disabled";
+    /// <summary>The account already has as many logins as it allows.</summary>
+    public const string UserLimit = "user-limit";
 }
 
 // ── MARK (client companies) ─────────────────────────────────────────
@@ -43,6 +47,35 @@ public sealed record CatalogueRequest(string DeviceToken, string MachineId);
 
 /// <summary>The company's catalogue: a library file (JSON) whose SHA-256 is the licence's catalogue hash.</summary>
 public sealed record CatalogueResponse(string LibraryJson);
+
+// ── Staff logins (MARK, the account owner only) ─────────────────────
+
+/// <summary>A staff login of a company, added by its account owner.</summary>
+/// <param name="Permissions">The features this login may use (only those the account has work).</param>
+/// <param name="Disabled">Turned off: the login cannot sign in and does not count towards the users allowed.</param>
+/// <param name="Computers">Computers this login is signed in on.</param>
+public sealed record StaffInfo(
+    Guid Id,
+    string Name,
+    string UserId,
+    IReadOnlyList<string> Permissions,
+    bool Disabled,
+    DateTime CreatedUtc,
+    DateTime? LastSignInUtc,
+    int Computers);
+
+/// <summary>The staff of a company and how many logins it allows (the account owner counts as one).</summary>
+public sealed record StaffList(int MaxUsers, int UsersInUse, IReadOnlyList<StaffInfo> Staff);
+
+/// <summary>A new staff login (<see cref="Id"/> empty) or the changes to one.</summary>
+/// <param name="Password">Required for a new login; for an existing one a non-empty value sets a new password.</param>
+public sealed record StaffEdit(Guid Id, string Name, string UserId, string? Password, IReadOnlyList<string> Permissions, bool Disabled = false);
+
+public sealed record StaffRequest(string DeviceToken, string MachineId);
+
+public sealed record SaveStaffRequest(string DeviceToken, string MachineId, StaffEdit Staff);
+
+public sealed record DeleteStaffRequest(string DeviceToken, string MachineId, Guid StaffId);
 
 // ── MARK Owner (the admin) ──────────────────────────────────────────
 
@@ -88,7 +121,9 @@ public sealed record CompanySummary(
     bool Suspended,
     int ComputersUsed,
     int MaxComputers,
-    DateTime? LastCheckInUtc);
+    DateTime? LastCheckInUtc,
+    int UsersInUse = 1,
+    int MaxUsers = 1);
 
 public sealed record ComputerInfo(Guid Id, string Name, string UserId, DateTime FirstSeenUtc, DateTime? LastCheckInUtc);
 
@@ -109,11 +144,15 @@ public sealed record CompanyDetail(
     string? Notes,
     DateTime CreatedUtc,
     IReadOnlyList<ComputerInfo> Computers,
-    CompanyCatalogue? Catalogue = null);
+    CompanyCatalogue? Catalogue = null,
+    int MaxUsers = 1,
+    IReadOnlyList<StaffInfo>? Staff = null);
 
 /// <summary>A new account, or the changes to one.</summary>
 /// <param name="OwnerPassword">Required for a new account; for an existing one a non-empty value sets a new password.</param>
 /// <param name="RemovedFeatures">Package features this company does not get.</param>
+/// <param name="MaxUsers">Logins allowed (the account owner and staff); null keeps the current number (a new account:
+/// as many as computers).</param>
 public sealed record CompanyEdit(
     string Name,
     string? LogoBase64,
@@ -128,7 +167,8 @@ public sealed record CompanyEdit(
     IReadOnlyList<AddOn> AddOns,
     IReadOnlyList<string> RemovedFeatures,
     string? Notes,
-    CompanyCatalogue? Catalogue = null);
+    CompanyCatalogue? Catalogue = null,
+    int? MaxUsers = null);
 
 public sealed record SetSuspendedRequest(bool Suspended);
 

@@ -12,6 +12,12 @@ public interface ILicenceApi
     Task SignOutAsync(SignOutRequest request, CancellationToken cancel = default);
 
     Task<CatalogueResponse> CatalogueAsync(CatalogueRequest request, CancellationToken cancel = default);
+
+    Task<StaffList> StaffAsync(StaffRequest request, CancellationToken cancel = default);
+
+    Task<StaffList> SaveStaffAsync(SaveStaffRequest request, CancellationToken cancel = default);
+
+    Task<StaffList> DeleteStaffAsync(DeleteStaffRequest request, CancellationToken cancel = default);
 }
 
 /// <summary>MARK's HTTP client for the licence server.</summary>
@@ -38,6 +44,15 @@ public sealed class LicenceApiClient : ILicenceApi, IDisposable
 
     public Task<CatalogueResponse> CatalogueAsync(CatalogueRequest request, CancellationToken cancel = default)
         => _api.SendAsync<CatalogueResponse>(HttpMethod.Post, "api/client/catalogue", request, cancel);
+
+    public Task<StaffList> StaffAsync(StaffRequest request, CancellationToken cancel = default)
+        => _api.SendAsync<StaffList>(HttpMethod.Post, "api/client/staff", request, cancel);
+
+    public Task<StaffList> SaveStaffAsync(SaveStaffRequest request, CancellationToken cancel = default)
+        => _api.SendAsync<StaffList>(HttpMethod.Post, "api/client/staff/save", request, cancel);
+
+    public Task<StaffList> DeleteStaffAsync(DeleteStaffRequest request, CancellationToken cancel = default)
+        => _api.SendAsync<StaffList>(HttpMethod.Post, "api/client/staff/delete", request, cancel);
 
     public void Dispose() => _api.Dispose();
 }
@@ -105,6 +120,9 @@ public sealed class OwnerApiClient : IDisposable
 
     public Task<CompanyDetail> FreeComputerAsync(Guid companyId, Guid computerId, CancellationToken cancel = default)
         => _api.SendAsync<CompanyDetail>(HttpMethod.Delete, $"api/admin/companies/{companyId}/computers/{computerId}", null, cancel);
+
+    public Task<CompanyDetail> RemoveStaffAsync(Guid companyId, Guid staffId, CancellationToken cancel = default)
+        => _api.SendAsync<CompanyDetail>(HttpMethod.Delete, $"api/admin/companies/{companyId}/staff/{staffId}", null, cancel);
 
     public Task DeleteCompanyAsync(Guid id, CancellationToken cancel = default)
         => _api.SendAsync(HttpMethod.Delete, $"api/admin/companies/{id}", null, cancel);

@@ -102,6 +102,9 @@ public partial class App : Application
             else Dispatcher.BeginInvoke(OnLicenceChanged);
         };
         mainViewModel.Account = new AccountViewModel(licence, () => SignOutAsync(licence, mainViewModel));
+        // Staff logins: only the account owner manages them (Milestone 14).
+        if (licence.CanManageStaff)
+            mainViewModel.Staff = new StaffViewModel(licence, dialogs.Confirm);
 
         var window = new MainWindow { DataContext = mainViewModel };
         MainWindow = window;

@@ -233,6 +233,42 @@ public sealed class LicenceManager
         }
     }
 
+    // ── Staff logins (the account owner only) ──────────────────────
+
+    /// <summary>True when the account owner is signed in: only they can add, change or remove staff logins.</summary>
+    public bool CanManageStaff => _licence is { IsStaff: false } && _state.DeviceToken is not null;
+
+    /// <summary>The company's staff logins. Returns the list, or null with an error message.</summary>
+    public Task<(StaffList? List, string? Error)> StaffAsync(CancellationToken cancel = default)
+        => StaffCallAsync((api, token) => api.StaffAsync(new StaffRequest(token, MachineId), cancel));
+
+    /// <summary>Adds or changes a staff login (name, User ID, password, features, turned off).</summary>
+    public Task<(StaffList? List, string? Error)> SaveStaffAsync(StaffEdit edit, CancellationToken cancel = default)
+        => StaffCallAsync((api, token) => api.SaveStaffAsync(new SaveStaffRequest(token, MachineId, edit), cancel));
+
+    /// <summary>Removes a staff login; MARK on its computers is signed out at their next check-in.</summary>
+    public Task<(StaffList? List, string? Error)> DeleteStaffAsync(Guid staffId, CancellationToken cancel = default)
+        => StaffCallAsync((api, token) => api.DeleteStaffAsync(new DeleteStaffRequest(token, MachineId, staffId), cancel));
+
+    private async Task<(StaffList? List, string? Error)> StaffCallAsync(Func<ILicenceApi, string, Task<StaffList>> call)
+    {
+        if (_state.DeviceToken is not { } token || _licence is null) return (null, "Sign in first.");
+        if (_licence.IsStaff) return (null, "Only the account owner can manage staff logins.");
+        try
+        {
+            return (await call(_apiFor(_state.ServerUrl), token), null);
+        }
+        catch (LicenceServerException ex) when (ex.Code == ErrorCodes.SignedOut)
+        {
+            SignedOutByServer(ex.Message);
+            return (null, ex.Message);
+        }
+        catch (LicenceServerException ex)
+        {
+            return (null, ex.Message);
+        }
+    }
+
     /// <summary>
     /// Signs out of this computer: the server frees it (best effort; offline it stays counted until the owner frees it)
     /// and the licence is removed from the computer. The User ID and server address are remembered.
@@ -294,12 +330,14 @@ public sealed class LicenceManager
         _state = _state with { Licence = null, DeviceToken = null, PasswordHash = null };
         TrySave();
         if (_licence is null) return;
+        var all = _licence.Features.Select(f => f.FeatureId).ToHashSet();
         Status = LicenceEvaluator.Evaluate(_licence, _utcNow()) with
         {
             Mode = LicenceMode.ReadOnly,
             Reason = $"{message} Your quotes can be viewed but not changed. Restart MARK to sign in again.",
             Warning = null,
-            Features = _licence.Features.Select(f => f.FeatureId).ToHashSet()
+            Features = LicenceEvaluator.ForLogin(_licence, all),
+            CompanyFeatures = all
         };
         StatusChanged?.Invoke();
     }

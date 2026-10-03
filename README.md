@@ -62,6 +62,7 @@ docs/
 ├── openings.md                 opening types (sashes), design library, design details, Inside/Outside view
 ├── licensing.md                accounts, sign-in, licences, packages, keys, MARK Owner, running the licence server
 ├── catalogue.md                product systems, used with, reinforcement, bundles, the owner's catalogue
+├── areas.md                    areas and tabs, staff logins and permissions, who did what
 ├── roadmap.md                  the milestone plan
 └── geometry.md                 coordinate system, tolerance, primitives, viewport math, grid
 ```
@@ -75,6 +76,14 @@ computer or delete an account at any time, and generate **licence keys** with a 
 check-in and becomes read-only when the account is suspended or expired. Features outside the company's package are
 shown locked. See [docs/licensing.md](docs/licensing.md).
 
+## Areas, staff and who did what
+
+MARK is organised into areas (Sales, Design, Pricing, Library, Production, and Orders, Purchasing, Inventory and
+Accounts to come) in a bar on the left, each with its tabs in the header. The account owner gives staff their own
+logins in **Account → Staff logins**, each with only the parts of MARK they need (a cutter sees only Production), up to
+the users the MARK supplier allows. Every quote records who created and saved it, with a history of what changed. See
+[docs/areas.md](docs/areas.md).
+
 ## Product catalogue, systems and bundles
 
 The owner keeps one master catalogue in **MARK Owner → Catalogue** (profiles, glass, hardware, **systems** such as
@@ -85,13 +94,13 @@ bundle parts are picked automatically. See [docs/catalogue.md](docs/catalogue.md
 
 ## Quotes
 
-MARK opens on the **Dashboard**. **Create quote** opens the quote's **Client** tab (project name, status, client,
-site address, requirements); **Designs** shows a card per window type with picture, quantity and price; **Drawing**
-is the designer below. **Save** (Ctrl+S) gives a new quote its number (QT-00001…). The **Quotes** page lists them
+MARK opens on **Sales › Dashboard**. **Create quote** opens the quote's **Client** tab (project name, status, client,
+site address, requirements, history); **Designs** shows a card per window type with picture, quantity and price;
+**Design › Drawing** is the designer below. **Save** (Ctrl+S) gives a new quote its number (QT-00001…). The **Quotes** page lists them
 (Active / Won / Lost / All, search). See [docs/quotes.md](docs/quotes.md).
 
 **Your own pricing**: product prices are in the Library Manager (per metre of profile, per m² of glass, per piece of
-hardware). Each quote's **Pricing** tab adds your cost lines (wastage, coating, labour, margin…), hardware rates per
+hardware). Each quote's **Pricing › Price** tab adds your cost lines (wastage, coating, labour, margin…), hardware rates per
 sash type, mesh and reinforcement rates, discount, charges (transport, loading) and tax, with a live price summary.
 **Save as my default** makes it the start of every new quote. See [docs/pricing.md](docs/pricing.md).
 

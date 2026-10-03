@@ -157,6 +157,8 @@ public static class LicenceServerApp
         admin.MapPost("/companies/{id:guid}/suspended", (Guid id, SetSuspendedRequest r) => service.SetSuspended(id, r.Suspended));
         admin.MapDelete("/companies/{id:guid}/computers/{computer:guid}", (Guid id, Guid computer) => service.FreeComputer(id, computer));
         admin.MapDelete("/companies/{id:guid}/staff/{staff:guid}", (Guid id, Guid staff) => service.RemoveStaff(id, staff));
+        admin.MapGet("/companies/{id:guid}/own-items", (Guid id) => service.CompanyItems(id));
+        admin.MapPut("/companies/{id:guid}/own-items", (Guid id, SaveCompanyItemsRequest r) => service.SaveCompanyItems(id, r.ItemsJson));
         admin.MapDelete("/companies/{id:guid}", (Guid id) =>
         {
             service.DeleteCompany(id);

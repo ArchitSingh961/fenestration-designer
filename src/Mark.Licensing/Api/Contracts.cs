@@ -103,6 +103,11 @@ public sealed record CatalogueInfo(int Version, DateTime? PublishedUtc, string? 
 
 public sealed record PublishCatalogueRequest(string LibraryJson);
 
+/// <summary>A company's own items (JSON of <c>CompanyItems</c>: products for that company only), or null when it has none.</summary>
+public sealed record CompanyItemsInfo(string? ItemsJson, DateTime? UpdatedUtc);
+
+public sealed record SaveCompanyItemsRequest(string ItemsJson);
+
 /// <summary>A product line of an account, with its own validity; a suspended product is left out of licences.</summary>
 public sealed record ProductLicence(Product Product, DateTime ValidUntilUtc, bool Suspended = false);
 
@@ -146,7 +151,8 @@ public sealed record CompanyDetail(
     IReadOnlyList<ComputerInfo> Computers,
     CompanyCatalogue? Catalogue = null,
     int MaxUsers = 1,
-    IReadOnlyList<StaffInfo>? Staff = null);
+    IReadOnlyList<StaffInfo>? Staff = null,
+    string? OwnItemsSummary = null);
 
 /// <summary>A new account, or the changes to one.</summary>
 /// <param name="OwnerPassword">Required for a new account; for an existing one a non-empty value sets a new password.</param>

@@ -59,7 +59,24 @@ width, height, longest side or perimeter). A bundle can belong to one system or 
    changed ones updated (the company's own prices are kept), and ones no longer given are retired, so saved quotes still
    open and price.
 
-A company with nothing ticked keeps its own library (as before Milestone 13).
+A company with nothing ticked and no own items keeps its own library (as before Milestone 13).
+
+## A company's own items
+
+Products made for **one company only**: its own profiles, glass, hardware, systems and bundles (for example a special
+frame, its own brand of handle, or a system only it sells). In the company's account, under **This company's own items**,
+**Edit own items…** opens the Library Manager with the catalogue and the company's own items:
+
+- everything **added** there is the company's own (ids must differ from the catalogue's); own items can **use catalogue
+  items** — an own system with the catalogue's sash, an own frame with the catalogue's steel, an own hardware set with
+  catalogue hinges — and those come along automatically;
+- choosing another **default system** there makes it the system the company's new windows start in;
+- changes to **catalogue items** made there are not kept (MARK Owner says so): change those on the Catalogue page.
+
+The company always gets its own items, on top of what is ticked from the catalogue (systems only for products it is
+licensed for). No other company sees them. Saving them changes the company's catalogue fingerprint, so MARK fetches them
+at its next check-in. A catalogue that would clash with a company's own items (same id, or removing something they use)
+is not published, and MARK Owner says which company is affected.
 
 ## In MARK
 
@@ -74,13 +91,14 @@ A company with nothing ticked keeps its own library (as before Milestone 13).
 | Where | What |
 |---|---|
 | `Mark.Core/Library/Systems.cs` | `ProductSystem`, `Bundle`, `BundlePart`, `UsedWith`, `ReinforcementRule`, `CatalogueSelection` |
+| `Mark.Core/Library/CompanyItems.cs` | A company's own items: `Combine` with the catalogue, `Split` an edited copy, `CatalogueChanges` |
 | `Mark.Core/Library/CatalogueSelector.cs` | A company's part of the master (closure of everything needed, licensed materials only) |
 | `Mark.Core/Design/FrameEditor.Systems.cs` | `TrySetSystem`; `SetFrameSystemCommand` |
 | `Mark.Calculation/CalculationEngine.cs` | System defaults, member bundles, opening sets, reinforcement |
 | `Mark.Data` | Schema 4 (systems, bundles, JSON columns; schema 5 adds quote history, see areas.md), `LibraryService.ApplyCatalogue` |
-| `Mark.LicenceServer` | Schema 2 (catalogue, selections), `PublishCatalogue`, `ClientCatalogue`, catalogue hash in licences |
+| `Mark.LicenceServer` | Schema 2 (catalogue, selections), schema 4 (`company_items`), `PublishCatalogue`, `SaveCompanyItems`, `ClientCatalogue`, catalogue hash in licences |
 | `Mark.Designer` | `CatalogueSync`, system picker, Library Manager (shared with MARK Owner) |
-| `Mark.Owner` | Catalogue page, `CatalogueChoiceViewModel` in the account and company-type editors |
+| `Mark.Owner` | Catalogue page, `CatalogueChoiceViewModel` in the account and company-type editors, own items (`LibraryWorkingCopy`) |
 
 ## Not yet
 

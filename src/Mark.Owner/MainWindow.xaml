@@ -443,6 +443,19 @@
                                            TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}"
                                            Visibility="{Binding HasCatalogue, Converter={StaticResource InverseBoolToVisibility}}" />
 
+                                <!-- Products only this company gets -->
+                                <TextBlock Text="THIS COMPANY'S OWN ITEMS" Style="{StaticResource SectionTitle}" Margin="0,18,0,2" />
+                                <TextBlock Text="Products only this company gets: its own profiles, glass, hardware, systems and bundles. They can use items of the catalogue, and come on top of what is ticked above."
+                                           TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,6" />
+                                <DockPanel Visibility="{Binding IsNew, Converter={StaticResource InverseBoolToVisibility}}">
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource SmallButton}" Content="Edit own items…"
+                                            ToolTip="Opens the Library Manager with the catalogue and this company's own items. What you add there only this company gets."
+                                            Command="{Binding DataContext.EditOwnItemsCommand, ElementName=CompaniesPage}" />
+                                    <TextBlock Text="{Binding OwnItemsSummary}" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#1F2A37" />
+                                </DockPanel>
+                                <TextBlock Text="Save the new account first, then add its own items." Foreground="{StaticResource MutedTextBrush}"
+                                           Visibility="{Binding IsNew, Converter={StaticResource BoolToVisibility}}" />
+
                                 <!-- Computers -->
                                 <StackPanel Visibility="{Binding IsNew, Converter={StaticResource InverseBoolToVisibility}}">
                                     <TextBlock Text="COMPUTERS SIGNED IN" Style="{StaticResource SectionTitle}" Margin="0,18,0,6" />

@@ -12,7 +12,7 @@ namespace Mark.LicenceServer;
 /// </summary>
 public sealed class LicenceDatabase
 {
-    public const int SchemaVersion = 3;
+    public const int SchemaVersion = 4;
 
     private readonly string _connectionString;
 
@@ -60,6 +60,21 @@ public sealed class LicenceDatabase
         if (version == 0) CreateVersion1(connection);
         if (version < 2) UpgradeToVersion2(connection);
         if (version < 3) UpgradeToVersion3(connection);
+        if (version < 4) UpgradeToVersion4(connection);
+    }
+
+    /// <summary>Version 4: each company's own items (products the owner made for that company only).</summary>
+    private static void UpgradeToVersion4(SqliteConnection connection)
+    {
+        using var transaction = connection.BeginTransaction();
+        Execute(connection, """
+            CREATE TABLE company_items (
+                company_id TEXT PRIMARY KEY REFERENCES companies(id) ON DELETE CASCADE,
+                items_json TEXT NOT NULL,
+                updated_utc TEXT NOT NULL);
+            """, transaction);
+        Execute(connection, "PRAGMA user_version = 4", transaction);
+        transaction.Commit();
     }
 
     /// <summary>

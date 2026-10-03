@@ -74,7 +74,7 @@ public sealed partial class LicenceService
 
         return new CompanyDetail(c.Id, c.Name, c.Logo, c.TypeId, ownerName, ownerUserId, c.Products, c.PackageId, c.ValidUntilUtc,
             c.MaxComputers, c.AddOns, c.RemovedFeatures, c.Suspended, c.Notes, c.CreatedUtc, computers, c.Catalogue, c.MaxUsers,
-            StaffOf(connection, c.Id, transaction));
+            StaffOf(connection, c.Id, transaction), OwnItemsOf(connection, c.Id, transaction).SummaryText);
     }
 
     /// <summary>A new company account with its owner login (User ID and password set by the admin).</summary>

@@ -233,5 +233,8 @@ public sealed record CatalogueSelection
 
     public IReadOnlyList<string> ItemIds { get; init; } = Array.Empty<string>();
 
-    public bool IsEmpty => SystemIds.Count == 0 && ItemIds.Count == 0;
+    /// <summary>Bundles that always come along (a company's own bundles), with their parts.</summary>
+    public IReadOnlyList<string> BundleIds { get; init; } = Array.Empty<string>();
+
+    public bool IsEmpty => SystemIds.Count == 0 && ItemIds.Count == 0 && BundleIds.Count == 0;
 }

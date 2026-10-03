@@ -33,12 +33,13 @@ public static class CatalogueSelector
             items.UnionWith(new[] { system.FrameProfileId, system.MullionProfileId, system.TransomProfileId, system.SashProfileId,
                 system.MeshSashProfileId, system.GlassId }.OfType<string>());
 
-        var bundles = master.Bundles.Where(b => b.SystemId is { } id && systemIds.Contains(id)).ToList();
+        var chosenBundles = selection.BundleIds.ToHashSet(StringComparer.Ordinal);
+        var bundles = master.Bundles.Where(b => b.SystemId is { } id ? systemIds.Contains(id) : chosenBundles.Contains(b.Id)).ToList();
         foreach (var bundle in bundles)
             AddBundleItems(bundle, items);
 
         // Bundles without a system: with their profile, or (opening sets) when every part is already there.
-        foreach (var bundle in master.Bundles.Where(b => b.SystemId is null))
+        foreach (var bundle in master.Bundles.Where(b => b.SystemId is null && !chosenBundles.Contains(b.Id)))
         {
             bool include = bundle.ProfileId is { } profileId ? items.Contains(profileId) : bundle.Parts.All(p => items.Contains(p.ItemId));
             if (!include) continue;

@@ -121,6 +121,12 @@ public sealed class OwnerApiClient : IDisposable
     public Task<CompanyDetail> FreeComputerAsync(Guid companyId, Guid computerId, CancellationToken cancel = default)
         => _api.SendAsync<CompanyDetail>(HttpMethod.Delete, $"api/admin/companies/{companyId}/computers/{computerId}", null, cancel);
 
+    public Task<CompanyItemsInfo> CompanyItemsAsync(Guid companyId, CancellationToken cancel = default)
+        => _api.SendAsync<CompanyItemsInfo>(HttpMethod.Get, $"api/admin/companies/{companyId}/own-items", null, cancel);
+
+    public Task<CompanyItemsInfo> SaveCompanyItemsAsync(Guid companyId, string itemsJson, CancellationToken cancel = default)
+        => _api.SendAsync<CompanyItemsInfo>(HttpMethod.Put, $"api/admin/companies/{companyId}/own-items", new SaveCompanyItemsRequest(itemsJson), cancel);
+
     public Task<CompanyDetail> RemoveStaffAsync(Guid companyId, Guid staffId, CancellationToken cancel = default)
         => _api.SendAsync<CompanyDetail>(HttpMethod.Delete, $"api/admin/companies/{companyId}/staff/{staffId}", null, cancel);
 

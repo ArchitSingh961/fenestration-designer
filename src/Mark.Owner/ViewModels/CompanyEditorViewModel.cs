@@ -220,6 +220,14 @@ public sealed class CompanyEditorViewModel : ViewModelBase
 
     public bool HasStaff => Existing?.Staff is { Count: > 0 };
 
+    private string? _ownItemsSummary;
+    /// <summary>"2 profiles · 1 system" or "None": the products only this company gets.</summary>
+    public string OwnItemsSummary
+    {
+        get => _ownItemsSummary ?? Existing?.OwnItemsSummary ?? "None";
+        set => SetProperty(ref _ownItemsSummary, value);
+    }
+
     /// <summary>"2 of 3 logins in use: the account owner and 1 staff."</summary>
     public string UsersInUseText
     {

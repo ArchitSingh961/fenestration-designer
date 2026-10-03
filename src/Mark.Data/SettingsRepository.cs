@@ -61,6 +61,32 @@ public sealed class SettingsRepository
     }
 
     private const string CatalogueHashKey = "catalogue.hash";
+    private const string OwnItemsKey = "catalogue.ownItems";
+
+    /// <summary>Which items of the owner's catalogue are the company's own (shown as their own section), or null.</summary>
+    public Mark.Core.Library.OwnItemsLabel? LoadOwnItems()
+        => _database.Guard("read the settings", () =>
+        {
+            using var connection = _database.Connect();
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT value_json FROM app_settings WHERE key = $key";
+            command.Parameters.AddWithValue("$key", OwnItemsKey);
+            return command.ExecuteScalar() is string json ? System.Text.Json.JsonSerializer.Deserialize<Mark.Core.Library.OwnItemsLabel?>(json) : null;
+        });
+
+    public void SaveOwnItems(Mark.Core.Library.OwnItemsLabel? ownItems)
+        => _database.Guard("save the settings", () =>
+        {
+            using var connection = _database.Connect();
+            using var command = connection.CreateCommand();
+            command.CommandText = """
+                INSERT INTO app_settings (key, value_json) VALUES ($key, $value)
+                ON CONFLICT (key) DO UPDATE SET value_json = excluded.value_json
+                """;
+            command.Parameters.AddWithValue("$key", OwnItemsKey);
+            command.Parameters.AddWithValue("$value", System.Text.Json.JsonSerializer.Serialize(ownItems));
+            command.ExecuteNonQuery();
+        });
 
     /// <summary>The fingerprint of the owner's catalogue last applied to the library, or null.</summary>
     public string? LoadCatalogueHash()

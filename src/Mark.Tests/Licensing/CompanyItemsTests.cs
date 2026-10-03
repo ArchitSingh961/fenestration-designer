@@ -167,4 +167,58 @@ public class CompanyItemsTests : IDisposable
         Assert.Null(_server.Read(_server.SignIn("sozluk").Licence).CatalogueHash);
         Assert.Equal("None", _server.Service.Company(company.Id).OwnItemsSummary);
     }
+    // ── Shown apart, with the company's name ────────────────────────
+
+    [Fact]
+    public void ACompanysCatalogue_MarksItsOwnItems_WithTheCompanyName()
+    {
+        _server.Service.PublishCatalogue(SampleJson);
+        var sozluk = Company("Sozluk", "sozluk", new CompanyCatalogue(new[] { Upvc }, Array.Empty<string>()));
+        Company("Shree Windows", "shree", new CompanyCatalogue(new[] { Upvc }, Array.Empty<string>()));
+        _server.Service.SaveCompanyItems(sozluk.Id, CompanyItems.Serialize(Sozluk()));
+
+        string Json(string userId)
+        {
+            var signIn = _server.SignIn(userId);
+            return _server.Service.ClientCatalogue(new CatalogueRequest(signIn.DeviceToken, "PC-1")).LibraryJson;
+        }
+        var label = LibrarySerializer.ReadOwnItems(Json("sozluk"))!;
+
+        Assert.Equal("Sozluk — own items", label.SectionTitle);
+        Assert.Equal(new[] { "MAT-SOZ-HANDLE", "PRF-SOZ-FRM", "BND-SOZ-HW", "SYS-SOZ-62" }.Order(), label.Ids.Order());
+        Assert.Null(LibrarySerializer.ReadOwnItems(Json("shree")));
+        Assert.NotNull(LibrarySerializer.Deserialize(Json("sozluk")).FindSystem("SYS-SOZ-62"));   // still a normal library file
+    }
+
+    [Fact]
+    public void LibraryManager_ShowsTheCompanysOwnItems_AsTheirOwnSection_AfterTheCatalogue()
+    {
+        using var temp = new TempDatabase();
+        var store = temp.Open();
+        store.Library.Import(CompanyItems.Combine(Sample, Sozluk()));
+        var label = new OwnItemsLabel("Sozluk", new[] { "PRF-SOZ-FRM" });
+
+        var manager = new Mark.Designer.ViewModels.LibraryManagerViewModel(store.Library,
+            ownItems: Mark.Designer.ViewModels.OwnItemsSection.Of(label));
+
+        Assert.Equal("Sozluk — own items", manager.Items.Last().Section);
+        Assert.Equal("PRF-SOZ-FRM", manager.Items.Last().Id);
+        Assert.All(manager.Items.SkipLast(1), row => Assert.Equal("Catalogue", row.Section));
+        Assert.All(new Mark.Designer.ViewModels.LibraryManagerViewModel(store.Library).Items, row => Assert.Null(row.Section));
+    }
+
+    [Fact]
+    public void Mark_RemembersWhichItemsAreTheCompanysOwn()
+    {
+        using var temp = new TempDatabase();
+        var store = temp.Open();
+
+        store.Settings.SaveOwnItems(new OwnItemsLabel("Sozluk", new[] { "PRF-SOZ-FRM" }));
+
+        var label = temp.Open().Settings.LoadOwnItems()!;
+        Assert.Equal("Sozluk", label.CompanyName);
+        Assert.True(label.Contains("PRF-SOZ-FRM"));
+        store.Settings.SaveOwnItems(null);
+        Assert.Null(store.Settings.LoadOwnItems());
+    }
 }

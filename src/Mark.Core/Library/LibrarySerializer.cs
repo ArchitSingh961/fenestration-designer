@@ -37,13 +37,20 @@ public static class LibrarySerializer
         public List<MaterialDefinition> Materials { get; set; } = new();
         public List<ProductSystem> Systems { get; set; } = new();
         public List<Bundle> Bundles { get; set; } = new();
+
+        /// <summary>A company's catalogue: which items are its own (only read by <see cref="ReadOwnItems"/>).</summary>
+        public OwnItemsLabel? OwnItems { get; set; }
     }
 
-    public static string Serialize(IProductLibrary library)
+    public static string Serialize(IProductLibrary library) => Serialize(library, null);
+
+    /// <summary>The library file, with the company's own items marked (a company's catalogue from the licence server).</summary>
+    public static string Serialize(IProductLibrary library, OwnItemsLabel? ownItems)
     {
         ArgumentNullException.ThrowIfNull(library);
         return JsonSerializer.Serialize(new LibraryFile
         {
+            OwnItems = ownItems,
             Currency = library.Currency,
             Defaults = library.Defaults,
             Profiles = library.Profiles.ToList(),
@@ -75,6 +82,19 @@ public static class LibrarySerializer
                 $"Library file version {file.Version} is newer than this application supports (version {CurrentVersion}).");
 
         return new ProductLibrary(file.Profiles, file.Glass, file.Materials, file.Defaults, file.Currency, file.Systems, file.Bundles);
+    }
+
+    /// <summary>Which items of a company's catalogue are its own, or null (any other library file).</summary>
+    public static OwnItemsLabel? ReadOwnItems(string json)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<LibraryFile>(json, Options)?.OwnItems is { CompanyName: not null, Ids: not null } own ? own : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     public static ProductLibrary Load(string filePath) => Deserialize(File.ReadAllText(filePath));

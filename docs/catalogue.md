@@ -73,6 +73,9 @@ frame, its own brand of handle, or a system only it sells). In the company's acc
 - choosing another **default system** there makes it the system the company's new windows start in;
 - changes to **catalogue items** made there are not kept (MARK Owner says so): change those on the Catalogue page.
 
+In the Library Manager — in MARK Owner's *Edit own items…* and in the company's MARK — they are listed apart, under a
+heading with the company's name (**Sozluk — own items**), after the catalogue's items.
+
 The company always gets its own items, on top of what is ticked from the catalogue (systems only for products it is
 licensed for). No other company sees them. Saving them changes the company's catalogue fingerprint, so MARK fetches them
 at its next check-in. A catalogue that would clash with a company's own items (same id, or removing something they use)

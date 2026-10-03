@@ -20,6 +20,13 @@
             <Setter Property="Margin" Value="0,12,0,4" />
         </Style>
 
+        <!-- The list, in sections when a company's own items are shown apart from the catalogue. -->
+        <CollectionViewSource x:Key="ItemsView" Source="{Binding Items}">
+            <CollectionViewSource.GroupDescriptions>
+                <PropertyGroupDescription PropertyName="Section" />
+            </CollectionViewSource.GroupDescriptions>
+        </CollectionViewSource>
+
         <!-- Tick boxes of systems (used with) -->
         <DataTemplate x:Key="CheckChoiceTemplate">
             <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" Margin="0,2,14,2" />
@@ -387,7 +394,25 @@
             <DockPanel>
                 <TextBlock DockPanel.Dock="Bottom" Text="{Binding ResultSummary}" Margin="0,4,0,0" FontSize="11"
                            Foreground="{StaticResource MutedTextBrush}" />
-                <ListView ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}">
+                <ListView ItemsSource="{Binding Source={StaticResource ItemsView}}" SelectedItem="{Binding SelectedItem}">
+                    <ListView.GroupStyle>
+                        <GroupStyle>
+                            <GroupStyle.HeaderTemplate>
+                                <DataTemplate>
+                                    <Border x:Name="Header" Background="#EEF3FB" BorderBrush="#D5E2F5" BorderThickness="0,1" Padding="8,5" Margin="0,6,0,2">
+                                        <TextBlock FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}">
+                                            <Run Text="{Binding Name, Mode=OneWay}" /><Run Text="  ·  " Foreground="#8A97A8" /><Run Text="{Binding ItemCount, Mode=OneWay}" Foreground="#8A97A8" />
+                                        </TextBlock>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Name}" Value="{x:Null}">
+                                            <Setter TargetName="Header" Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </GroupStyle.HeaderTemplate>
+                        </GroupStyle>
+                    </ListView.GroupStyle>
                     <ListView.View>
                         <GridView>
                             <GridViewColumn Header="Id" Width="140" DisplayMemberBinding="{Binding Id}" />

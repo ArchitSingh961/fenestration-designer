@@ -48,6 +48,7 @@ public sealed class CatalogueSync
             var (json, error) = await _licence.DownloadCatalogueAsync(cancel);
             if (json is null) return $"Your product catalogue could not be updated: {error}";
             var result = _store.Library.ApplyCatalogue(LibrarySerializer.Deserialize(json));
+            _store.Settings.SaveOwnItems(LibrarySerializer.ReadOwnItems(json));
             _store.Settings.SaveCatalogueHash(expected);
             return result.Changed
                 ? $"Your product catalogue was updated: {result.Added.Count} new, {result.Updated.Count} changed, {result.Retired.Count} no longer offered."

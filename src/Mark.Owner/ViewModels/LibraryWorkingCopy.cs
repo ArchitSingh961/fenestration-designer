@@ -22,7 +22,7 @@ public sealed class LibraryWorkingCopy
 
     /// <summary>Opens the Library Manager on <paramref name="start"/>; returns the library as it was closed, or null when nothing changed.</summary>
     /// <exception cref="InvalidOperationException">The working copy could not be created.</exception>
-    public ProductLibrary? Edit(ProductLibrary start)
+    public ProductLibrary? Edit(ProductLibrary start, OwnItemsSection? ownItems = null)
     {
         Directory.CreateDirectory(_workFolder);
         string path = Path.Combine(_workFolder, $"own-items-{Guid.NewGuid():N}.db");
@@ -31,7 +31,7 @@ public sealed class LibraryWorkingCopy
             var store = LocalStore.Open(path);
             store.Library.Import(start);
             string before = LibrarySerializer.Serialize(store.Library.Current);
-            _host.ShowLibraryManager(new LibraryManagerViewModel(store.Library, dialogs: _host.Dialogs));
+            _host.ShowLibraryManager(new LibraryManagerViewModel(store.Library, dialogs: _host.Dialogs, ownItems: ownItems));
             var after = store.Library.Current;
             return LibrarySerializer.Serialize(after) == before ? null : LibrarySerializer.Deserialize(LibrarySerializer.Serialize(after));
         }

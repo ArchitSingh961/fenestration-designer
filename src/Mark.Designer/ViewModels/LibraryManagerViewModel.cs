@@ -12,6 +12,17 @@ namespace Mark.Designer.ViewModels;
 public sealed record LibraryItemRow(LibraryItemKind Kind, string Id, string Name, string Detail, bool IsActive)
 {
     public string Status => IsActive ? "" : "retired";
+
+    /// <summary>"Catalogue" or "Sozluk — own items" when the list is in sections, otherwise null.</summary>
+    public string? Section { get; init; }
+}
+
+/// <summary>Shows a company's own items as a section of their own after the catalogue: its title and which ids are its.</summary>
+public sealed record OwnItemsSection(string Title, Func<string, bool> IsOwn)
+{
+    public const string CatalogueTitle = "Catalogue";
+
+    public static OwnItemsSection Of(OwnItemsLabel label) => new(label.SectionTitle, label.Contains);
 }
 
 /// <summary>A kind of library entry as offered in the manager's "Show" list.</summary>
@@ -36,12 +47,15 @@ public sealed class LibraryManagerViewModel : ViewModelBase
     private readonly IProjectRepository? _projects;
     private readonly Func<Project?> _openProject;
     private readonly IDialogService? _dialogs;
+    private readonly OwnItemsSection? _ownItems;
     private bool _refreshing;
 
     /// <param name="pricesOnly">The library follows the owner's catalogue: only the company's own prices can be changed.</param>
+    /// <param name="ownItems">A company's own items, shown as a section of their own after the catalogue; null: one list.</param>
     public LibraryManagerViewModel(LibraryService library, IProjectRepository? projects = null, Func<Project?>? openProject = null,
-        IDialogService? dialogs = null, bool pricesOnly = false)
+        IDialogService? dialogs = null, bool pricesOnly = false, OwnItemsSection? ownItems = null)
     {
+        _ownItems = ownItems;
         _library = library ?? throw new ArgumentNullException(nameof(library));
         _projects = projects;
         _openProject = openProject ?? (() => null);
@@ -242,6 +256,9 @@ public sealed class LibraryManagerViewModel : ViewModelBase
             };
 
             Items.Clear();
+            if (_ownItems is { } own)
+                rows = rows.Select(r => r with { Section = own.IsOwn(r.Id) ? own.Title : OwnItemsSection.CatalogueTitle })
+                    .OrderBy(r => r.Section == OwnItemsSection.CatalogueTitle ? 0 : 1).ToList();
             foreach (var row in rows)
                 Items.Add(row);
             int total = Kind switch

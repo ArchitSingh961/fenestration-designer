@@ -109,7 +109,10 @@ public sealed partial class LicenceService
             BundleIds = own.Bundles.Select(b => b.Id).ToList()
         };
         var library = CatalogueSelector.Select(combined, selection, material => licensed.Contains(ProductOf(material)));
-        return LibrarySerializer.Serialize(library);
+        var ownIds = own.AllIds.ToHashSet(StringComparer.Ordinal);
+        var sent = library.Profiles.Select(p => p.Id).Concat(library.Glass.Select(g => g.Id)).Concat(library.Materials.Select(m => m.Id))
+            .Concat(library.Systems.Select(x => x.Id)).Concat(library.Bundles.Select(b => b.Id)).Where(ownIds.Contains).ToList();
+        return LibrarySerializer.Serialize(library, sent.Count == 0 ? null : new OwnItemsLabel(company.Name, sent));
     }
 
     // ── A company's own items ───────────────────────────────────────

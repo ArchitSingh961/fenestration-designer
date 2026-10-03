@@ -317,8 +317,17 @@ public partial class MainViewModel
             Report(Access.ReadOnlyMessage ?? AccessViewModel.LockedMessage(Licensing.Features.LibraryManager));
             return;
         }
+        Mark.Core.Library.OwnItemsLabel? ownItems = null;
+        try
+        {
+            if (Access.IsCatalogueManaged) ownItems = Store.Settings.LoadOwnItems();
+        }
+        catch (DataStoreException)
+        {
+            // Without the label the company's own items are listed with the others.
+        }
         Dialogs.ShowLibraryManager(new LibraryManagerViewModel(Store.Library, Store.Projects, () => Project, Dialogs,
-            pricesOnly: Access.IsCatalogueManaged));
+            pricesOnly: Access.IsCatalogueManaged, ownItems: ownItems is null ? null : OwnItemsSection.Of(ownItems)));
     }
 
     private void Report(string? error)

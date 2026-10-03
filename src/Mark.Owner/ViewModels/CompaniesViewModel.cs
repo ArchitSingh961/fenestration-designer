@@ -284,7 +284,11 @@ public sealed class CompaniesViewModel : OwnerPage
         try
         {
             var own = Mark.Core.Library.CompanyItems.Deserialize(info!.ItemsJson);
-            if (_workingCopy.Edit(Mark.Core.Library.CompanyItems.Combine(master, own)) is not { } changed)
+            // Everything not in the catalogue is the company's, including what is added in the Library Manager.
+            var catalogueIds = Mark.Core.Library.CompanyItems.Split(master, Mark.Core.Library.ProductLibrary.Empty).AllIds.ToHashSet(StringComparer.Ordinal);
+            var section = new OwnItemsSection(new Mark.Core.Library.OwnItemsLabel(company.Name, Array.Empty<string>()).SectionTitle,
+                id => !catalogueIds.Contains(id));
+            if (_workingCopy.Edit(Mark.Core.Library.CompanyItems.Combine(master, own), section) is not { } changed)
             {
                 Show($"{company.Name}'s own items were not changed.");
                 return;

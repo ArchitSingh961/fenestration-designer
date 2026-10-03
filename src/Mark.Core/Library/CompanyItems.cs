@@ -4,6 +4,17 @@ using System.Text.Json.Serialization;
 namespace Mark.Core.Library;
 
 /// <summary>
+/// Which items of a company's catalogue are its own (made for it only), and the company's name, so the Library Manager
+/// can show them as a section of their own: "Sozluk — own items".
+/// </summary>
+public sealed record OwnItemsLabel(string CompanyName, IReadOnlyList<string> Ids)
+{
+    public string SectionTitle => $"{CompanyName} — own items";
+
+    public bool Contains(string id) => Ids.Contains(id, StringComparer.Ordinal);
+}
+
+/// <summary>
 /// Products the owner made for one company only: its own profiles, glass, hardware, systems and bundles, and the system
 /// its new windows start in. They may use items of the master catalogue (an own system with a catalogue frame profile,
 /// an own bundle with catalogue hinges), so they are complete only together with it (<see cref="Combine"/>). Their ids
@@ -33,6 +44,10 @@ public sealed record CompanyItems
     public int Count => Profiles.Count + Glass.Count + Materials.Count + Systems.Count + Bundles.Count;
 
     /// <summary>The ids of the profiles, glass and materials.</summary>
+    /// <summary>Every id: profiles, glass, materials, systems and bundles.</summary>
+    [JsonIgnore]
+    public IEnumerable<string> AllIds => ItemIds.Concat(Systems.Select(x => x.Id)).Concat(Bundles.Select(b => b.Id));
+
     [JsonIgnore]
     public IEnumerable<string> ItemIds => Profiles.Select(p => p.Id).Concat(Glass.Select(g => g.Id)).Concat(Materials.Select(m => m.Id));
 

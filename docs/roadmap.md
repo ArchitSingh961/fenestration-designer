@@ -42,8 +42,10 @@ used unless changed before that milestone starts.
 - Roles: **Admin** (the owner) and **Account owner** (a client company).
 - **MARK Owner** — the owner side **(default — confirm: a separate desktop program on the owner's PC)**:
   - all companies at a glance: name, logo, products, package, users/computers used, validity, status, last check-in;
-  - **New account**: company name and logo (only the admin can change them), User ID and password set by the admin,
-    account type **Aluminium / uPVC / Aluminium + uPVC** (each product licensed separately), validity
+  - **Company types** made by the admin (e.g. uPVC fabricator, Aluminium fabricator, uPVC + Aluminium, Trial), each
+    with its products, package and validity as a starting point;
+  - **New account**: company name and logo (only the admin can change them), **company type**, User ID and password
+    set by the admin, products **uPVC / Aluminium** (each licensed separately, with its own validity), validity
     (1 month / 3 months / 6 months / 1 year / exact date), number of computers;
   - suspend / reactivate an account or one product, extend validity, reset a password, change the account type,
     free a computer.
@@ -55,7 +57,7 @@ used unless changed before that milestone starts.
   cannot be edited without breaking the signature. Clock-rollback protection.
 - **Daily check-in** when online; **offline grace period (default — confirm: 7 days)**.
 - When expired or suspended: **(default — confirm: read-only — open and export old quotes, no changes)**.
-- **Free trial (default — confirm: 14 days, both products)**.
+- **Free trial**: a "Trial" company type (default — confirm: 14 days, both products, everything included).
 - The client's **company name and logo** shown in MARK's header (and later on quotations).
 - **Feature catalogue** of everything in MARK, grouped by area (products, sales, design, pricing, library,
   production, orders, purchasing, inventory, accounts, limits on users and computers).
@@ -69,7 +71,35 @@ grace period; a tampered licence file is rejected.
 
 ---
 
-## 13 — Separate areas and permissions
+## 13 — Product catalogue, systems and bundles
+
+**Goal:** the admin decides what every company can use, and the designer uses the right parts automatically.
+
+- **Master catalogue on the admin side only** (MARK Owner): profiles, glass, hardware/equipment, reinforcement and
+  accessories. Only the admin adds, changes or removes items.
+- **"Used with" for every item**: material (uPVC / Aluminium), system (e.g. "62mm Casement – uPVC", "Series 60
+  Sliding – Aluminium"), window or door, position (outer frame, sash, mullion incl. Z mullion, transom, coupler,
+  glazing bead, interlock, track, mesh sash…), inward/outward, opening types, glass thickness range.
+- **Bundles**: parts that always go together in one position, e.g. sliding 2-track frame = frame profile + track
+  rail + bottom cover + gasket; sliding sash = sash profile + interlock + brush seal + rollers; hardware sets.
+  Each part has a quantity rule: per length (e.g. gasket 2 × length), per piece, by size (e.g. 2 hinges up to
+  1200 mm, 3 above), and a cut deduction for profiles.
+- **Reinforcement (RI)** per profile: which steel bar, when it is needed (always / above a length), cut deduction.
+- **Per company**: the admin ticks which systems, bundles and items each company gets; each company type brings a
+  starting set. Changes reach the company at its next check-in.
+- In MARK the library becomes **read-only** for client companies: they see and use only what they were given and
+  **(default — confirm) enter only their own purchase prices**.
+- Designs choose a system (and window or door); the whole bundle goes into the bill of materials, cutting list and
+  price; only compatible glass is offered. Old quotes keep their copy when an item is removed.
+- Existing libraries and designs are converted to a default system per material.
+
+**Done when:** a design in a 62mm uPVC casement system lists the right frame, sash, mullion, coupler and
+reinforcement with correct cut lengths and prices; a company sees only what the admin gave it; incompatible items
+cannot be chosen.
+
+---
+
+## 14 — Separate areas and permissions
 
 **Goal:** MARK is organised into areas, and each user sees only what they may use.
 
@@ -81,29 +111,6 @@ grace period; a tampered licence file is rejected.
 - Who did what: quotes and changes record the user.
 
 **Done when:** each area opens on its own; a user without access to an area cannot reach it; staff permissions work.
-
----
-
-## 14 — Product systems and "used with" rules
-
-**Goal:** the library describes real product systems, and the designer uses the right parts automatically.
-
-- **Systems** (e.g. "62mm Casement – uPVC", "Series 60 Sliding – Aluminium") with material uPVC or Aluminium
-  (replaces a separate uPVC/Aluminium split).
-- **Parts by role**, with window/door and inward/outward variants: outer frame, sash, mullion (incl. Z mullion),
-  transom, coupler, glazing bead, interlock, track, mesh sash…
-- **Reinforcement (RI)** per profile: which steel bar, when it is needed (always / above a length) and its cut
-  deduction.
-- **Hardware sets** per system and opening type with size rules (e.g. 2 hinges up to 1200 mm, 3 above).
-- **Glass compatibility**: thickness range per system; glazing bead chosen by glass thickness.
-- **Add your own** glass, profiles, reinforcement, couplers and hardware, and tick the systems, roles and opening
-  types each may be used with.
-- Designs choose a system (and window or door); parts, reinforcement, bead and hardware are picked automatically;
-  only compatible glass is offered. Reinforcement appears in the bill of materials, cutting list and pricing.
-- Existing libraries and designs are converted to a default system per material.
-
-**Done when:** a design in a 62mm uPVC casement system lists the right frame, sash, mullion, coupler and
-reinforcement with correct cut lengths and prices, and incompatible items cannot be chosen.
 
 ---
 
@@ -160,5 +167,5 @@ reinforcement with correct cut lengths and prices, and incompatible items cannot
 - A cloud version with data on the owner's server, shared across a company's computers.
 
 ## Order of work
-12 → 13 → 14 → 15 → 16 → 17 → 18 → 19 → 20 **(default — confirm)**. Milestone 14 can move before 12 if product
-systems are needed sooner; each later area milestone registers its features in the package catalogue as it is built.
+12 → 13 → 14 → 15 → 16 → 17 → 18 → 19 → 20. Each later area milestone registers its features in the package catalogue
+as it is built.

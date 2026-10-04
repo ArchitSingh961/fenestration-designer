@@ -37,7 +37,8 @@ public sealed partial class LicenceService
                 reader.IsDBNull(extra + 4) ? null : ParseTime(reader.GetString(extra + 4)),
                 reader.GetInt32(extra + 5), c.MaxUsers));
         }
-        return list;
+        reader.Close();
+        return list.Select(c => c with { OwnItemsSummary = OwnItemsOf(connection, c.Id, null).SummaryText }).ToList();
     }
 
     public CompanyDetail Company(Guid id)

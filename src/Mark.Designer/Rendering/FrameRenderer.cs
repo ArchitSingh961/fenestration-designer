@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Media;
 using Mark.Core.Design;
 using Mark.Core.Geometry;
+using Mark.Core.Library;
 using Mark.Core.Models;
 
 namespace Mark.Designer.Rendering;
@@ -57,8 +58,15 @@ public sealed class FrameRenderer
 
     private readonly DimensionRenderer _dimensions = new();
     private readonly DesignRules _rules;
+    private readonly Func<string?, GlassLook?> _glassLook;
 
-    public FrameRenderer(DesignRules rules) => _rules = rules ?? throw new ArgumentNullException(nameof(rules));
+    /// <param name="glassLook">How a glass type (by library id; null = the library's default glass) is drawn; null: all
+    /// glass plain and clear.</param>
+    public FrameRenderer(DesignRules rules, Func<string?, GlassLook?>? glassLook = null)
+    {
+        _rules = rules ?? throw new ArgumentNullException(nameof(rules));
+        _glassLook = glassLook ?? (_ => null);
+    }
 
     /// <summary>Extra world area around a frame its drawing needs (floor line, reference), for culling and Fit.</summary>
     public static Rectangle2D DrawnBounds(Frame frame)
@@ -82,7 +90,7 @@ public sealed class FrameRenderer
         foreach (var glass in frame.GlassPanels)
         {
             bool selected = isSelected(glass.Id);
-            context.DrawRectangle(selected ? DesignTheme.SelectedGlassFill : DesignTheme.GlassFill,
+            context.DrawRectangle(GlassBrushes.For(_glassLook(glass.GlassDefinitionId), selected),
                 DesignTheme.GlassOutline, glass.Boundary.Offset(origin));
         }
 

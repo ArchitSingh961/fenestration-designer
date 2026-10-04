@@ -56,16 +56,13 @@ public sealed class CompaniesViewModel : OwnerPage
     private readonly Func<IReadOnlyList<CompanyTypeInfo>> _types;
     private readonly Func<Mark.Core.Library.ProductLibrary?> _catalogue;
     private readonly Func<DateTime> _utcNow;
-    private readonly LibraryWorkingCopy? _workingCopy;
     private List<CompanyRow> _all = new();
 
     public CompaniesViewModel(OwnerApiClient api, IOwnerDialogs dialogs, Action sessionEnded,
         Func<IReadOnlyList<PackageInfo>> packages, Func<IReadOnlyList<CompanyTypeInfo>> types, Func<DateTime>? utcNow = null,
-        Func<Mark.Core.Library.ProductLibrary?>? catalogue = null, LibraryWorkingCopy? workingCopy = null)
+        Func<Mark.Core.Library.ProductLibrary?>? catalogue = null)
         : base(api, dialogs, sessionEnded)
     {
-        _workingCopy = workingCopy;
-        EditOwnItemsCommand = new AsyncCommand(EditOwnItemsAsync, () => Editor is { IsNew: false } && _workingCopy is not null);
         _packages = packages;
         _types = types;
         _catalogue = catalogue ?? (() => null);
@@ -92,7 +89,6 @@ public sealed class CompaniesViewModel : OwnerPage
     public ICommand DeleteCommand { get; }
     public ICommand FreeComputerCommand { get; }
     public ICommand RemoveStaffCommand { get; }
-    public ICommand EditOwnItemsCommand { get; }
     public ICommand ChooseLogoCommand { get; }
     public ICommand RemoveLogoCommand { get; }
 
@@ -131,7 +127,7 @@ public sealed class CompaniesViewModel : OwnerPage
             if (!SetProperty(ref _editor, value)) return;
             OnPropertyChanged(nameof(HasEditor));
             OnPropertyChanged(nameof(SuspendText));
-            foreach (var command in new[] { SaveCommand, ToggleSuspendCommand, DeleteCommand, EditOwnItemsCommand })
+            foreach (var command in new[] { SaveCommand, ToggleSuspendCommand, DeleteCommand })
                 ((AsyncCommand)command).RaiseCanExecuteChanged();
             foreach (var command in new[] { CancelCommand, ChooseLogoCommand, RemoveLogoCommand })
                 ((RelayCommand)command).RaiseCanExecuteChanged();
@@ -265,52 +261,6 @@ public sealed class CompaniesViewModel : OwnerPage
             await LoadAsync();
             Editor = new CompanyEditorViewModel(updated!, _packages(), _types(), catalogue: _catalogue());
             Show(message);
-        }
-    }
-
-    /// <summary>
-    /// Edits the company's own items (products only it gets) with the Library Manager, on a copy of the catalogue with
-    /// them added: what is new there becomes the company's; changes to catalogue items are not kept. Saved at once.
-    /// </summary>
-    public async Task EditOwnItemsAsync()
-    {
-        if (Editor?.Existing is not { } company || _workingCopy is null) return;
-        var editor = Editor;
-        var master = _catalogue() ?? Mark.Core.Library.ProductLibrary.Empty;
-        CompanyItemsInfo? info = null;
-        if (!await RunAsync(async () => info = await Api.CompanyItemsAsync(company.Id))) return;
-
-        Mark.Core.Library.ProductLibrary edited;
-        try
-        {
-            var own = Mark.Core.Library.CompanyItems.Deserialize(info!.ItemsJson);
-            // Everything not in the catalogue is the company's, including what is added in the Library Manager.
-            var catalogueIds = Mark.Core.Library.CompanyItems.Split(master, Mark.Core.Library.ProductLibrary.Empty).AllIds.ToHashSet(StringComparer.Ordinal);
-            var section = new OwnItemsSection(new Mark.Core.Library.OwnItemsLabel(company.Name, Array.Empty<string>()).SectionTitle,
-                id => !catalogueIds.Contains(id));
-            if (_workingCopy.Edit(Mark.Core.Library.CompanyItems.Combine(master, own), section) is not { } changed)
-            {
-                Show($"{company.Name}'s own items were not changed.");
-                return;
-            }
-            edited = changed;
-        }
-        catch (InvalidOperationException ex)
-        {
-            Show($"The own items of {company.Name} could not be opened: {ex.Message}", true);
-            return;
-        }
-
-        var items = Mark.Core.Library.CompanyItems.Split(edited, master);
-        int catalogueChanges = Mark.Core.Library.CompanyItems.CatalogueChanges(edited, master);
-        string note = catalogueChanges == 0 ? ""
-            : $" Changes to {catalogueChanges} item{(catalogueChanges == 1 ? "" : "s")} of the catalogue were not kept here: change those on the Catalogue page.";
-        if (await RunAsync(() => Api.SaveCompanyItemsAsync(company.Id, Mark.Core.Library.CompanyItems.Serialize(items))))
-        {
-            editor.OwnItemsSummary = items.SummaryText;
-            Show(items.IsEmpty
-                ? $"{company.Name} has no own items now.{note}"
-                : $"Saved {company.Name}'s own items ({items.SummaryText}). Only {company.Name} gets them, at its next check-in.{note}");
         }
     }
 

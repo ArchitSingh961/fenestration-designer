@@ -24,6 +24,9 @@ public interface ICatalogueEditorHost
 /// systems with their bundles). Edit it with the Library Manager (on a working copy), then publish it; companies get their
 /// part at their next check-in. A new server can start from the sample catalogue or a library file.
 /// </summary>
+/// <summary>A company on the Catalogue page with its own items: "Sozluk" · "1 system · 2 profiles".</summary>
+public sealed record OwnItemsRow(Guid CompanyId, string Name, string Summary);
+
 public sealed class CatalogueViewModel : OwnerPage
 {
     private readonly ICatalogueEditorHost _host;
@@ -42,7 +45,15 @@ public sealed class CatalogueViewModel : OwnerPage
         ExportCommand = new RelayCommand(Export, () => Library is not null);
         UseSampleCommand = new AsyncCommand(UseSampleAsync, () => _samplePath is not null && File.Exists(_samplePath));
         RefreshCommand = new AsyncCommand(LoadAsync);
+        EditOwnItemsCommand = new RelayCommand(async p => { if (p is OwnItemsRow row) await EditOwnItemsAsync(row); });
     }
+
+    public ICommand EditOwnItemsCommand { get; }
+
+    /// <summary>Every company with its own items (products for it only), for "Edit own items…".</summary>
+    public System.Collections.ObjectModel.ObservableCollection<OwnItemsRow> OwnItemRows { get; } = new();
+
+    public bool HasCompanies => OwnItemRows.Count > 0;
 
     public ICommand EditCommand { get; }
     public ICommand ImportCommand { get; }
@@ -67,6 +78,61 @@ public sealed class CatalogueViewModel : OwnerPage
     public override async Task LoadAsync()
     {
         await RunAsync(async () => Display(await Api.CatalogueAsync()));
+        await LoadCompaniesAsync();
+    }
+
+    private async Task LoadCompaniesAsync()
+    {
+        List<CompanySummary>? companies = null;
+        if (!await RunAsync(async () => companies = await Api.CompaniesAsync())) return;
+        OwnItemRows.Clear();
+        foreach (var c in companies!)
+            OwnItemRows.Add(new OwnItemsRow(c.Id, c.Name, c.OwnItemsSummary is null or "None" ? "No own items" : c.OwnItemsSummary));
+        OnPropertyChanged(nameof(HasCompanies));
+    }
+
+    /// <summary>
+    /// Edits a company's own items (products only it gets) with the Library Manager, on a copy of the catalogue with
+    /// them added and shown apart under the company's name: what is new there becomes the company's; changes to catalogue
+    /// items are not kept. Saved at once.
+    /// </summary>
+    public async Task EditOwnItemsAsync(OwnItemsRow company)
+    {
+        var master = Library ?? ProductLibrary.Empty;
+        CompanyItemsInfo? info = null;
+        if (!await RunAsync(async () => info = await Api.CompanyItemsAsync(company.CompanyId))) return;
+
+        ProductLibrary edited;
+        try
+        {
+            var own = CompanyItems.Deserialize(info!.ItemsJson);
+            // Everything not in the catalogue is the company's, including what is added in the Library Manager.
+            var catalogueIds = CompanyItems.Split(master, ProductLibrary.Empty).AllIds.ToHashSet(StringComparer.Ordinal);
+            var section = new OwnItemsSection(new OwnItemsLabel(company.Name, Array.Empty<string>()).SectionTitle, id => !catalogueIds.Contains(id));
+            if (new LibraryWorkingCopy(_host, _workFolder).Edit(CompanyItems.Combine(master, own), section) is not { } changed)
+            {
+                Show($"The own items of {company.Name} were not changed.");
+                return;
+            }
+            edited = changed;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Show($"The own items of {company.Name} could not be opened: {ex.Message}", true);
+            return;
+        }
+
+        var items = CompanyItems.Split(edited, master);
+        int catalogueChanges = CompanyItems.CatalogueChanges(edited, master);
+        string note = catalogueChanges == 0 ? ""
+            : $" Changes to {catalogueChanges} item{(catalogueChanges == 1 ? "" : "s")} of the catalogue were not kept: use Edit catalogue for those.";
+        if (await RunAsync(() => Api.SaveCompanyItemsAsync(company.CompanyId, CompanyItems.Serialize(items))))
+        {
+            await LoadCompaniesAsync();
+            Show(items.IsEmpty
+                ? $"{company.Name} has no own items now.{note}"
+                : $"Saved the own items of {company.Name} ({items.SummaryText}). Only {company.Name} gets them, at its next check-in.{note}");
+        }
     }
 
     private void Display(CatalogueInfo info)

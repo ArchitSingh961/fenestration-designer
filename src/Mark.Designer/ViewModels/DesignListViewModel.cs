@@ -135,7 +135,7 @@ public sealed class DesignListViewModel : ViewModelBase
                 Quantity = quantity,
                 UnitPriceText = unit is { } p ? $"{Money(p)} each" : "Not priced",
                 TotalPriceText = unit is { } q ? Money(q * quantity) : "—",
-                Picture = DesignThumbnails.Render(frame, _rules, 200, 150, CardPicture),
+                Picture = DesignThumbnails.Render(frame, _rules, 200, 150, CardPicture, id => GlassLookIn(library, id)),
                 EditCommand = new RelayCommand(() => _edit(id)),
                 DuplicateCommand = new RelayCommand(() => Message = _duplicate(id)),
                 DeleteCommand = new RelayCommand(() => Message = _delete(id))
@@ -153,6 +153,10 @@ public sealed class DesignListViewModel : ViewModelBase
     }
 
     /// <summary>The card picture: the bare design with its opening symbols, a little bolder than a library icon.</summary>
+    /// <summary>How a glass type of the library is drawn (null id: the library's default glass).</summary>
+    public static Mark.Core.Library.GlassLook? GlassLookIn(Mark.Core.Library.IProductLibrary? library, string? glassId)
+        => library is null ? null : (glassId is null ? library.DefaultGlass : library.FindGlass(glassId))?.Look;
+
     private static readonly FrameRenderOptions CardPicture = FrameRenderOptions.Thumbnail with { SymbolScale = 0.6 };
 
     /// <summary>"2 × Sliding, 1 × Fixed, mesh" in drawing order of first appearance.</summary>

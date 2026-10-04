@@ -137,10 +137,21 @@
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <TextBlock Text="Category" Style="{StaticResource FormLabel}" />
                     <TextBox Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding Group}" IsEnabled="{Binding CanEditDetails}" />
+                    <TextBlock Grid.Row="5" Text="Look in drawings" Style="{StaticResource FormLabel}" />
+                    <Grid Grid.Row="5" Grid.Column="1" IsEnabled="{Binding CanEditDetails}"
+                          ToolTip="How this glass is drawn on the canvas, the design cards and quotations">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="6" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ComboBox Margin="0,2" ItemsSource="{x:Static vm:LibraryItemEditorViewModel.GlassPatterns}" SelectedItem="{Binding GlassPattern}" />
+                        <ComboBox Grid.Column="2" Margin="0,2" ItemsSource="{x:Static vm:LibraryItemEditorViewModel.GlassColours}" SelectedItem="{Binding GlassColour}" />
+                    </Grid>
                     <TextBlock Grid.Row="1" Text="Thickness (mm)" Style="{StaticResource FormLabel}" />
                     <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding Thickness}" IsEnabled="{Binding CanEditDetails}" />
                     <TextBlock Grid.Row="2" Text="Cost per m²" Style="{StaticResource FormLabel}" FontWeight="SemiBold" />

@@ -306,6 +306,8 @@ public partial class MainViewModel
         RefreshProperties();
         RefreshCalculation();
         RefreshQuoteViews();
+        Canvas.InvalidateContent();                                // glass looks may have changed
+        RefreshCompanyDesigns();
     }
 
     internal void OpenLibraryManager()

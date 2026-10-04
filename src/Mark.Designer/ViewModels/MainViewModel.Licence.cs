@@ -44,6 +44,7 @@ public partial class MainViewModel
         OnPropertyChanged(nameof(HasStaff));
         OnPropertyChanged(nameof(QuoteTotalText));
         Cutting.ShowsCosts = Access.CanSeeQuoteValues;
+        RefreshCompanyDesigns();
         OnViewChanged();
         RefreshNavigation();
     }
@@ -71,6 +72,27 @@ public partial class MainViewModel
 
     /// <summary>The account owner can open the Staff page.</summary>
     public bool HasStaff => _staff is not null && Access.CanManageStaff;
+
+    /// <summary>
+    /// The company's own systems (from the owner's catalogue) as a category of the design library, named after the
+    /// company. Without own systems the category is not shown.
+    /// </summary>
+    public void RefreshCompanyDesigns()
+    {
+        Mark.Core.Library.OwnItemsLabel? own = null;
+        try
+        {
+            if (Store is not null && Access.IsCatalogueManaged) own = Store.Settings.LoadOwnItems();
+        }
+        catch (Mark.Data.DataStoreException)
+        {
+            // Without the label there is no company category.
+        }
+        var designs = own is null ? new List<SystemDesigns>()
+            : Library.Systems.Where(x => x.IsActive && own.Contains(x.Id))
+                .Select(x => new SystemDesigns(x, DesignTemplates.ForSystem(x, Library))).ToList();
+        DesignLibrary.SetCompanyDesigns(own?.CompanyName, designs);
+    }
 
     // ── Product systems (Milestone 13) ─────────────────────────────
 

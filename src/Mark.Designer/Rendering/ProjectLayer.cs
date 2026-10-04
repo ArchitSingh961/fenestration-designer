@@ -1,5 +1,6 @@
 using Mark.Core.Design;
 using Mark.Core.Geometry;
+using Mark.Core.Library;
 using Mark.Core.Models;
 
 namespace Mark.Designer.Rendering;
@@ -34,8 +35,11 @@ public sealed class ProjectLayer : IViewportLayer
         _isSelected = isSelected;
         _previewFor = previewFor ?? (_ => null);
         _isOutsideView = isOutsideView ?? (() => false);
-        _renderer = new FrameRenderer(rules ?? new DesignRules());
+        _renderer = new FrameRenderer(rules ?? new DesignRules(), id => GlassLookOf?.Invoke(id));
     }
+
+    /// <summary>How each glass type is drawn (by library id; null id = the default glass). Null: all glass clear.</summary>
+    public Func<string?, GlassLook?>? GlassLookOf { get; set; }
 
     public BoundingBox2D Bounds => BoundingBox2D.FromRectangles(_project().Frames.Select(FrameRenderer.DrawnBounds));
 

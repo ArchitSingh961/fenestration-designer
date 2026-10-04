@@ -29,9 +29,7 @@ public sealed class OwnerShellViewModel : ViewModelBase
         _api = api ?? throw new ArgumentNullException(nameof(api));
         _signedOut = signedOut ?? throw new ArgumentNullException(nameof(signedOut));
         Action sessionEnded = () => _signedOut();
-        Companies = new CompaniesViewModel(api, dialogs, sessionEnded, () => _packages, () => _types, catalogue: () => _catalogue,
-            workingCopy: catalogueHost is null ? null
-                : new LibraryWorkingCopy(catalogueHost, workFolder ?? Path.Combine(Path.GetTempPath(), "MARK Owner")));
+        Companies = new CompaniesViewModel(api, dialogs, sessionEnded, () => _packages, () => _types, catalogue: () => _catalogue);
         Keys = new KeysViewModel(api, dialogs, sessionEnded);
         Packages = new PackagesViewModel(api, dialogs, sessionEnded, packages => _packages = packages);
         CompanyTypes = new CompanyTypesViewModel(api, dialogs, sessionEnded, () => _packages, types => _types = types, () => _catalogue);

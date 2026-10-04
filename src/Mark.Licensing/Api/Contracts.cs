@@ -128,7 +128,8 @@ public sealed record CompanySummary(
     int MaxComputers,
     DateTime? LastCheckInUtc,
     int UsersInUse = 1,
-    int MaxUsers = 1);
+    int MaxUsers = 1,
+    string? OwnItemsSummary = null);
 
 public sealed record ComputerInfo(Guid Id, string Name, string UserId, DateTime FirstSeenUtc, DateTime? LastCheckInUtc);
 

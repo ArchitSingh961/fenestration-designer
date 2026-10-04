@@ -247,6 +247,8 @@ public sealed class ProductLibrary : IProductLibrary
             if (g.WeightKgPerSquareMetre is { } w) NonNegative(w, "the weight per m²", g.Id);
             NonNegative(g.MinChargeableAreaM2, "the minimum chargeable area", g.Id);
             CheckUsages(g.Materials, g.Id, allowArea: true);
+            if (g.Look?.Color is { } colour && !System.Text.RegularExpressions.Regex.IsMatch(colour, "^#[0-9A-Fa-f]{6}$"))
+                errors.Add($"'{g.Id}': the glass colour must be written as #RRGGBB.");
         }
 
         ValidateSystems(errors, ids);

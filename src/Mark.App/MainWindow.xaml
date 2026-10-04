@@ -1926,7 +1926,8 @@
                                             <DataTemplate>
                                                 <StackPanel ToolTip="{Binding ToolTip}" Width="50" AutomationProperties.Name="{Binding Name}">
                                                     <TextBlock Text="{Binding Glyph}" FontFamily="Segoe MDL2 Assets" FontSize="18" HorizontalAlignment="Center" />
-                                                    <TextBlock Text="{Binding Name}" FontSize="10" HorizontalAlignment="Center" Margin="0,4,0,0" />
+                                                    <TextBlock Text="{Binding Name}" FontSize="10" HorizontalAlignment="Center" Margin="0,4,0,0"
+                                                               MaxWidth="54" TextTrimming="CharacterEllipsis" />
                                                 </StackPanel>
                                             </DataTemplate>
                                         </ListBox.ItemTemplate>
@@ -2029,7 +2030,7 @@
                                                                         <DataTemplate>
                                                                             <Button Style="{StaticResource DesignTile}" Command="{Binding ApplyCommand}"
                                                                                     ToolTip="{Binding Name}" AutomationProperties.Name="{Binding Name}"
-                                                                                    views:DesignDragSource.TemplateId="{Binding Template.Id}">
+                                                                                    views:DesignDragSource.TemplateId="{Binding DragId}">
                                                                                 <Image Source="{Binding Thumbnail}" Width="56" Height="56" />
                                                                             </Button>
                                                                         </DataTemplate>

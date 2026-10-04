@@ -120,10 +120,50 @@ public sealed record GlassDefinition
     /// <summary>The systems this glass is used with (null = any; systems also limit the thickness).</summary>
     public UsedWith? UsedWith { get; init; }
 
+    /// <summary>How the glass looks in drawings (null: plain clear glass).</summary>
+    public GlassLook? Look { get; init; }
+
     public IReadOnlyDictionary<string, string> Properties { get; init; } = new Dictionary<string, string>();
 
     /// <summary>False once retired: not offered for new assignments, still resolvable by Id (see ProfileDefinition).</summary>
     public bool IsActive { get; init; } = true;
+}
+
+/// <summary>The surface of a glass as drawn: clear, tinted, frosted (obscure), reflective, patterned or designer.</summary>
+public enum GlassPattern
+{
+    Clear,
+    Tinted,
+    Frosted,
+    Reflective,
+    Patterned,
+    Designer
+}
+
+/// <summary>How a glass is drawn on the canvas, design cards and quotations: its surface and colour.</summary>
+public sealed record GlassLook
+{
+    public GlassPattern Pattern { get; init; } = GlassPattern.Clear;
+
+    /// <summary>The colour as "#RRGGBB" (null: the usual light blue of clear glass).</summary>
+    public string? Color { get; init; }
+
+    /// <summary>The named colours offered in the Library Manager, with their "#RRGGBB" value (null: the default).</summary>
+    public static IReadOnlyList<(string Name, string? Color)> Colors { get; } = new (string, string?)[]
+    {
+        ("Clear blue", null), ("Grey", "#8E9AA6"), ("Bronze", "#B08B5E"), ("Green", "#7FB58A"), ("Blue", "#5C8FD6"),
+        ("Smoke", "#5A5F66"), ("Gold", "#D4B262"), ("Milky white", "#F2F4F5")
+    };
+
+    /// <summary>"Frosted · Bronze", or "Clear".</summary>
+    public string Description
+    {
+        get
+        {
+            string colour = Colors.FirstOrDefault(c => string.Equals(c.Color, Color, StringComparison.OrdinalIgnoreCase)).Name ?? Color ?? "";
+            return Pattern == GlassPattern.Clear && Color is null ? "Clear" : Color is null ? Pattern.ToString() : $"{Pattern} · {colour}";
+        }
+    }
 }
 
 /// <summary>What kind of BOM item a <see cref="MaterialDefinition"/> is. Categories, not products.</summary>

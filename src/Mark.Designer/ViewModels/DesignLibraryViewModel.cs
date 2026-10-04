@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows.Input;
 using System.Windows.Media;
 using Mark.Core.Design;
+using Mark.Core.Library;
 using Mark.Designer.Rendering;
 
 namespace Mark.Designer.ViewModels;
@@ -9,16 +10,23 @@ namespace Mark.Designer.ViewModels;
 /// <summary>One design in the library panel: its picture, name and the command that applies it.</summary>
 public sealed class DesignLibraryItem
 {
-    public DesignLibraryItem(DesignTemplate template, ImageSource? thumbnail, ICommand apply)
+    public DesignLibraryItem(DesignTemplate template, ImageSource? thumbnail, ICommand apply, ProductSystem? system = null)
     {
         Template = template;
         Thumbnail = thumbnail;
         ApplyCommand = apply;
+        System = system;
     }
 
     public DesignTemplate Template { get; }
 
-    public string Name => Template.Name;
+    /// <summary>The company's own system the design is made in, or null (the frame's system is kept).</summary>
+    public ProductSystem? System { get; }
+
+    /// <summary>What a drag carries: the template id, with "@system id" for a design in one of the company's systems.</summary>
+    public string DragId => System is null ? Template.Id : $"{Template.Id}@{System.Id}";
+
+    public string Name => System is null ? Template.Name : $"{Template.Name} · {System.Name}";
 
     public ImageSource? Thumbnail { get; }
 
@@ -33,6 +41,9 @@ public sealed record DesignLibrarySection(string Title, IReadOnlyList<DesignLibr
 /// <param name="Glyph">A Segoe MDL2 Assets / Fluent icon character.</param>
 public sealed record DesignLibraryCategory(string Name, string Glyph, string ToolTip);
 
+/// <summary>A company's own system and the ready-made designs offered in it.</summary>
+public sealed record SystemDesigns(ProductSystem System, IReadOnlyList<DesignTemplate> Templates);
+
 /// <summary>
 /// The design library panel: a rail of categories (Frame tools, Dividers, Openable, Sliding, Mesh) and the sections
 /// of designs of the selected category. Designs come from <see cref="DesignTemplates"/>; their thumbnails are drawn
@@ -44,15 +55,25 @@ public sealed class DesignLibraryViewModel : ViewModelBase
     public const string FrameCategory = "Frame";
 
     private readonly Dictionary<string, IReadOnlyList<DesignLibrarySection>> _sections = new();
-    private readonly Func<DesignTemplate, string?> _apply;
+    private readonly Func<DesignTemplate, string?, string?> _apply;
     private readonly DesignRules _rules;
+    private readonly IReadOnlyList<DesignLibraryCategory> _builtIn;
+    private DesignLibraryCategory? _company;
+    private IReadOnlyList<SystemDesigns> _companyDesigns = Array.Empty<SystemDesigns>();
 
     /// <param name="apply">Applies a design to the current target; returns an error message or null.</param>
     public DesignLibraryViewModel(DesignRules rules, Func<DesignTemplate, string?> apply)
+        : this(rules, (template, _) => apply(template))
+    {
+    }
+
+    /// <param name="apply">Applies a design (in a system of the company's own, or null) to the current target; returns an
+    /// error message or null.</param>
+    public DesignLibraryViewModel(DesignRules rules, Func<DesignTemplate, string?, string?> apply)
     {
         _rules = rules ?? throw new ArgumentNullException(nameof(rules));
         _apply = apply ?? throw new ArgumentNullException(nameof(apply));
-        Categories = new[]
+        _builtIn = new[]
         {
             new DesignLibraryCategory(FrameCategory, "", "New frame, snapping"),
             new DesignLibraryCategory(DesignTemplates.Dividers, "", "Dividers: mullions and transoms"),
@@ -64,7 +85,31 @@ public sealed class DesignLibraryViewModel : ViewModelBase
         _selectedCategory = FrameCategory;
     }
 
-    public IReadOnlyList<DesignLibraryCategory> Categories { get; }
+    /// <summary>The rail: frame tools, the built-in categories and, when the company has systems of its own, its category.</summary>
+    public IReadOnlyList<DesignLibraryCategory> Categories => _company is null ? _builtIn : _builtIn.Append(_company).ToList();
+
+    /// <summary>The name of the company's own category, or null when it has no systems of its own.</summary>
+    public string? CompanyCategory => _company?.Name;
+
+    /// <summary>
+    /// Offers the company's own systems as a category named after the company: a section per system with the designs
+    /// that suit it. No systems: no such category.
+    /// </summary>
+    public void SetCompanyDesigns(string? companyName, IReadOnlyList<SystemDesigns> designs)
+    {
+        ArgumentNullException.ThrowIfNull(designs);
+        if (_company is not null) _sections.Remove(_company.Name);
+        var kept = designs.Where(d => d.Templates.Count > 0).ToList();
+        string name = string.IsNullOrWhiteSpace(companyName) ? "Own" : companyName.Trim();
+        _company = kept.Count == 0 ? null : new DesignLibraryCategory(name, "\uE734", $"{name}: designs in your own systems");
+        _companyDesigns = kept;
+        OnPropertyChanged(nameof(Categories));
+        OnPropertyChanged(nameof(CompanyCategory));
+        if (Categories.All(c => c.Name != _selectedCategory))
+            SelectedCategory = FrameCategory;
+        else
+            OnPropertyChanged(nameof(Sections));
+    }
 
     public ICommand SelectCategoryCommand { get; }
 
@@ -94,7 +139,10 @@ public sealed class DesignLibraryViewModel : ViewModelBase
             if (IsFramePanel) return Array.Empty<DesignLibrarySection>();
             if (!_sections.TryGetValue(_selectedCategory, out var sections))
             {
-                sections = DesignTemplates.InCategory(_selectedCategory)
+                sections = _company is not null && _selectedCategory == _company.Name
+                    ? _companyDesigns.Select(d => new DesignLibrarySection(d.System.Name,
+                        d.Templates.Select(t => CreateItem(t, d.System)).ToList())).ToList()
+                    : DesignTemplates.InCategory(_selectedCategory)
                     .GroupBy(t => t.Section)
                     .Select(g => new DesignLibrarySection(g.Key, g.Select(CreateItem).ToList()))
                     .ToList();
@@ -118,6 +166,8 @@ public sealed class DesignLibraryViewModel : ViewModelBase
 
     public bool HasMessage => !string.IsNullOrEmpty(_message);
 
-    private DesignLibraryItem CreateItem(DesignTemplate template)
-        => new(template, DesignThumbnails.For(template, _rules), new RelayCommand(() => Message = _apply(template)));
+    private DesignLibraryItem CreateItem(DesignTemplate template) => CreateItem(template, null);
+
+    private DesignLibraryItem CreateItem(DesignTemplate template, ProductSystem? system)
+        => new(template, DesignThumbnails.For(template, _rules), new RelayCommand(() => Message = _apply(template, system?.Id)), system);
 }

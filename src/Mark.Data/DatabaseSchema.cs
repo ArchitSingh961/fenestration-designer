@@ -13,7 +13,7 @@ internal static class DatabaseSchema
     public const int ApplicationId = 0x46454E31;
 
     /// <summary>The schema version written by this build.</summary>
-    public const int CurrentVersion = 5;
+    public const int CurrentVersion = 6;
 
     /// <summary>Upgrade scripts keyed by the version they upgrade FROM.</summary>
     public static readonly IReadOnlyDictionary<int, string> Upgrades = new Dictionary<int, string>
@@ -21,8 +21,14 @@ internal static class DatabaseSchema
         [1] = Version2,
         [2] = Version3,
         [3] = Version4,
-        [4] = Version5
+        [4] = Version5,
+        [5] = Version6
     };
+
+    /// <summary>Version 6: how each glass is drawn (its pattern and colour), as JSON.</summary>
+    public const string Version6 = """
+        ALTER TABLE glass ADD COLUMN look_json TEXT NULL;
+        """;
 
     /// <summary>
     /// Version 5 (Milestone 14, who did what): who created and last saved each quote, and the history of every quote

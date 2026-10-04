@@ -24,7 +24,7 @@ public partial class MainViewModel : IViewportDropTarget
 
     private void CreateDesignFeatures()
     {
-        DesignLibrary = new DesignLibraryViewModel(Rules, ApplyDesign);
+        DesignLibrary = new DesignLibraryViewModel(Rules, (template, systemId) => ApplyDesign(template, systemId));
         ShowInsideCommand = new RelayCommand(() => IsOutsideView = false);
         ShowOutsideCommand = new RelayCommand(() => IsOutsideView = true);
         Properties.SetDesignInfo = SetDesignInfo;
@@ -72,7 +72,8 @@ public partial class MainViewModel : IViewportDropTarget
     /// design's suggested size is created with it. Replacing a whole frame's existing design asks first. One undo step.
     /// Returns an error message, or null (also when the user declined).
     /// </summary>
-    public string? ApplyDesign(DesignTemplate template)
+    /// <param name="systemId">A system of the company's own to make the frames in (null: they keep theirs).</param>
+    public string? ApplyDesign(DesignTemplate template, string? systemId = null)
     {
         ArgumentNullException.ThrowIfNull(template);
         if (IsOutsideView) return "Switch to the Inside view to change the design.";
@@ -98,12 +99,12 @@ public partial class MainViewModel : IViewportDropTarget
         if (targets.Count == 0)
         {
             if (Project.Frames.Count > 0) return "Select a frame or an opening first.";
-            return CreateFrameWithDesign(template, null);
+            return CreateFrameWithDesign(template, null, systemId);
         }
-        return ApplyDesign(template, targets);
+        return ApplyDesign(template, targets, systemId);
     }
 
-    private string? ApplyDesign(DesignTemplate template, IReadOnlyList<(Frame Frame, Guid? GlassId)> targets)
+    private string? ApplyDesign(DesignTemplate template, IReadOnlyList<(Frame Frame, Guid? GlassId)> targets, string? systemId = null)
     {
         var replaced = targets.Where(t => t.GlassId is null && !template.KeepsLayout && HasDesign(t.Frame))
             .Select(t => Reference(t.Frame)).ToList();
@@ -113,6 +114,9 @@ public partial class MainViewModel : IViewportDropTarget
             return null;
 
         var commands = targets.Select(t => (IUndoableCommand)new ApplyTemplateCommand(t.Frame, template, t.GlassId, Rules)).ToList();
+        if (systemId is not null)
+            commands.AddRange(targets.Select(t => t.Frame).Distinct()
+                .Select(f => (IUndoableCommand)new SetFrameSystemCommand(f, systemId, Library, Rules)));
         string? error = RunForMessage(() => CompositeCommand.Combine($"Apply design \"{template.Name}\"", commands)!);
         DesignMessage = error;
         return error;
@@ -129,7 +133,7 @@ public partial class MainViewModel : IViewportDropTarget
     /// A new frame of the design's suggested size with the design applied, at <paramref name="topLeft"/> or to the right
     /// of the existing frames. One undo step; the new frame is selected.
     /// </summary>
-    private string? CreateFrameWithDesign(DesignTemplate template, Point2D? topLeft)
+    private string? CreateFrameWithDesign(DesignTemplate template, Point2D? topLeft, string? systemId = null)
     {
         var (width, height) = template.SuggestedSize;
         double x = topLeft?.X ?? (Project.Frames.Count == 0 ? 0 : Project.Frames.Max(f => f.X + f.Width) + Rules.FrameSpacingMm);
@@ -146,6 +150,8 @@ public partial class MainViewModel : IViewportDropTarget
         }
 
         var steps = new List<IUndoableCommand> { create };
+        if (systemId is not null)
+            steps.Add(new SetFrameSystemCommand(create.Frame, systemId, Library, Rules));
         if (!template.KeepsLayout)
             steps.Add(new ApplyTemplateCommand(create.Frame, template, null, Rules));
         string? error = RunForMessage(() => CompositeCommand.Combine($"New design \"{template.Name}\"", steps)!);
@@ -198,9 +204,16 @@ public partial class MainViewModel : IViewportDropTarget
         return (frame, null, frame.Bounds);
     }
 
+    /// <summary>A dragged design: "template id", or "template id@system id" for one in the company's own system.</summary>
+    private static (DesignTemplate? Template, string? SystemId) Dragged(string dragId)
+    {
+        int at = dragId.IndexOf('@');
+        return at < 0 ? (DesignTemplates.Find(dragId), null) : (DesignTemplates.Find(dragId[..at]), dragId[(at + 1)..]);
+    }
+
     bool IViewportDropTarget.DragOver(Point2D world, string templateId)
     {
-        if (IsOutsideView || DesignTemplates.Find(templateId) is null)
+        if (IsOutsideView || Dragged(templateId).Template is null)
         {
             Interaction.SetDropTarget(null);
             return false;
@@ -214,14 +227,15 @@ public partial class MainViewModel : IViewportDropTarget
     bool IViewportDropTarget.Drop(Point2D world, string templateId)
     {
         Interaction.SetDropTarget(null);
-        if (IsOutsideView || DesignTemplates.Find(templateId) is not { } template)
+        var (dragged, systemId) = Dragged(templateId);
+        if (IsOutsideView || dragged is not { } template)
             return false;
 
         var (frame, glassId, _) = DropTargetAt(world);
         string? error = DesignBlocked(template) is { } blocked ? blocked
             : frame is null
-            ? CreateFrameWithDesign(template, new Point2D(Snap(world.X), Snap(world.Y)))
-            : ApplyDesign(template, new[] { (frame, glassId) });
+            ? CreateFrameWithDesign(template, new Point2D(Snap(world.X), Snap(world.Y)), systemId)
+            : ApplyDesign(template, new[] { (frame, glassId) }, systemId);
         DesignLibrary.Message = error;
         if (error is null && frame is not null)
             Select(glassId is { } id && frame.GlassPanels.Any(g => g.Id == id) ? id : frame.Id);

@@ -68,6 +68,9 @@ public sealed record DesignTemplate(string Id, string Name, string Category, str
     /// </summary>
     public bool KeepsLayout => Root is TemplateLeaf { Opening: null };
 
+    /// <summary>The opening type of every opening of the design (null: keeps the target's).</summary>
+    public IEnumerable<OpeningType?> Openings => Leaves(Root).Select(l => l.Opening);
+
     internal static IEnumerable<TemplateLeaf> Leaves(TemplateNode node) => node switch
     {
         TemplateLeaf leaf => new[] { leaf },
@@ -97,6 +100,29 @@ public static class DesignTemplates
     public static DesignTemplate? Find(string id) => All.FirstOrDefault(t => t.Id == id);
 
     public static IEnumerable<DesignTemplate> InCategory(string category) => All.Where(t => t.Category == category);
+
+    /// <summary>
+    /// The ready-made designs that suit a product system: those whose openings the system's hardware sets cover (a
+    /// sliding system gets sliding designs, a casement system casement and tilt &amp; turn ones), or the openable designs
+    /// when the system has no hardware sets; a system without a sash only gets fixed designs. At most
+    /// <paramref name="max"/>.
+    /// </summary>
+    public static IReadOnlyList<DesignTemplate> ForSystem(Library.ProductSystem system, Library.IProductLibrary library, int max = 12)
+    {
+        ArgumentNullException.ThrowIfNull(system);
+        ArgumentNullException.ThrowIfNull(library);
+        var covered = library.Bundles.Where(b => b.IsActive && b.IsOpeningSet && (b.SystemId is null || b.SystemId == system.Id))
+            .SelectMany(b => b.OpeningTypes).ToHashSet();
+        bool sliding = covered.Any(o => o.IsSliding())
+                       || (covered.Count == 0 && library.FindProfile(system.FrameProfileId)?.Roles.Contains(ProfileType.Track) == true);
+        bool Allowed(OpeningType? opening) => opening is OpeningType.Fixed
+            || (system.SashProfileId is not null && opening is { } o
+                && (covered.Count > 0 ? covered.Contains(o) : sliding ? o.IsSliding() : o.IsHinged()));
+        return All.Where(t => t.Category != Mesh && !t.KeepsLayout && DesignTemplate.Leaves(t.Root).All(l => Allowed(l.Opening)))
+            .OrderBy(t => t.IsDividerOnly ? 1 : 0)
+            .Take(max)
+            .ToList();
+    }
 
     // ── Building blocks ─────────────────────────────────────────────
 

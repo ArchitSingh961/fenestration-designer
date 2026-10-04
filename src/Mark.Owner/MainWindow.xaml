@@ -443,19 +443,6 @@
                                            TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}"
                                            Visibility="{Binding HasCatalogue, Converter={StaticResource InverseBoolToVisibility}}" />
 
-                                <!-- Products only this company gets -->
-                                <TextBlock Text="THIS COMPANY'S OWN ITEMS" Style="{StaticResource SectionTitle}" Margin="0,18,0,2" />
-                                <TextBlock Text="Products only this company gets: its own profiles, glass, hardware, systems and bundles. They can use items of the catalogue, and come on top of what is ticked above."
-                                           TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,6" />
-                                <DockPanel Visibility="{Binding IsNew, Converter={StaticResource InverseBoolToVisibility}}">
-                                    <Button DockPanel.Dock="Right" Style="{StaticResource SmallButton}" Content="Edit own items…"
-                                            ToolTip="Opens the Library Manager with the catalogue and this company's own items. What you add there only this company gets."
-                                            Command="{Binding DataContext.EditOwnItemsCommand, ElementName=CompaniesPage}" />
-                                    <TextBlock Text="{Binding OwnItemsSummary}" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#1F2A37" />
-                                </DockPanel>
-                                <TextBlock Text="Save the new account first, then add its own items." Foreground="{StaticResource MutedTextBrush}"
-                                           Visibility="{Binding IsNew, Converter={StaticResource BoolToVisibility}}" />
-
                                 <!-- Computers -->
                                 <StackPanel Visibility="{Binding IsNew, Converter={StaticResource InverseBoolToVisibility}}">
                                     <TextBlock Text="COMPUTERS SIGNED IN" Style="{StaticResource SectionTitle}" Margin="0,18,0,6" />
@@ -804,7 +791,7 @@
                         <TextBlock Text="{Binding Message}" Style="{StaticResource PageMessageText}" />
                     </Border>
                     <TextBlock TextWrapping="Wrap" Foreground="#4B5563" Margin="0,0,0,12"
-                               Text="Everything companies can use comes from here: profiles, glass, hardware, systems and bundles. Only you can change it. In each company's account you tick the systems and items it gets; it receives them at its next check-in and enters only its own prices." />
+                               Text="Everything companies can use comes from here: profiles, glass, hardware, systems and bundles. Only you can change it. In each company's account you tick the systems and items it gets; below you make items for one company only. Companies receive them at their next check-in and enter only their own prices." />
 
                     <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,0,0,12"
                             Visibility="{Binding HasCatalogue, Converter={StaticResource InverseBoolToVisibility}}">
@@ -848,6 +835,35 @@
                                                             </DataTemplate>
                                                         </ItemsControl.ItemTemplate>
                                                     </ItemsControl>
+                                                </StackPanel>
+                                            </DockPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Items for one company only -->
+                    <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,12,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Companies' own items" Style="{StaticResource CardTitle}" />
+                            <TextBlock TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" Margin="0,4,0,8"
+                                       Text="Profiles, glass, hardware, systems and bundles for one company only. They can use items of the catalogue, come on top of what is ticked in the company's account, and show in its MARK under the company's name. Own systems also appear as ready-made designs in its design library." />
+                            <TextBlock Text="No companies yet." Foreground="{StaticResource MutedTextBrush}"
+                                       Visibility="{Binding HasCompanies, Converter={StaticResource InverseBoolToVisibility}}" />
+                            <ItemsControl ItemsSource="{Binding OwnItemRows}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="#E3E6EA" BorderThickness="0,0,0,1" Padding="0,8">
+                                            <DockPanel>
+                                                <Button DockPanel.Dock="Right" Style="{StaticResource SmallButton}" Content="Edit own items…" VerticalAlignment="Center"
+                                                        CommandParameter="{Binding}" AutomationProperties.Name="{Binding Name, StringFormat=Edit own items of {0}}"
+                                                        ToolTip="Opens the Library Manager with the catalogue and this company's own items. What you add there only this company gets."
+                                                        Command="{Binding DataContext.EditOwnItemsCommand, RelativeSource={RelativeSource AncestorType=ScrollViewer}}" />
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#1F2A37" />
+                                                    <TextBlock Text="{Binding Summary}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
                                                 </StackPanel>
                                             </DockPanel>
                                         </Border>

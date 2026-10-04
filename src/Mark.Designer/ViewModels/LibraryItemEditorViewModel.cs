@@ -101,6 +101,16 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase, ILibraryEditor
     public string WeightPerSquareMetre { get; set; } = "";
     public string MinChargeableArea { get; set; } = "";
 
+    /// <summary>How the glass is drawn: clear, tinted, frosted, reflective, patterned or designer.</summary>
+    public GlassPattern GlassPattern { get; set; } = GlassPattern.Clear;
+
+    /// <summary>One of <see cref="GlassColours"/>.</summary>
+    public string GlassColour { get; set; } = GlassLook.Colors[0].Name;
+
+    public static IReadOnlyList<GlassPattern> GlassPatterns { get; } = Enum.GetValues<GlassPattern>();
+
+    public static IReadOnlyList<string> GlassColours { get; } = GlassLook.Colors.Select(c => c.Name).ToList();
+
     // ── Material ────────────────────────────────────────────────────
 
     public MaterialCategory MaterialCategory { get; set; } = MaterialCategory.Accessory;
@@ -150,7 +160,10 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase, ILibraryEditor
         Id = g.Id, Name = g.Name, Code = g.Code ?? "", Manufacturer = g.Manufacturer ?? "", Group = g.Category ?? "",
         IsActive = g.IsActive, Thickness = Text(g.ThicknessMm, isNew), CostPerSquareMetre = Text(g.CostPerSquareMetre, isNew),
         WeightPerSquareMetre = g.WeightKgPerSquareMetre is { } w ? Text(w) : "", MinChargeableArea = Text(g.MinChargeableAreaM2, isNew),
-        UsagesText = UsageLines(g.Materials)
+        UsagesText = UsageLines(g.Materials),
+        GlassPattern = g.Look?.Pattern ?? GlassPattern.Clear,
+        GlassColour = GlassLook.Colors.FirstOrDefault(c => string.Equals(c.Color, g.Look?.Color, StringComparison.OrdinalIgnoreCase)).Name
+                      ?? GlassLook.Colors[0].Name
     };
 
     public static LibraryItemEditorViewModel For(MaterialDefinition m, bool isNew = false, IProductLibrary? library = null)
@@ -226,8 +239,17 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase, ILibraryEditor
         WeightKgPerSquareMetre = string.IsNullOrWhiteSpace(WeightPerSquareMetre) ? null : Number(WeightPerSquareMetre, "Weight per m²", errors),
         MinChargeableAreaM2 = Number(MinChargeableArea, "Minimum chargeable area", errors, blankIsZero: true),
         Materials = Usages(errors),
-        UsedWith = EditorText.UsedWith(((GlassDefinition)_original).UsedWith, UsedWithSystems)
+        UsedWith = EditorText.UsedWith(((GlassDefinition)_original).UsedWith, UsedWithSystems),
+        Look = LookOf(GlassPattern, GlassColour, ((GlassDefinition)_original).Look)
     };
+
+    /// <summary>The look chosen in the editor (null for plain clear glass). A colour not in the list is kept.</summary>
+    private static GlassLook? LookOf(GlassPattern pattern, string colourName, GlassLook? original)
+    {
+        var named = GlassLook.Colors.FirstOrDefault(c => c.Name == colourName);
+        string? colour = named.Name is null ? original?.Color : named.Color;
+        return pattern == GlassPattern.Clear && colour is null ? null : new GlassLook { Pattern = pattern, Color = colour };
+    }
 
     private MaterialDefinition BuildMaterial(List<string> errors) => (MaterialDefinition)_original with
     {

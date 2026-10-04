@@ -96,7 +96,7 @@ public sealed class SqliteLibraryRepository : ILibraryRepository
 
         var glass = ReadRows(connection,
             "SELECT id, name, code, manufacturer, category, thickness_mm, cost_per_m2, weight_kg_per_m2, " +
-            "min_chargeable_area_m2, properties_json, is_active, used_with_json FROM glass ORDER BY sort_order, id",
+            "min_chargeable_area_m2, properties_json, is_active, used_with_json, look_json FROM glass ORDER BY sort_order, id",
             r =>
             {
                 string id = r.GetString(0);
@@ -114,6 +114,7 @@ public sealed class SqliteLibraryRepository : ILibraryRepository
                     Properties = ReadProperties(r.GetString(9)),
                     IsActive = r.GetInt64(10) != 0,
                     UsedWith = Document<UsedWith>(r, 11),
+                    Look = Document<GlassLook>(r, 12),
                     Materials = ChildrenOf(glassUsages, id)
                 };
             });
@@ -299,15 +300,16 @@ public sealed class SqliteLibraryRepository : ILibraryRepository
     {
         Run(c, t, """
             INSERT INTO glass (id, sort_order, name, code, manufacturer, category, thickness_mm, cost_per_m2, weight_kg_per_m2,
-                               min_chargeable_area_m2, properties_json, is_active, used_with_json)
+                               min_chargeable_area_m2, properties_json, is_active, used_with_json, look_json)
             VALUES ($id, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM glass), $name, $code, $manufacturer, $category,
-                    $thickness, $cost, $weight, $minArea, $properties, $active, $usedWith)
+                    $thickness, $cost, $weight, $minArea, $properties, $active, $usedWith, $look)
             ON CONFLICT (id) DO UPDATE SET name = excluded.name, code = excluded.code, manufacturer = excluded.manufacturer,
                 category = excluded.category, thickness_mm = excluded.thickness_mm, cost_per_m2 = excluded.cost_per_m2,
                 weight_kg_per_m2 = excluded.weight_kg_per_m2, min_chargeable_area_m2 = excluded.min_chargeable_area_m2,
-                properties_json = excluded.properties_json, is_active = excluded.is_active, used_with_json = excluded.used_with_json
+                properties_json = excluded.properties_json, is_active = excluded.is_active, used_with_json = excluded.used_with_json,
+                look_json = excluded.look_json
             """,
-            ("$usedWith", DocumentJson(g.UsedWith)),
+            ("$usedWith", DocumentJson(g.UsedWith)), ("$look", DocumentJson(g.Look)),
             ("$id", g.Id), ("$name", g.Name), ("$code", g.Code), ("$manufacturer", g.Manufacturer), ("$category", g.Category),
             ("$thickness", g.ThicknessMm), ("$cost", Money(g.CostPerSquareMetre)), ("$weight", g.WeightKgPerSquareMetre),
             ("$minArea", g.MinChargeableAreaM2), ("$properties", WriteProperties(g.Properties)), ("$active", g.IsActive ? 1 : 0));

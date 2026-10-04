@@ -250,6 +250,26 @@
         { "materialId": "MAT-GSK-GLZ", "basis": "perMetre", "quantity": 1 },
         { "materialId": "MAT-SET-BLK", "basis": "perPiece", "quantity": 6 }
       ]
+    },
+    {
+      "id": "GLS-FRS-5", "name": "5mm Frosted Toughened", "category": "Toughened", "thicknessMm": 5,
+      "costPerSquareMetre": 1450.00, "weightKgPerSquareMetre": 12.5, "minChargeableAreaM2": 0.3,
+      "usedWith": { "systemIds": [ "SYS-AL-S60C", "SYS-AL-SL60" ] },
+      "look": { "pattern": "frosted", "color": "#F2F4F5" },
+      "materials": [
+        { "materialId": "MAT-GSK-GLZ", "basis": "perMetre", "quantity": 1 },
+        { "materialId": "MAT-SET-BLK", "basis": "perPiece", "quantity": 4 }
+      ]
+    },
+    {
+      "id": "GLS-BRZ-6", "name": "6mm Bronze Tinted Toughened", "category": "Tinted", "thicknessMm": 6,
+      "costPerSquareMetre": 1650.00, "weightKgPerSquareMetre": 15.0, "minChargeableAreaM2": 0.3,
+      "usedWith": { "systemIds": [ "SYS-AL-S60C", "SYS-AL-SL60" ] },
+      "look": { "pattern": "tinted", "color": "#B08B5E" },
+      "materials": [
+        { "materialId": "MAT-GSK-GLZ", "basis": "perMetre", "quantity": 1 },
+        { "materialId": "MAT-SET-BLK", "basis": "perPiece", "quantity": 4 }
+      ]
     }
   ],
   "materials": [

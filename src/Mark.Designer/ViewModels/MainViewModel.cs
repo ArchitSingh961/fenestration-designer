@@ -136,7 +136,10 @@ public partial class MainViewModel : ViewModelBase, IDesignService
             }
         };
 
-        Canvas.ContentLayers.Add(new ProjectLayer(() => Project, IsSelected, PreviewFrameFor, () => IsOutsideView, Rules));
+        Canvas.ContentLayers.Add(new ProjectLayer(() => Project, IsSelected, PreviewFrameFor, () => IsOutsideView, Rules)
+        {
+            GlassLookOf = id => DesignListViewModel.GlassLookIn(Library, id)
+        });
         Canvas.OverlayLayers.Add(new InteractionOverlayLayer(Interaction, () => SingleSelectedFrame));
 
         NewProject();

@@ -46,6 +46,13 @@ Each part is a profile (cut to the bar length, or the measured size, minus a ded
 hardware/accessory item counted **per piece**, **per metre** or **by size** (measured on the bar, or on the opening's
 width, height, longest side or perimeter). A bundle can belong to one system or to any.
 
+## How glass looks
+
+Every glass has a **look**: clear, tinted, frosted, reflective, patterned or designer, and a colour (clear blue, grey,
+bronze, green, blue, smoke, gold, milky white), set in the Library Manager under *Look in drawings*. The canvas, the
+design cards, the library thumbnails and the quotation draw each pane with its glass's look, so frosted glass shows
+frosted and bronze glass bronze. The look comes with the catalogue like everything else.
+
 ## The owner's catalogue (MARK Owner → Catalogue)
 
 1. **Use the sample catalogue**, **Import file…** (a library file), or **Edit catalogue…** to open the Library Manager on a
@@ -64,8 +71,8 @@ A company with nothing ticked and no own items keeps its own library (as before 
 ## A company's own items
 
 Products made for **one company only**: its own profiles, glass, hardware, systems and bundles (for example a special
-frame, its own brand of handle, or a system only it sells). In the company's account, under **This company's own items**,
-**Edit own items…** opens the Library Manager with the catalogue and the company's own items:
+frame, its own brand of handle, or a system only it sells). On MARK Owner's **Catalogue** page, under **Companies' own
+items**, **Edit own items…** next to a company opens the Library Manager with the catalogue and the company's own items:
 
 - everything **added** there is the company's own (ids must differ from the catalogue's); own items can **use catalogue
   items** — an own system with the catalogue's sash, an own frame with the catalogue's steel, an own hardware set with
@@ -75,6 +82,11 @@ frame, its own brand of handle, or a system only it sells). In the company's acc
 
 In the Library Manager — in MARK Owner's *Edit own items…* and in the company's MARK — they are listed apart, under a
 heading with the company's name (**Sozluk — own items**), after the catalogue's items.
+
+The company's own **systems** also appear in its MARK as ready-made designs: the design library on the Drawing tab gets
+a category named after the company, with a section per own system holding the designs that suit it (those its hardware
+sets cover — sliding designs for a sliding system, casement and tilt & turn for a casement one). Clicking or dragging one
+makes the window in that system, in one undo step.
 
 The company always gets its own items, on top of what is ticked from the catalogue (systems only for products it is
 licensed for). No other company sees them. Saving them changes the company's catalogue fingerprint, so MARK fetches them

@@ -35,8 +35,9 @@ public static class DesignThumbnails
     }
 
     /// <summary>A picture of <paramref name="frame"/> fitted into <paramref name="maxWidth"/> × <paramref name="maxHeight"/> DIPs.</summary>
+    /// <param name="glassLook">How each glass type is drawn (null: all glass clear).</param>
     public static ImageSource Render(Frame frame, DesignRules rules, double maxWidth, double maxHeight,
-        FrameRenderOptions? options = null)
+        FrameRenderOptions? options = null, Func<string?, Mark.Core.Library.GlassLook?>? glassLook = null)
     {
         ArgumentNullException.ThrowIfNull(frame);
         double zoom = Math.Clamp(Math.Min(maxWidth / frame.Width, maxHeight / frame.Height),
@@ -51,7 +52,7 @@ public static class DesignThumbnails
             dc.DrawRectangle(Brushes.Transparent, null, new Rect(0, 0, maxWidth, maxHeight));
             dc.PushTransform(new TranslateTransform((maxWidth - size.Width) / 2, (maxHeight - size.Height) / 2));
             var context = new ViewportDrawingContext(dc, transform, size, 1.0);
-            new FrameRenderer(rules).Render(context, frame, 1, _ => false, options ?? FrameRenderOptions.Thumbnail);
+            new FrameRenderer(rules, glassLook).Render(context, frame, 1, _ => false, options ?? FrameRenderOptions.Thumbnail);
             dc.Pop();
         }
         group.Freeze();

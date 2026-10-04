@@ -133,7 +133,8 @@ sash type, mesh and reinforcement rates, discount, charges (transport, loading) 
 8. The **Cutting plan** shows the stock bars to cut per profile, with pieces, remnant and waste per bar, utilisation and
    bar cost. Kerf, trim and minimum offcut come from `Settings\calculation-rules.json`; stock lengths from the library.
 9. **Save / Open** (Ctrl+S / Ctrl+O): projects are saved in the local database
-   (`%LOCALAPPDATA%\MARK\mark.db`). The first save asks for a name; **Save a Copy As** saves a copy with
+   of the signed-in company (`%LOCALAPPDATA%\MARK\Companies\{company id}\mark.db`: each company on a computer has its
+   own, see [persistence.md](docs/persistence.md)). The first save asks for a name; **Save a Copy As** saves a copy with
    new Ids. **Import / Export Project File** read and write the same JSON as a project file. Closing, New and Open ask
    before discarding unsaved changes (the title shows `*`).
 10. **Library Manager** (File menu or toolbar): search and filter profiles, glass and materials (manufacturer,

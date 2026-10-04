@@ -59,12 +59,22 @@ public partial class App : Application
         {
             // The local database is the source of truth for the library and saved projects. On first run it is created
             // and the shipped library.json is imported into it; afterwards library.json is only an import/export format.
-            // --database <file> uses another database (e.g. for testing); normally %LOCALAPPDATA%\MARK\mark.db.
-            string databasePath = ArgumentAfter(e.Args, "--database") ?? LocalStore.DefaultPath;
-            if (databasePath == LocalStore.DefaultPath)
+            // Each company keeps its own database on this computer (%LOCALAPPDATA%\MARK\Companies\{id}\mark.db), so
+            // nothing of one company shows in another's; --database <file> uses another database (e.g. for testing).
+            var signedIn = _licence.Licence;
+            string? databaseArgument = ArgumentAfter(e.Args, "--database");
+            string databasePath = databaseArgument
+                                  ?? (signedIn is { CompanyId: var companyId } && companyId != Guid.Empty
+                                      ? CompanyDatabases.PathFor(companyId)
+                                      : LocalStore.DefaultPath);
+            if (databaseArgument is null)
                 messages.Add(LocalStore.AdoptLegacyDatabase(LocalStore.DefaultPath, LocalStore.LegacyDefaultPath));
             var store = LocalStore.Open(databasePath, LibraryPath);
             messages.AddRange(store.StartupMessages);
+            // Before, every company signed in here shared one database: bring over this login's own work, once.
+            if (databaseArgument is null && signedIn is not null && databasePath != LocalStore.DefaultPath)
+                messages.Add(CompanyDatabases.AdoptSharedWork(store, LocalStore.DefaultPath, signedIn.CompanyId, signedIn.UserId,
+                    signedIn.UserName));
             // The owner's catalogue first, so the designer starts with the company's systems (waits briefly when online).
             _catalogue = new CatalogueSync(_licence, store);
             if (_catalogue.IsDue)
@@ -169,7 +179,8 @@ public partial class App : Application
     /// <summary>Signs out of this computer after asking, then restarts MARK at the sign-in page.</summary>
     private async Task SignOutAsync(LicenceManager licence, MainViewModel mainViewModel)
     {
-        if (MessageBox.Show(MainWindow!, "Sign out of MARK on this computer?\n\nYour saved quotes stay on this computer. " +
+        if (MessageBox.Show(MainWindow!, "Sign out of MARK on this computer?\n\nYour company's saved quotes stay on this computer, where another company " +
+                                         "signing in does not see them. " +
                                          "You will need your User ID and password to sign in again.",
                 "Sign out", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
             return;

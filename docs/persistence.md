@@ -17,7 +17,13 @@ Core (ProductLibrary, Project, ProjectSerializer)          Calculation (unchange
 
 ## Database file and first run
 
-- Location: `%LOCALAPPDATA%\MARK\mark.db` (`LocalStore.DefaultPath`).
+- Location: one database per company signed in on the computer, `%LOCALAPPDATA%\MARK\Companies\{company id}\mark.db`
+  (`CompanyDatabases.PathFor`), so no company sees another's quotes, enquiries, history, settings or library.
+  `%LOCALAPPDATA%\MARK\mark.db` (`LocalStore.DefaultPath`) is the database every company shared up to Milestone 15; it
+  is no longer opened. At each login's first start afterwards, `CompanyDatabases.AdoptSharedWork` copies that login's
+  own quotes (with history and revisions) and enquiries into its company's database, once; quotes saved before quotes
+  recorded who made them, the price structure and the quotation texts go to the first company signing in. The shared
+  file stays as a backup.
 - `SqliteDatabase.Open`: creates the folder and file if missing, runs `PRAGMA quick_check`, then:
   - new file → creates schema version 1 in one transaction, sets `PRAGMA application_id` (`FEN1`) and `user_version`;
   - our file, older schema → applies the upgrade scripts in order, each in its own transaction;

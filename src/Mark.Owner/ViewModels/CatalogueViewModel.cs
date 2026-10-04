@@ -93,8 +93,8 @@ public sealed class CatalogueViewModel : OwnerPage
 
     /// <summary>
     /// Edits a company's own items (products only it gets) with the Library Manager, on a copy of the catalogue with
-    /// them added and shown apart under the company's name: what is new there becomes the company's; changes to catalogue
-    /// items are not kept. Saved at once.
+    /// them added and shown apart under the company's name, in the tabs made for them ("50 Series"): what is new there
+    /// becomes the company's; changes to catalogue items are not kept. Saved at once.
     /// </summary>
     public async Task EditOwnItemsAsync(OwnItemsRow company)
     {
@@ -103,18 +103,21 @@ public sealed class CatalogueViewModel : OwnerPage
         if (!await RunAsync(async () => info = await Api.CompanyItemsAsync(company.CompanyId))) return;
 
         ProductLibrary edited;
+        OwnItemsSection section;
         try
         {
             var own = CompanyItems.Deserialize(info!.ItemsJson);
             // Everything not in the catalogue is the company's, including what is added in the Library Manager.
             var catalogueIds = CompanyItems.Split(master, ProductLibrary.Empty).AllIds.ToHashSet(StringComparer.Ordinal);
-            var section = new OwnItemsSection(new OwnItemsLabel(company.Name, Array.Empty<string>()).SectionTitle, id => !catalogueIds.Contains(id));
-            if (new LibraryWorkingCopy(_host, _workFolder).Edit(CompanyItems.Combine(master, own), section) is not { } changed)
+            section = new OwnItemsSection(company.Name, id => !catalogueIds.Contains(id), own.Tabs, canEditTabs: true);
+            var combined = CompanyItems.Combine(master, own);
+            var changed = new LibraryWorkingCopy(_host, _workFolder).Edit(combined, section);
+            if (changed is null && SameTabs(section.ToTabs(), own.Tabs))
             {
                 Show($"The own items of {company.Name} were not changed.");
                 return;
             }
-            edited = changed;
+            edited = changed ?? combined;
         }
         catch (InvalidOperationException ex)
         {
@@ -122,7 +125,7 @@ public sealed class CatalogueViewModel : OwnerPage
             return;
         }
 
-        var items = CompanyItems.Split(edited, master);
+        var items = CompanyItems.Split(edited, master).WithTabs(section.ToTabs());
         int catalogueChanges = CompanyItems.CatalogueChanges(edited, master);
         string note = catalogueChanges == 0 ? ""
             : $" Changes to {catalogueChanges} item{(catalogueChanges == 1 ? "" : "s")} of the catalogue were not kept: use Edit catalogue for those.";
@@ -134,6 +137,9 @@ public sealed class CatalogueViewModel : OwnerPage
                 : $"Saved the own items of {company.Name} ({items.SummaryText}). Only {company.Name} gets them, at its next check-in.{note}");
         }
     }
+
+    private static bool SameTabs(IReadOnlyList<OwnItemTab> a, IReadOnlyList<OwnItemTab> b)
+        => a.Count == b.Count && a.Zip(b).All(p => p.First.Name == p.Second.Name && p.First.Ids.SequenceEqual(p.Second.Ids));
 
     private void Display(CatalogueInfo info)
     {

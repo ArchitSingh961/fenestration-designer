@@ -4,14 +4,50 @@ using System.Text.Json.Serialization;
 namespace Mark.Core.Library;
 
 /// <summary>
-/// Which items of a company's catalogue are its own (made for it only), and the company's name, so the Library Manager
-/// can show them as a section of their own: "Sozluk — own items".
+/// Which items of a company's catalogue are its own (made for it only), the company's name and the tabs the owner put
+/// them in, so the Library Manager can show them apart: "Sozluk — 50 Series", "Sozluk — own items" (those in no tab).
 /// </summary>
-public sealed record OwnItemsLabel(string CompanyName, IReadOnlyList<string> Ids)
+public sealed record OwnItemsLabel(string CompanyName, IReadOnlyList<string> Ids, IReadOnlyList<OwnItemTab>? Tabs = null)
 {
+    /// <summary>The section of the own items that are in no tab.</summary>
     public string SectionTitle => $"{CompanyName} — own items";
 
     public bool Contains(string id) => Ids.Contains(id, StringComparer.Ordinal);
+
+    /// <summary>The name of the tab the item is in, or null.</summary>
+    public string? TabOf(string id) => Tabs?.FirstOrDefault(t => t.Contains(id))?.Name;
+}
+
+/// <summary>A tab of a company's own items, e.g. "50 Series": its name and the ids of the items in it, in order.</summary>
+public sealed record OwnItemTab(string Name, IReadOnlyList<string> Ids)
+{
+    public bool Contains(string id) => Ids.Contains(id, StringComparer.Ordinal);
+
+    /// <summary>
+    /// The tabs cleaned up: names trimmed, empty names dropped, tabs of the same name (ignoring case) merged, only ids in
+    /// <paramref name="ids"/>, each id in its first tab only. Empty tabs are kept (made, not filled yet).
+    /// </summary>
+    public static IReadOnlyList<OwnItemTab> Clean(IEnumerable<OwnItemTab>? tabs, IEnumerable<string> ids)
+    {
+        var known = ids.ToHashSet(StringComparer.Ordinal);
+        var used = new HashSet<string>(StringComparer.Ordinal);
+        var result = new List<(string Name, List<string> Ids)>();
+        foreach (var tab in tabs ?? Array.Empty<OwnItemTab>())
+        {
+            string name = (tab?.Name ?? "").Trim();
+            if (name.Length == 0) continue;
+            var target = result.FirstOrDefault(t => string.Equals(t.Name, name, StringComparison.OrdinalIgnoreCase));
+            if (target.Name is null)
+            {
+                target = (name, new List<string>());
+                result.Add(target);
+            }
+            foreach (string id in tab!.Ids ?? Array.Empty<string>())
+                if (known.Contains(id) && used.Add(id))
+                    target.Ids.Add(id);
+        }
+        return result.Select(t => new OwnItemTab(t.Name, t.Ids)).ToList();
+    }
 }
 
 /// <summary>
@@ -35,6 +71,12 @@ public sealed record CompanyItems
     /// <summary>The system the company's new windows start in, when it is not the catalogue's default.</summary>
     public string? DefaultSystemId { get; init; }
 
+    /// <summary>The tabs the owner sorted the items into ("50 Series", "60 Series"); items in none are listed after them.</summary>
+    public IReadOnlyList<OwnItemTab> Tabs { get; init; } = Array.Empty<OwnItemTab>();
+
+    /// <summary>These items with <paramref name="tabs"/>, cleaned up (see <see cref="OwnItemTab.Clean"/>).</summary>
+    public CompanyItems WithTabs(IEnumerable<OwnItemTab>? tabs) => this with { Tabs = OwnItemTab.Clean(tabs, AllIds) };
+
     public static CompanyItems Empty { get; } = new();
 
     [JsonIgnore]
@@ -43,11 +85,11 @@ public sealed record CompanyItems
     [JsonIgnore]
     public int Count => Profiles.Count + Glass.Count + Materials.Count + Systems.Count + Bundles.Count;
 
-    /// <summary>The ids of the profiles, glass and materials.</summary>
     /// <summary>Every id: profiles, glass, materials, systems and bundles.</summary>
     [JsonIgnore]
     public IEnumerable<string> AllIds => ItemIds.Concat(Systems.Select(x => x.Id)).Concat(Bundles.Select(b => b.Id));
 
+    /// <summary>The ids of the profiles, glass and materials.</summary>
     [JsonIgnore]
     public IEnumerable<string> ItemIds => Profiles.Select(p => p.Id).Concat(Glass.Select(g => g.Id)).Concat(Materials.Select(m => m.Id));
 
@@ -64,6 +106,7 @@ public sealed record CompanyItems
             Add(Profiles.Count, "profile", "profiles");
             Add(Glass.Count, "glass", "glass");
             Add(Materials.Count, "hardware or accessory", "hardware and accessories");
+            if (parts.Count > 0) Add(Tabs.Count, "tab", "tabs");
             return parts.Count == 0 ? "None" : string.Join(" · ", parts);
         }
     }
@@ -137,7 +180,8 @@ public sealed record CompanyItems
                 Glass = items.Glass ?? Array.Empty<GlassDefinition>(),
                 Materials = items.Materials ?? Array.Empty<MaterialDefinition>(),
                 Systems = items.Systems ?? Array.Empty<ProductSystem>(),
-                Bundles = items.Bundles ?? Array.Empty<Bundle>()
+                Bundles = items.Bundles ?? Array.Empty<Bundle>(),
+                Tabs = items.Tabs ?? Array.Empty<OwnItemTab>()
             };
         }
         catch (JsonException ex)

@@ -112,7 +112,8 @@ public sealed partial class LicenceService
         var ownIds = own.AllIds.ToHashSet(StringComparer.Ordinal);
         var sent = library.Profiles.Select(p => p.Id).Concat(library.Glass.Select(g => g.Id)).Concat(library.Materials.Select(m => m.Id))
             .Concat(library.Systems.Select(x => x.Id)).Concat(library.Bundles.Select(b => b.Id)).Where(ownIds.Contains).ToList();
-        return LibrarySerializer.Serialize(library, sent.Count == 0 ? null : new OwnItemsLabel(company.Name, sent));
+        return LibrarySerializer.Serialize(library, sent.Count == 0 ? null
+            : new OwnItemsLabel(company.Name, sent, OwnItemTab.Clean(own.Tabs, sent).Where(t => t.Ids.Count > 0).ToList()));
     }
 
     // ── A company's own items ───────────────────────────────────────
@@ -137,6 +138,7 @@ public sealed partial class LicenceService
         try
         {
             items = Mark.Core.Library.CompanyItems.Deserialize(itemsJson);
+            items = items.WithTabs(items.Tabs);
         }
         catch (InvalidOperationException ex)
         {

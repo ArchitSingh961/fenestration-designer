@@ -17,12 +17,119 @@ public sealed record LibraryItemRow(LibraryItemKind Kind, string Id, string Name
     public string? Section { get; init; }
 }
 
-/// <summary>Shows a company's own items as a section of their own after the catalogue: its title and which ids are its.</summary>
-public sealed record OwnItemsSection(string Title, Func<string, bool> IsOwn)
+/// <summary>
+/// Shows a company's own items apart from the catalogue, in the tabs the owner made for them ("Sozluk — 50 Series"),
+/// then those in no tab ("Sozluk — own items"). When <see cref="CanEditTabs"/> (the owner editing them in MARK Owner),
+/// tabs can be made, renamed and removed and items moved between them; <see cref="ToTabs"/> gives the result.
+/// </summary>
+public sealed class OwnItemsSection
 {
     public const string CatalogueTitle = "Catalogue";
 
-    public static OwnItemsSection Of(OwnItemsLabel label) => new(label.SectionTitle, label.Contains);
+    private readonly List<string> _tabs = new();
+    private readonly Dictionary<string, string> _tabOf = new(StringComparer.Ordinal);
+    private readonly List<string> _order = new();
+
+    /// <param name="isOwn">Which ids are the company's (the rest are the catalogue's).</param>
+    /// <param name="tabs">The tabs and the items in them.</param>
+    /// <param name="canEditTabs">Tabs can be changed (the owner); otherwise they are only shown.</param>
+    public OwnItemsSection(string companyName, Func<string, bool> isOwn, IEnumerable<OwnItemTab>? tabs = null, bool canEditTabs = false)
+    {
+        CompanyName = companyName;
+        IsOwn = isOwn ?? throw new ArgumentNullException(nameof(isOwn));
+        CanEditTabs = canEditTabs;
+        foreach (var tab in tabs ?? Array.Empty<OwnItemTab>())
+        {
+            if (AddTab(tab.Name) is not null) continue;
+            string name = _tabs.First(t => string.Equals(t, tab.Name.Trim(), StringComparison.OrdinalIgnoreCase));
+            foreach (string id in tab.Ids) Assign(id, name);
+        }
+    }
+
+    public static OwnItemsSection Of(OwnItemsLabel label) => new(label.CompanyName, label.Contains, label.Tabs);
+
+    public string CompanyName { get; }
+
+    public Func<string, bool> IsOwn { get; }
+
+    public bool CanEditTabs { get; }
+
+    /// <summary>The section of the own items in no tab: "Sozluk — own items".</summary>
+    public string Title => $"{CompanyName} — own items";
+
+    public IReadOnlyList<string> TabNames => _tabs;
+
+    /// <summary>The tab the item is in, or null.</summary>
+    public string? TabOf(string id) => _tabOf.TryGetValue(id, out var tab) ? tab : null;
+
+    /// <summary>"Catalogue", "Sozluk — 50 Series" or "Sozluk — own items".</summary>
+    public string SectionOf(string id) => !IsOwn(id) ? CatalogueTitle : TabOf(id) is { } tab ? TitleOf(tab) : Title;
+
+    public string TitleOf(string tab) => $"{CompanyName} — {tab}";
+
+    /// <summary>Where a section comes in the list: the catalogue, the tabs in order, then the items in no tab.</summary>
+    public int OrderOf(string section)
+        => section == CatalogueTitle ? 0 : _tabs.FindIndex(t => TitleOf(t) == section) is var i and >= 0 ? 1 + i : 1 + _tabs.Count;
+
+    /// <summary>Adds a tab; returns why it cannot be added, or null.</summary>
+    public string? AddTab(string? name)
+    {
+        string trimmed = (name ?? "").Trim();
+        if (trimmed.Length == 0) return "Enter a name for the tab.";
+        if (trimmed.Length > 60) return "The name of a tab can have at most 60 characters.";
+        if (_tabs.Any(t => string.Equals(t, trimmed, StringComparison.OrdinalIgnoreCase))) return $"There is already a tab \"{trimmed}\".";
+        _tabs.Add(trimmed);
+        return null;
+    }
+
+    /// <summary>Renames a tab (its items stay in it); returns why it cannot be renamed, or null.</summary>
+    public string? RenameTab(string tab, string? name)
+    {
+        int index = _tabs.IndexOf(tab);
+        if (index < 0) return "The tab no longer exists.";
+        string trimmed = (name ?? "").Trim();
+        if (trimmed.Length == 0) return "Enter a name for the tab.";
+        if (trimmed.Length > 60) return "The name of a tab can have at most 60 characters.";
+        if (_tabs.Where((t, i) => i != index).Any(t => string.Equals(t, trimmed, StringComparison.OrdinalIgnoreCase)))
+            return $"There is already a tab \"{trimmed}\".";
+        _tabs[index] = trimmed;
+        foreach (string id in _tabOf.Where(p => p.Value == tab).Select(p => p.Key).ToList())
+            _tabOf[id] = trimmed;
+        return null;
+    }
+
+    /// <summary>Removes a tab; its items are then in no tab.</summary>
+    public void RemoveTab(string tab)
+    {
+        _tabs.Remove(tab);
+        foreach (string id in _tabOf.Where(p => p.Value == tab).Select(p => p.Key).ToList())
+            _tabOf.Remove(id);
+    }
+
+    /// <summary>Puts an item in a tab (null or an unknown tab: in no tab).</summary>
+    public void Assign(string id, string? tab)
+    {
+        if (string.IsNullOrEmpty(id)) return;
+        if (tab is not null && _tabs.Contains(tab))
+        {
+            _tabOf[id] = tab;
+            if (!_order.Contains(id)) _order.Add(id);
+        }
+        else
+        {
+            _tabOf.Remove(id);
+        }
+    }
+
+    /// <summary>The tabs with their items (in the order they were put in), for saving.</summary>
+    public IReadOnlyList<OwnItemTab> ToTabs()
+        => _tabs.Select(t => new OwnItemTab(t, _order.Where(id => _tabOf.TryGetValue(id, out var tab) && tab == t).ToList())).ToList();
+}
+
+/// <summary>A tab above the list: everything, the catalogue, a tab of the company's own items, or its items in no tab.</summary>
+public sealed record ListTabChoice(string Name, string? Section, string? Tab, bool IsOwnTab)
+{
+    public override string ToString() => Name;
 }
 
 /// <summary>A kind of library entry as offered in the manager's "Show" list.</summary>
@@ -69,6 +176,9 @@ public sealed class LibraryManagerViewModel : ViewModelBase
         ToggleActiveCommand = new RelayCommand(ToggleActive, () => SelectedItem is not null && !PricesOnly);
         ImportCommand = new RelayCommand(Import, () => !PricesOnly);
         ExportCommand = new RelayCommand(Export);
+        AddTabCommand = new RelayCommand(AddTab, () => CanEditTabs);
+        RenameTabCommand = new RelayCommand(RenameTab, () => CanEditTabs && SelectedListTab is { Tab: not null });
+        RemoveTabCommand = new RelayCommand(RemoveTab, () => CanEditTabs && SelectedListTab is { Tab: not null });
         Refresh();
     }
 
@@ -76,6 +186,152 @@ public sealed class LibraryManagerViewModel : ViewModelBase
     public bool PricesOnly { get; }
 
     public bool CanEdit => !PricesOnly;
+
+    // ── Tabs of a company's own items ───────────────────────────────
+
+    private const string NoTab = "(no tab)";
+
+    /// <summary>A company's own items are shown apart: the tabs above the list.</summary>
+    public bool HasListTabs => _ownItems is not null;
+
+    /// <summary>Tabs can be made, renamed and removed, and items moved between them (the owner, in MARK Owner).</summary>
+    public bool CanEditTabs => _ownItems is { CanEditTabs: true } && !PricesOnly;
+
+    /// <summary>All · Catalogue · each tab of the company's own items · its items in no tab.</summary>
+    public ObservableCollection<ListTabChoice> ListTabs { get; } = new();
+
+    private ListTabChoice? _selectedListTab;
+    /// <summary>The tab whose items the list shows ("All": everything).</summary>
+    public ListTabChoice? SelectedListTab
+    {
+        get => _selectedListTab;
+        set
+        {
+            if (value is null && _refreshing) return;                  // the list of tabs being rebuilt
+            if (!SetProperty(ref _selectedListTab, value)) return;
+            ((RelayCommand)RenameTabCommand).RaiseCanExecuteChanged();
+            ((RelayCommand)RemoveTabCommand).RaiseCanExecuteChanged();
+            if (!_refreshing) Refresh();
+        }
+    }
+
+    /// <summary>"(no tab)" and the tabs, to put the chosen own item in.</summary>
+    public IReadOnlyList<string> ItemTabChoices
+        => _ownItems is null ? Array.Empty<string>() : new[] { NoTab }.Concat(_ownItems.TabNames).ToList();
+
+    /// <summary>The tab chooser is shown: the owner, with one of the company's own items (or a new item) in the form.</summary>
+    public bool ShowsItemTab => CanEditTabs && Editor is { } editor && (editor.IsNew || _ownItems!.IsOwn(editor.Id.Trim()));
+
+    private string? _newItemTab;
+    /// <summary>The tab of the item in the form; changing it moves the item at once (a new item: when it is saved).</summary>
+    public string ItemTab
+    {
+        get
+        {
+            if (_ownItems is null || Editor is not { } editor) return NoTab;
+            return (editor.IsNew ? _newItemTab : _ownItems.TabOf(editor.Id.Trim())) ?? NoTab;
+        }
+        set
+        {
+            if (!CanEditTabs || Editor is not { } editor || value is null) return;
+            string? tab = value == NoTab ? null : value;
+            if (editor.IsNew)
+            {
+                _newItemTab = tab;
+                OnPropertyChanged();
+                return;
+            }
+            string id = editor.Id.Trim();
+            if (!_ownItems!.IsOwn(id) || _ownItems.TabOf(id) == tab) return;
+            _ownItems.Assign(id, tab);
+            ShowTabOf(id);
+            Succeed(tab is null ? $"'{id}' is in no tab now." : $"Moved '{id}' to the tab {tab}.");
+        }
+    }
+
+    public ICommand AddTabCommand { get; }
+    public ICommand RenameTabCommand { get; }
+    public ICommand RemoveTabCommand { get; }
+
+    private void AddTab()
+    {
+        if (_ownItems is null || _dialogs?.PromptText("New tab", "Name of the tab, e.g. 50 Series", "") is not { } name) return;
+        if (_ownItems.AddTab(name) is { } error)
+        {
+            Fail(error);
+            return;
+        }
+        string added = name.Trim();
+        _selectedListTab = null;
+        Refresh();
+        SelectedListTab = ListTabs.FirstOrDefault(t => t.Tab == added);
+        Succeed($"Made the tab {added}. Choose New to add an item to it, or move an item to it with Tab in its form.");
+    }
+
+    private void RenameTab()
+    {
+        if (_ownItems is null || SelectedListTab is not { Tab: { } tab }
+            || _dialogs?.PromptText("Rename tab", "New name of the tab", tab) is not { } name) return;
+        if (_ownItems.RenameTab(tab, name) is { } error)
+        {
+            Fail(error);
+            return;
+        }
+        string renamed = name.Trim();
+        _selectedListTab = null;
+        Refresh();
+        SelectedListTab = ListTabs.FirstOrDefault(t => t.Tab == renamed);
+        Succeed($"Renamed the tab {tab} to {renamed}.");
+    }
+
+    private void RemoveTab()
+    {
+        if (_ownItems is null || SelectedListTab is not { Tab: { } tab }) return;
+        if (_dialogs is not null && !_dialogs.Confirm("Remove tab",
+                $"Remove the tab {tab}? Its items are not deleted: they are listed under {_ownItems.Title}."))
+            return;
+        _ownItems.RemoveTab(tab);
+        _selectedListTab = null;
+        Refresh();
+        Succeed($"Removed the tab {tab}.");
+    }
+
+    /// <summary>Shows the item in the list again after it moved: its tab when one tab is shown.</summary>
+    private void ShowTabOf(string id)
+    {
+        if (_ownItems is not null && _selectedListTab is { Section: not null })
+            _selectedListTab = new ListTabChoice("", _ownItems.SectionOf(id), _ownItems.TabOf(id), false);
+        Refresh(select: id);
+    }
+
+    /// <summary>Rebuilds the tabs above the list, keeping the chosen one when it is still there.</summary>
+    private void RefreshListTabs()
+    {
+        if (_ownItems is not { } own) return;
+        var tabs = new List<ListTabChoice>
+        {
+            new("All", null, null, false),
+            new(OwnItemsSection.CatalogueTitle, OwnItemsSection.CatalogueTitle, null, false)
+        };
+        tabs.AddRange(own.TabNames.Select(t => new ListTabChoice(t, own.TitleOf(t), t, true)));
+        tabs.Add(new ListTabChoice(own.TabNames.Count == 0 ? "Own items" : "Other own items", own.Title, null, true));
+        string? keep = _selectedListTab?.Section;
+        // Only when the tabs changed: rebuilding them while one is being clicked would upset the list and the filters.
+        if (!ListTabs.SequenceEqual(tabs))
+        {
+            ListTabs.Clear();
+            foreach (var tab in tabs) ListTabs.Add(tab);
+            OnPropertyChanged(nameof(ItemTabChoices));
+        }
+        var chosen = ListTabs.FirstOrDefault(t => t.Section == keep) ?? ListTabs[0];
+        if (!Equals(chosen, _selectedListTab))
+        {
+            _selectedListTab = chosen;
+            OnPropertyChanged(nameof(SelectedListTab));
+        }
+        ((RelayCommand)RenameTabCommand).RaiseCanExecuteChanged();
+        ((RelayCommand)RemoveTabCommand).RaiseCanExecuteChanged();
+    }
 
     public static IReadOnlyList<LibraryItemKind> Kinds { get; } = Enum.GetValues<LibraryItemKind>();
 
@@ -179,8 +435,10 @@ public sealed class LibraryManagerViewModel : ViewModelBase
         get => _editor;
         private set
         {
-            if (SetProperty(ref _editor, value))
-                ((RelayCommand)SaveCommand).RaiseCanExecuteChanged();
+            if (!SetProperty(ref _editor, value)) return;
+            ((RelayCommand)SaveCommand).RaiseCanExecuteChanged();
+            OnPropertyChanged(nameof(ItemTab));
+            OnPropertyChanged(nameof(ShowsItemTab));
         }
     }
 
@@ -226,6 +484,7 @@ public sealed class LibraryManagerViewModel : ViewModelBase
             var library = _library.Current;
             string? selectedId = select ?? SelectedItem?.Id;
             RefreshChoices(library);
+            RefreshListTabs();
 
             var query = new LibraryQuery(SearchText)
             {
@@ -257,8 +516,12 @@ public sealed class LibraryManagerViewModel : ViewModelBase
 
             Items.Clear();
             if (_ownItems is { } own)
-                rows = rows.Select(r => r with { Section = own.IsOwn(r.Id) ? own.Title : OwnItemsSection.CatalogueTitle })
-                    .OrderBy(r => r.Section == OwnItemsSection.CatalogueTitle ? 0 : 1).ToList();
+            {
+                string? only = _selectedListTab?.Section;
+                rows = rows.Select(r => r with { Section = own.SectionOf(r.Id) })
+                    .Where(r => only is null || r.Section == only)
+                    .OrderBy(r => own.OrderOf(r.Section!)).ToList();
+            }
             foreach (var row in rows)
                 Items.Add(row);
             int total = Kind switch
@@ -281,6 +544,7 @@ public sealed class LibraryManagerViewModel : ViewModelBase
 
     private void New()
     {
+        _newItemTab = _selectedListTab?.Tab;                            // a new item goes in the tab shown
         var library = _library.Current;
         Editor = Kind switch
         {
@@ -313,11 +577,16 @@ public sealed class LibraryManagerViewModel : ViewModelBase
     /// <summary>Fills a filter list with "(all)" plus the distinct values in ordinal order; keeps the choice if still offered.</summary>
     private void Replace(ObservableCollection<string> target, IEnumerable<string?> values, string current, Action<string> set, string property)
     {
-        var distinct = values.Where(v => !string.IsNullOrWhiteSpace(v)).Select(v => v!.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToList();
-        target.Clear();
-        target.Add(All);
-        foreach (var v in distinct) target.Add(v);
+        var wanted = new[] { All }.Concat(values.Where(v => !string.IsNullOrWhiteSpace(v)).Select(v => v!.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase)).ToList();
+        // Change only what differs, and never take "(all)" out: emptying the list would clear the drop-down's choice
+        // (it then showed nothing after a search or a change of tab).
+        if (!target.SequenceEqual(wanted))
+        {
+            if (target.Count == 0 || target[0] != All) target.Insert(0, All);
+            while (target.Count > 1) target.RemoveAt(target.Count - 1);
+            foreach (var v in wanted.Skip(1)) target.Add(v);
+        }
         set(target.Contains(current) ? current : All);
         OnPropertyChanged(property);
     }
@@ -385,11 +654,14 @@ public sealed class LibraryManagerViewModel : ViewModelBase
                 case Bundle b: _library.Update(b); break;
             }
             string id = editor.Id.Trim();
+            if (editor.IsNew && CanEditTabs && _ownItems!.IsOwn(id))
+                _ownItems.Assign(id, _newItemTab);
             Refresh(select: id);
             if (SelectedItem?.Id != id)                         // saved but filtered out: show it anyway
             {
                 SearchText = null;
                 ShowInactive = true;
+                _selectedListTab = null;
                 Refresh(select: id);
             }
             Succeed(editor.IsNew ? $"Added '{id}'." : $"Saved '{id}'. Designs using it are recalculated.");

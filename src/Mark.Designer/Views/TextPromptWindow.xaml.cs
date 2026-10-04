@@ -1,6 +1,6 @@
 using System.Windows;
 
-namespace Mark.App.Dialogs;
+namespace Mark.Designer.Views;
 
 /// <summary>Asks for one line of text (e.g. a project name). UI glue only.</summary>
 public partial class TextPromptWindow : Window

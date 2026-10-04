@@ -27,6 +27,32 @@
             </CollectionViewSource.GroupDescriptions>
         </CollectionViewSource>
 
+        <!-- The tabs above the list (a company's own items): a row of pills, the chosen one in blue. -->
+        <Style x:Key="ListTabItem" TargetType="ListBoxItem">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Bd" CornerRadius="14" Padding="12,4" Margin="0,0,6,6" Background="White"
+                                BorderBrush="#D5DAE1" BorderThickness="1">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#F3F6FA" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource AccentBrush}" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                <Setter Property="Foreground" Value="White" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Tick boxes of systems (used with) -->
         <DataTemplate x:Key="CheckChoiceTemplate">
             <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" Margin="0,2,14,2" />
@@ -405,6 +431,32 @@
             <DockPanel>
                 <TextBlock DockPanel.Dock="Bottom" Text="{Binding ResultSummary}" Margin="0,4,0,0" FontSize="11"
                            Foreground="{StaticResource MutedTextBrush}" />
+                <!-- Tabs of the company's own items -->
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4" Visibility="{Binding HasListTabs, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top"
+                                Visibility="{Binding CanEditTabs, Converter={StaticResource BoolToVisibility}}">
+                        <Button Content="+ New tab" Padding="10,3" Command="{Binding AddTabCommand}"
+                                ToolTip="A tab for the company's own items, e.g. 50 Series" />
+                        <Button Content="Rename" Padding="10,3" Margin="6,0,0,0" Command="{Binding RenameTabCommand}"
+                                ToolTip="Rename the chosen tab" />
+                        <Button Content="Remove" Padding="10,3" Margin="6,0,0,0" Command="{Binding RemoveTabCommand}"
+                                ToolTip="Remove the chosen tab (its items are kept, in no tab)" />
+                    </StackPanel>
+                    <ListBox ItemsSource="{Binding ListTabs}" SelectedItem="{Binding SelectedListTab}" BorderThickness="0" Background="Transparent"
+                             ItemContainerStyle="{StaticResource ListTabItem}" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             AutomationProperties.Name="Tabs">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
                 <ListView ItemsSource="{Binding Source={StaticResource ItemsView}}" SelectedItem="{Binding SelectedItem}">
                     <ListView.GroupStyle>
                         <GroupStyle>
@@ -460,6 +512,15 @@
                                 ToolTip="Only items nothing uses can be deleted; retire the others" />
                     </StackPanel>
                 </StackPanel>
+                <!-- Which tab of the company's own items the item is in -->
+                <Border DockPanel.Dock="Top" Background="#EEF3FB" BorderBrush="#D5E2F5" BorderThickness="1" CornerRadius="4" Padding="10,6"
+                        Margin="0,0,0,10" Visibility="{Binding ShowsItemTab, Converter={StaticResource BoolToVisibility}}">
+                    <DockPanel>
+                        <TextBlock Text="Tab" Style="{StaticResource FormLabel}" Width="142" FontWeight="SemiBold" />
+                        <ComboBox ItemsSource="{Binding ItemTabChoices}" SelectedItem="{Binding ItemTab}" AutomationProperties.Name="Tab"
+                                  ToolTip="The tab of the company's own items this item is listed in (moves it at once)" />
+                    </DockPanel>
+                </Border>
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <ContentControl Content="{Binding Editor}" Focusable="False" />
                 </ScrollViewer>

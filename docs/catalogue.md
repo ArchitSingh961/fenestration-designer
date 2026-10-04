@@ -83,6 +83,18 @@ items**, **Edit own items…** next to a company opens the Library Manager with 
 In the Library Manager — in MARK Owner's *Edit own items…* and in the company's MARK — they are listed apart, under a
 heading with the company's name (**Sozluk — own items**), after the catalogue's items.
 
+**Tabs.** The owner can sort a company's own items into tabs, e.g. **50 Series** and **60 Series**. Above the list are
+the tabs **All · Catalogue · 50 Series · 60 Series · Other own items**; a click shows only that tab's items, and the list
+heads them **Sozluk — 50 Series**. In *Edit own items…*:
+
+- **+ New tab** makes one (it is shown at once, empty); **Rename** and **Remove** act on the tab chosen (removing a tab
+  keeps its items, under *Other own items*);
+- **Tab** at the top of an own item's form moves it to another tab at once;
+- **New** while a tab is shown puts the new item in that tab.
+
+The tabs are saved with the company's own items when the Library Manager is closed (also when only the tabs changed),
+and the company sees the tabs that have items in them in its MARK, where it cannot change them.
+
 The company's own **systems** also appear in its MARK as ready-made designs: the design library on the Drawing tab gets
 a category named after the company, with a section per own system holding the designs that suit it (those its hardware
 sets cover — sliding designs for a sliding system, casement and tilt & turn for a casement one). Clicking or dragging one
@@ -106,7 +118,7 @@ is not published, and MARK Owner says which company is affected.
 | Where | What |
 |---|---|
 | `Mark.Core/Library/Systems.cs` | `ProductSystem`, `Bundle`, `BundlePart`, `UsedWith`, `ReinforcementRule`, `CatalogueSelection` |
-| `Mark.Core/Library/CompanyItems.cs` | A company's own items: `Combine` with the catalogue, `Split` an edited copy, `CatalogueChanges` |
+| `Mark.Core/Library/CompanyItems.cs` | A company's own items: `Combine` with the catalogue, `Split` an edited copy, `CatalogueChanges`; their tabs (`OwnItemTab`, `WithTabs`) |
 | `Mark.Core/Library/CatalogueSelector.cs` | A company's part of the master (closure of everything needed, licensed materials only) |
 | `Mark.Core/Design/FrameEditor.Systems.cs` | `TrySetSystem`; `SetFrameSystemCommand` |
 | `Mark.Calculation/CalculationEngine.cs` | System defaults, member bundles, opening sets, reinforcement |

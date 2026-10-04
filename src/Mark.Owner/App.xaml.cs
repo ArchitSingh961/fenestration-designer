@@ -139,7 +139,13 @@ internal sealed class OwnerDialogs : IOwnerDialogs, ICatalogueEditorHost, IDialo
     public void ShowLibraryManager(LibraryManagerViewModel manager)
         => new LibraryManagerWindow(manager) { Owner = _owner(), Title = "Catalogue — Library Manager" }.ShowDialog();
 
-    public string? PromptText(string title, string label, string initialText) => null;
+    /// <summary>One line of text, e.g. the name of a new tab of a company's own items.</summary>
+    public string? PromptText(string title, string label, string initialText)
+    {
+        var owner = Application.Current?.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive) ?? _owner();
+        var window = new TextPromptWindow(title, label, initialText) { Owner = owner };
+        return window.ShowDialog() == true ? window.Text : null;
+    }
 
     public Guid? ChooseProject(ProjectListViewModel projects) => null;
 

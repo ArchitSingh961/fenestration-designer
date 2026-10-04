@@ -43,9 +43,9 @@ public static class FeatureCatalog
     public static IReadOnlyList<Feature> All { get; } = new[]
     {
         new Feature(Features.Quotes, "Sales", "Quotes and clients", "Dashboard, quote list, client details and design cards.", IsCore: true),
-        new Feature(Features.Enquiries, "Sales", "Enquiries", "Enquiry form and enquiry → quote → order.", IsBuilt: false),
-        new Feature(Features.QuotationPdf, "Sales", "Quotation PDF", "Quotations with the company logo, drawings and terms.", IsBuilt: false),
-        new Feature(Features.SalesCharts, "Sales", "Sales charts", "Quotes won and lost by week, month, person and city.", IsBuilt: false),
+        new Feature(Features.Enquiries, "Sales", "Enquiries", "Enquiry form and enquiry → quote → order."),
+        new Feature(Features.QuotationPdf, "Sales", "Quotation PDF", "Quotations with the company logo, drawings and terms."),
+        new Feature(Features.SalesCharts, "Sales", "Sales charts", "Quotes won and lost by week, month, person and city."),
         new Feature(Features.Drawing, "Design", "Frame designer", "Draw frames, mullions and transoms to exact sizes.", IsCore: true),
         new Feature(Features.Openings, "Design", "Openings", "Casement, tilt & turn, sliding, pivot and mesh shutters."),
         new Feature(Features.DesignLibrary, "Design", "Design library", "Ready-made designs applied by click or drag."),
@@ -81,11 +81,12 @@ public static class StarterPackages
     {
         ("Basic", "Quotes and designing with openings, ready-made designs and cost.",
             (IReadOnlyList<string>)new[] { Features.Quotes, Features.Drawing, Features.Openings, Features.DesignLibrary, Features.Costing }),
-        ("Professional", "Basic plus price structure, Library Manager, cutting plans and project files.",
+        ("Professional", "Basic plus enquiries, quotation PDF, price structure, Library Manager, cutting plans and project files.",
             new[]
             {
                 Features.Quotes, Features.Drawing, Features.Openings, Features.DesignLibrary, Features.Costing,
-                Features.PriceStructure, Features.LibraryManager, Features.CuttingPlans, Features.ProjectFiles
+                Features.PriceStructure, Features.LibraryManager, Features.CuttingPlans, Features.ProjectFiles,
+                Features.Enquiries, Features.QuotationPdf
             }),
         ("Complete", "Everything in MARK, including each new area as it is released.",
             FeatureCatalog.All.Select(f => f.Id).ToList())

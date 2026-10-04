@@ -7,7 +7,7 @@ namespace Mark.Designer.ViewModels;
 public enum AppArea { Sales, Design, Pricing, Library, Production, Orders, Purchasing, Inventory, Accounts }
 
 /// <summary>Everything MARK can show, as the tabs of the areas (one view can be a tab of more than one area).</summary>
-public enum AppView { Dashboard, Quotes, Client, Designs, Drawing, Pricing, Materials, Cutting, Library, Overview, Account, Staff }
+public enum AppView { Dashboard, Quotes, Client, Designs, Drawing, Pricing, Materials, Cutting, Library, Overview, Account, Staff, Enquiries, QuotationSetup }
 
 /// <summary>How a tab or area looks to the signed-in login.</summary>
 public enum AccessState
@@ -40,12 +40,14 @@ public static class AreaCatalog
 {
     public static IReadOnlyList<AreaInfo> All { get; } = new[]
     {
-        new AreaInfo(AppArea.Sales, "Sales", "", "Dashboard, quotes and clients.", new[]
+        new AreaInfo(AppArea.Sales, "Sales", "", "Dashboard, enquiries, quotes, clients and quotations.", new[]
         {
             new AreaTabInfo(AppView.Dashboard, "Dashboard", Licensing.Features.Quotes),
+            new AreaTabInfo(AppView.Enquiries, "Enquiries", Licensing.Features.Enquiries),
             new AreaTabInfo(AppView.Quotes, "Quotes", Licensing.Features.Quotes),
             new AreaTabInfo(AppView.Client, "Client", Licensing.Features.Quotes),
-            new AreaTabInfo(AppView.Designs, "Designs", Licensing.Features.Quotes)
+            new AreaTabInfo(AppView.Designs, "Designs", Licensing.Features.Quotes),
+            new AreaTabInfo(AppView.QuotationSetup, "Quotation setup", Licensing.Features.QuotationPdf)
         }),
         new AreaInfo(AppArea.Design, "Design", "", "Windows and doors drawn to size, with openings and ready-made designs.", new[]
         {

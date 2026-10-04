@@ -729,6 +729,172 @@
                         </Border>
                     </Grid>
 
+                    <!-- Sales charts: by week or month; by person and city -->
+                    <ContentControl Style="{StaticResource LockNotice}" Margin="0,16,0,0" MaxWidth="560" HorizontalAlignment="Left"
+                                    Content="{Binding DataContext.Access.SalesChartsLock, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    Visibility="{Binding DataContext.Access.CanSeeSalesCharts, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBoolToVisibility}}" />
+                    <StackPanel DataContext="{Binding DataContext.SalesCharts, RelativeSource={RelativeSource AncestorType=Window}}"
+                                Visibility="{Binding DataContext.Access.CanSeeSalesCharts, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}">
+                        <Grid Margin="0,16,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="3*" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="2*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Style="{StaticResource Card}" Padding="16">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                            <RadioButton Style="{StaticResource FilterTab}" Content="By week" IsChecked="{Binding IsWeeks}" />
+                                            <RadioButton Style="{StaticResource FilterTab}" Content="By month" IsChecked="{Binding IsMonths}" />
+                                        </StackPanel>
+                                        <StackPanel>
+                                            <TextBlock Text="Enquiries, quotes, won and lost" Style="{StaticResource CardTitle}" />
+                                            <TextBlock Text="{Binding SummaryText}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                    <!-- Legend -->
+                                    <ItemsControl ItemsSource="{Binding Legend}" Margin="0,8,0,4">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,14,0">
+                                                    <Border Width="10" Height="10" CornerRadius="2" Background="{Binding Color}" VerticalAlignment="Center" />
+                                                    <TextBlock Text="{Binding Name}" Margin="5,0,0,0" FontSize="11" Foreground="#374151" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <!-- Grouped bars per period, from a common baseline -->
+                                    <Border BorderBrush="#E5E7EB" BorderThickness="0,0,0,1" Margin="0,6,0,0">
+                                        <ItemsControl ItemsSource="{Binding Columns}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <UniformGrid Rows="1" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <ItemsControl ItemsSource="{Binding Bars}" Height="124" HorizontalAlignment="Center" Background="Transparent">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" />
+                                                            </ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Width="7" Height="{Binding Height}" Margin="1,0" CornerRadius="3,3,0,0" Background="{Binding Color}"
+                                                                        VerticalAlignment="Bottom" ToolTip="{Binding ToolTip}" />
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Border>
+                                    <ItemsControl ItemsSource="{Binding Columns}" Margin="0,4,0,0">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Rows="1" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Label}" FontSize="10" Foreground="{StaticResource MutedTextBrush}" HorizontalAlignment="Center" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <TextBlock Text="Value won" FontWeight="SemiBold" Foreground="#1F2A37" Margin="0,16,0,4" />
+                                    <Border BorderBrush="#E5E7EB" BorderThickness="0,0,0,1">
+                                        <ItemsControl ItemsSource="{Binding Columns}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <UniformGrid Rows="1" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Height="124" Background="Transparent" ToolTip="{Binding ValueToolTip}">
+                                                        <Border Width="16" Height="{Binding ValueHeight}" CornerRadius="3,3,0,0" Background="#2A78D6"
+                                                                VerticalAlignment="Bottom" HorizontalAlignment="Center" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Border>
+                                    <ItemsControl ItemsSource="{Binding Columns}" Margin="0,4,0,0">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Rows="1" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Label}" FontSize="10" Foreground="{StaticResource MutedTextBrush}" HorizontalAlignment="Center" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <!-- The same numbers as a table -->
+                                    <Expander Header="Show the numbers" Margin="0,12,0,0" Foreground="#374151">
+                                        <ListView ItemsSource="{Binding Columns}" BorderThickness="0" Margin="0,6,0,0" MaxHeight="320">
+                                            <ListView.View>
+                                                <GridView>
+                                                    <GridViewColumn Header="Period" Width="170" DisplayMemberBinding="{Binding LongLabel}" />
+                                                    <GridViewColumn Header="Enquiries" Width="75" DisplayMemberBinding="{Binding Counts[0]}" />
+                                                    <GridViewColumn Header="Quotes" Width="65" DisplayMemberBinding="{Binding Counts[1]}" />
+                                                    <GridViewColumn Header="Won" Width="55" DisplayMemberBinding="{Binding Counts[2]}" />
+                                                    <GridViewColumn Header="Lost" Width="55" DisplayMemberBinding="{Binding Counts[3]}" />
+                                                    <GridViewColumn Header="Value won" Width="110" DisplayMemberBinding="{Binding WonValueText}" />
+                                                </GridView>
+                                            </ListView.View>
+                                        </ListView>
+                                    </Expander>
+                                </StackPanel>
+                            </Border>
+                            <StackPanel Grid.Column="2">
+                                <Border Style="{StaticResource Card}" Padding="16" Margin="0,0,0,16">
+                                    <StackPanel>
+                                        <TextBlock Text="Sales by person" Style="{StaticResource CardTitle}" />
+                                        <TextBlock Text="Quotes each person created in the period." FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,6" />
+                                        <ListView ItemsSource="{Binding People}" BorderThickness="0" MaxHeight="240">
+                                            <ListView.View>
+                                                <GridView>
+                                                    <GridViewColumn Header="Person" Width="120" DisplayMemberBinding="{Binding Name}" />
+                                                    <GridViewColumn Header="Quotes" Width="55" DisplayMemberBinding="{Binding Quotes}" />
+                                                    <GridViewColumn Header="Won" Width="45" DisplayMemberBinding="{Binding Won}" />
+                                                    <GridViewColumn Header="Win rate" Width="65" DisplayMemberBinding="{Binding WinRate}" />
+                                                    <GridViewColumn Header="Value won" Width="95" DisplayMemberBinding="{Binding WonValue}" />
+                                                </GridView>
+                                            </ListView.View>
+                                        </ListView>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource Card}" Padding="16">
+                                    <StackPanel>
+                                        <TextBlock Text="Sales by city" Style="{StaticResource CardTitle}" />
+                                        <TextBlock Text="The client's city of quotes created in the period." FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,6" />
+                                        <ListView ItemsSource="{Binding Cities}" BorderThickness="0" MaxHeight="240">
+                                            <ListView.View>
+                                                <GridView>
+                                                    <GridViewColumn Header="City" Width="140" DisplayMemberBinding="{Binding City}" />
+                                                    <GridViewColumn Header="Quotes" Width="60" DisplayMemberBinding="{Binding Quotes}" />
+                                                    <GridViewColumn Header="Won" Width="50" DisplayMemberBinding="{Binding Won}" />
+                                                    <GridViewColumn Header="Value won" Width="110" DisplayMemberBinding="{Binding WonValue}" />
+                                                </GridView>
+                                            </ListView.View>
+                                        </ListView>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+
                     <!-- Who did what: the latest changes to all quotes -->
                     <Border Style="{StaticResource Card}" Padding="16" Margin="0,16,0,0"
                             Visibility="{Binding HasRecentActivity, Converter={StaticResource BoolToVisibility}}">
@@ -797,6 +963,7 @@
                                 <GridViewColumn Header="Project" Width="200" DisplayMemberBinding="{Binding Name}" />
                                 <GridViewColumn Header="Client" Width="170" DisplayMemberBinding="{Binding Client}" />
                                 <GridViewColumn Header="Status" Width="70" DisplayMemberBinding="{Binding Status}" />
+                                <GridViewColumn Header="Order" Width="85" DisplayMemberBinding="{Binding Order}" />
                                 <GridViewColumn Header="Designs" Width="65" DisplayMemberBinding="{Binding Designs}" />
                                 <GridViewColumn Header="Qty" Width="50" DisplayMemberBinding="{Binding Quantity}" />
                                 <GridViewColumn Header="Area" Width="80" DisplayMemberBinding="{Binding Area}" />
@@ -1280,6 +1447,437 @@
                 </StackPanel>
             </ScrollViewer>
 
+            <!-- ══ Enquiries: the list, and the two-step form ══ -->
+            <Grid x:Name="EnquiriesPage" DataContext="{Binding Enquiries}" Background="{StaticResource PageBackgroundBrush}"
+                  Visibility="{Binding DataContext.Page, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=Enquiries}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <DockPanel>
+                    <DockPanel DockPanel.Dock="Top" Margin="24,18,24,10">
+                        <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Content="New enquiry" Command="{Binding NewCommand}" />
+                        <StackPanel>
+                            <TextBlock Text="Enquiries" Style="{StaticResource PageTitle}" />
+                            <TextBlock Text="{Binding DueText}" Foreground="#B7791F" FontWeight="SemiBold" />
+                        </StackPanel>
+                    </DockPanel>
+                    <DockPanel DockPanel.Dock="Top" Margin="24,0,24,8">
+                        <TextBox DockPanel.Dock="Right" Width="240" Padding="6,4" VerticalContentAlignment="Center"
+                                 ToolTip="Search by number, client, city, phone, source, salesperson or quote"
+                                 Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" />
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton Style="{StaticResource FilterTab}" Content="{Binding OpenHeader}"
+                                         IsChecked="{Binding Filter, Converter={StaticResource EnumToBool}, ConverterParameter=Open}" />
+                            <RadioButton Style="{StaticResource FilterTab}" Content="{Binding QuotedHeader}"
+                                         IsChecked="{Binding Filter, Converter={StaticResource EnumToBool}, ConverterParameter=Quoted}" />
+                            <RadioButton Style="{StaticResource FilterTab}" Content="{Binding WonHeader}"
+                                         IsChecked="{Binding Filter, Converter={StaticResource EnumToBool}, ConverterParameter=Won}" />
+                            <RadioButton Style="{StaticResource FilterTab}" Content="{Binding LostHeader}"
+                                         IsChecked="{Binding Filter, Converter={StaticResource EnumToBool}, ConverterParameter=Lost}" />
+                            <RadioButton Style="{StaticResource FilterTab}" Content="{Binding AllHeader}"
+                                         IsChecked="{Binding Filter, Converter={StaticResource EnumToBool}, ConverterParameter=All}" />
+                        </StackPanel>
+                    </DockPanel>
+                    <TextBlock DockPanel.Dock="Bottom" Margin="24,8,24,16" Text="{Binding Message}" TextWrapping="Wrap"
+                               Foreground="{StaticResource MutedTextBrush}" />
+                    <Border Style="{StaticResource Card}" Margin="24,0,24,0" Padding="0">
+                        <ListView ItemsSource="{Binding Rows}" BorderThickness="0" Background="Transparent">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="Padding" Value="4,6" />
+                                    <Setter Property="AutomationProperties.Name" Value="{Binding Number}" />
+                                    <EventSetter Event="MouseDoubleClick" Handler="EnquiryRow_DoubleClick" />
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Enquiry" Width="90" DisplayMemberBinding="{Binding Number}" />
+                                    <GridViewColumn Header="Client" Width="180" DisplayMemberBinding="{Binding Client}" />
+                                    <GridViewColumn Header="City" Width="100" DisplayMemberBinding="{Binding City}" />
+                                    <GridViewColumn Header="Phone" Width="110" DisplayMemberBinding="{Binding Phone}" />
+                                    <GridViewColumn Header="Stage" Width="80" DisplayMemberBinding="{Binding Stage}" />
+                                    <GridViewColumn Header="Source" Width="95" DisplayMemberBinding="{Binding Source}" />
+                                    <GridViewColumn Header="Salesperson" Width="110" DisplayMemberBinding="{Binding Owner}" />
+                                    <GridViewColumn Header="Expected value" Width="105">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Value}" TextAlignment="Right" MinWidth="90" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Follow-up" Width="95">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding FollowUp}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsDue}" Value="True">
+                                                                    <Setter Property="Foreground" Value="#B45309" />
+                                                                    <Setter Property="FontWeight" Value="SemiBold" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Quote" Width="100" DisplayMemberBinding="{Binding Quote}" />
+                                    <GridViewColumn Header="" Width="70">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource SecondaryButton}" Content="Open" Padding="10,2" Margin="0"
+                                                        Command="{Binding DataContext.EditCommand, ElementName=EnquiriesPage}" CommandParameter="{Binding}"
+                                                        AutomationProperties.Name="{Binding Number, StringFormat=Open {0}}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </Border>
+                </DockPanel>
+
+                <!-- The form: step 1 client and site, step 2 the enquiry -->
+                <Border Grid.Column="1" Width="460" Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,0,0,0"
+                        DataContext="{Binding Editor}" Visibility="{Binding DataContext.HasEditor, ElementName=EnquiriesPage, Converter={StaticResource BoolToVisibility}}">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Top" Margin="20,16,20,8">
+                            <TextBlock Text="{Binding Title}" Style="{StaticResource CardTitle}" />
+                            <TextBlock Text="{Binding StepText}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" Margin="0,2,0,0" />
+                        </StackPanel>
+                        <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="20,10">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Left" Style="{StaticResource SecondaryButton}" Content="Delete" Margin="0"
+                                        Command="{Binding DataContext.DeleteCommand, ElementName=EnquiriesPage}"
+                                        Visibility="{Binding IsNew, Converter={StaticResource InverseBoolToVisibility}}" />
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Style="{StaticResource SecondaryButton}" Content="Cancel" Command="{Binding DataContext.CancelCommand, ElementName=EnquiriesPage}" />
+                                    <Button Style="{StaticResource SecondaryButton}" Content="Back" Command="{Binding DataContext.BackCommand, ElementName=EnquiriesPage}"
+                                            Visibility="{Binding IsStep2, Converter={StaticResource BoolToVisibility}}" />
+                                    <Button Style="{StaticResource PrimaryButton}" Content="Next" Command="{Binding DataContext.NextCommand, ElementName=EnquiriesPage}"
+                                            Visibility="{Binding IsStep1, Converter={StaticResource BoolToVisibility}}" />
+                                    <Button Style="{StaticResource SecondaryButton}" Content="Save enquiry" Command="{Binding DataContext.SaveCommand, ElementName=EnquiriesPage}"
+                                            Visibility="{Binding IsStep2, Converter={StaticResource BoolToVisibility}}" />
+                                    <Button Style="{StaticResource PrimaryButton}" Content="Create quote" Command="{Binding DataContext.CreateQuoteCommand, ElementName=EnquiriesPage}"
+                                            ToolTip="Save the enquiry and start a quote with its client, site and requirements"
+                                            Visibility="{Binding CanCreateQuote, Converter={StaticResource BoolToVisibility}}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <TextBlock DockPanel.Dock="Bottom" Margin="20,0,20,8" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}"
+                                   Text="{Binding DataContext.Message, ElementName=EnquiriesPage}" />
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                            <StackPanel Margin="20,0,20,12">
+                                <!-- Step 1: client and site -->
+                                <StackPanel Visibility="{Binding IsStep1, Converter={StaticResource BoolToVisibility}}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="90" />
+                                            <ColumnDefinition Width="8" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="8" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="Title" Style="{StaticResource FormLabel}" />
+                                            <ComboBox IsEditable="True" Padding="6,4" Margin="0,0,0,8" ItemsSource="{x:Static vm:EnquiryEditorViewModel.Titles}"
+                                                      Text="{Binding ClientTitle, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="First name" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Text="{Binding FirstName, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="4">
+                                            <TextBlock Text="Last name" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Text="{Binding LastName, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                    </Grid>
+                                    <TextBlock Text="Company" Style="{StaticResource FormLabel}" />
+                                    <TextBox Style="{StaticResource FormBox}" Text="{Binding Company, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="8" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="Phone *" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Text="{Binding Phone, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="E-mail" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                    </Grid>
+                                    <TextBlock Text="SITE ADDRESS" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource HeaderTextBrush}" Margin="0,8,0,2" />
+                                    <TextBlock Text="Address 1" Style="{StaticResource FormLabel}" />
+                                    <TextBox Style="{StaticResource FormBox}" Text="{Binding AddressLine1, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Text="Address 2" Style="{StaticResource FormLabel}" />
+                                    <TextBox Style="{StaticResource FormBox}" Text="{Binding AddressLine2, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="8" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="8" />
+                                            <ColumnDefinition Width="90" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="City" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Text="{Binding City, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="State" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Text="{Binding State, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="4">
+                                            <TextBlock Text="PIN code" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Text="{Binding PostalCode, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+
+                                <!-- Step 2: the enquiry -->
+                                <StackPanel Visibility="{Binding IsStep2, Converter={StaticResource BoolToVisibility}}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="8" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="Stage" Style="{StaticResource FormLabel}" />
+                                            <ComboBox Padding="6,4" Margin="0,0,0,8" ItemsSource="{x:Static vm:EnquiryEditorViewModel.Stages}" SelectedItem="{Binding Stage}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Source" Style="{StaticResource FormLabel}" />
+                                            <ComboBox IsEditable="True" Padding="6,4" Margin="0,0,0,8" ItemsSource="{x:Static vm:EnquiryEditorViewModel.Sources}"
+                                                      Text="{Binding Source, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                    </Grid>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="8" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="Salesperson" Style="{StaticResource FormLabel}" />
+                                            <ComboBox IsEditable="True" Padding="6,4" Margin="0,0,0,8"
+                                                      ItemsSource="{Binding DataContext.Owners, ElementName=EnquiriesPage}"
+                                                      Text="{Binding Owner, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Expected value" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Text="{Binding ExpectedValue, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                    </Grid>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="8" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="Follow up on" Style="{StaticResource FormLabel}" />
+                                            <DatePicker SelectedDate="{Binding FollowUp}" Margin="0,0,0,8" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Expected decision" Style="{StaticResource FormLabel}" />
+                                            <DatePicker SelectedDate="{Binding ExpectedClose}" Margin="0,0,0,8" />
+                                        </StackPanel>
+                                    </Grid>
+                                    <TextBlock Text="Requirements" Style="{StaticResource FormLabel}" />
+                                    <TextBox Style="{StaticResource FormBox}" MinHeight="100" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top"
+                                             Text="{Binding Requirements, UpdateSourceTrigger=PropertyChanged}"
+                                             ToolTip="Rooms, window types, glass, colour, budget, timing, site conditions" />
+                                    <StackPanel Visibility="{Binding IsLost, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock Text="Why it was lost" Style="{StaticResource FormLabel}" />
+                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding LostReason, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <Button Style="{StaticResource SecondaryButton}" Content="Open its quote" Margin="0,6,0,0" HorizontalAlignment="Left"
+                                            Command="{Binding DataContext.OpenQuoteCommand, ElementName=EnquiriesPage}"
+                                            Visibility="{Binding HasQuote, Converter={StaticResource BoolToVisibility}}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+            </Grid>
+
+            <!-- ══ Quotation setup: what every quotation PDF prints ══ -->
+            <ScrollViewer DataContext="{Binding QuotationSetup}" VerticalScrollBarVisibility="Auto" Focusable="False"
+                          Background="{StaticResource PageBackgroundBrush}"
+                          Visibility="{Binding DataContext.Page, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=QuotationSetup}">
+                <StackPanel Margin="24,18,24,24" MaxWidth="1150">
+                    <DockPanel Margin="0,0,0,6">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button Style="{StaticResource SecondaryButton}" Content="Discard changes" Command="{Binding RevertCommand}" />
+                            <Button Style="{StaticResource PrimaryButton}" Content="Save setup" Command="{Binding SaveCommand}" />
+                        </StackPanel>
+                        <TextBlock Text="Quotation setup" Style="{StaticResource PageTitle}" />
+                    </DockPanel>
+                    <TextBlock TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,12"
+                               Text="What every quotation PDF prints: your details at the top of each page, the covering letter, terms and conditions and bank details. Your company name and logo come from your MARK account. Make a quotation with Quotation PDF… on an open, saved quote." />
+                    <Border Padding="10" Margin="0,0,0,12" CornerRadius="6" Visibility="{Binding HasMessage, Converter={StaticResource BoolToVisibility}}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#E8F6EE" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MessageIsError}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Foreground="#1F2A37" />
+                    </Border>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <TextBlock Text="Your details" Style="{StaticResource CardTitle}" Margin="0,0,0,6" />
+                                    <TextBlock Text="Company name (used only without a MARK account)" Style="{StaticResource FormLabel}" />
+                                    <TextBox Style="{StaticResource FormBox}" Text="{Binding CompanyName, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Text="Line above your name, e.g. Authorised partner" Style="{StaticResource FormLabel}" />
+                                    <TextBox Style="{StaticResource FormBox}" Text="{Binding PartnerLabel, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Text="Address (one or more lines)" Style="{StaticResource FormLabel}" />
+                                    <TextBox Style="{StaticResource FormBox}" MinHeight="54" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top"
+                                             Text="{Binding Address, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="8" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="Contact no." Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Text="{Binding Phone, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBlock Text="Website" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Text="{Binding Website, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="E-mail" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBlock Text="GSTIN" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Text="{Binding Gstin, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <TextBlock Text="Brand (top left of every page)" Style="{StaticResource CardTitle}" Margin="0,0,0,6" />
+                                    <TextBlock Text="E.g. the profile system you sell. Leave empty for none." FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
+                                    <TextBlock Text="Brand name" Style="{StaticResource FormLabel}" />
+                                    <TextBox Style="{StaticResource FormBox}" Text="{Binding BrandName, UpdateSourceTrigger=PropertyChanged}" />
+                                    <DockPanel Margin="0,4,0,0">
+                                        <Border DockPanel.Dock="Left" Width="150" Height="60" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Margin="0,0,10,0">
+                                            <Image Source="{Binding BrandLogoImage}" Stretch="Uniform" Margin="4" />
+                                        </Border>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <Button Style="{StaticResource SecondaryButton}" Content="Choose logo…" Margin="0,0,0,4" HorizontalAlignment="Left" Command="{Binding ChooseBrandLogoCommand}" />
+                                            <Button Style="{StaticResource SecondaryButton}" Content="Remove" Margin="0" HorizontalAlignment="Left" Command="{Binding RemoveBrandLogoCommand}"
+                                                    Visibility="{Binding HasBrandLogo, Converter={StaticResource BoolToVisibility}}" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <TextBlock Text="Bank details" Style="{StaticResource CardTitle}" Margin="0,0,0,6" />
+                                    <TextBlock Text="Account name" Style="{StaticResource FormLabel}" />
+                                    <TextBox Style="{StaticResource FormBox}" Text="{Binding BankAccountName, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="8" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="Account number" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Text="{Binding BankAccountNumber, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBlock Text="IFSC" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Text="{Binding BankIfsc, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Bank" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Text="{Binding BankName, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBlock Text="Branch" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Text="{Binding BankBranch, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Padding="20,16">
+                                <StackPanel>
+                                    <TextBlock Text="Units and last page" Style="{StaticResource CardTitle}" Margin="0,0,0,6" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,4,0,8">
+                                        <TextBlock Text="Areas in" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="#4B5563" />
+                                        <RadioButton Content="Square feet" IsChecked="{Binding IsSquareFeet}" Margin="0,0,14,0" />
+                                        <RadioButton Content="Square metres" IsChecked="{Binding IsSquareMetres}" />
+                                    </StackPanel>
+                                    <TextBlock Text="Money label after amounts" Style="{StaticResource FormLabel}" />
+                                    <TextBox Style="{StaticResource FormBox}" Width="120" HorizontalAlignment="Left" Text="{Binding CurrencyLabel, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Text="A last page with one picture (e.g. care instructions)" Style="{StaticResource FormLabel}" />
+                                    <DockPanel>
+                                        <Border DockPanel.Dock="Left" Width="90" Height="120" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Margin="0,0,10,0">
+                                            <Image Source="{Binding ExtraPageImage}" Stretch="Uniform" Margin="3" />
+                                        </Border>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <Button Style="{StaticResource SecondaryButton}" Content="Choose picture…" Margin="0,0,0,4" HorizontalAlignment="Left" Command="{Binding ChooseExtraPageCommand}" />
+                                            <Button Style="{StaticResource SecondaryButton}" Content="Remove" Margin="0" HorizontalAlignment="Left" Command="{Binding RemoveExtraPageCommand}"
+                                                    Visibility="{Binding HasExtraPage, Converter={StaticResource BoolToVisibility}}" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Content="Use MARK's texts" Padding="10,3"
+                                                Command="{Binding DefaultTextsCommand}" ToolTip="Replace the letter, terms and acceptance with MARK's standard texts" />
+                                        <TextBlock Text="Covering letter" Style="{StaticResource CardTitle}" />
+                                    </DockPanel>
+                                    <TextBlock Text="After &quot;Dear Customer,&quot; — one paragraph per line." FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,6" />
+                                    <TextBox Style="{StaticResource FormBox}" MinHeight="120" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top"
+                                             Text="{Binding Letter, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <TextBlock Text="Terms and conditions" Style="{StaticResource CardTitle}" />
+                                    <TextBlock Text="One term per line; they are numbered on the quotation." FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,6" />
+                                    <TextBox Style="{StaticResource FormBox}" MinHeight="200" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top"
+                                             VerticalScrollBarVisibility="Auto" Text="{Binding Terms, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Padding="20,16">
+                                <StackPanel>
+                                    <TextBlock Text="Acceptance and notes" Style="{StaticResource CardTitle}" Margin="0,0,0,6" />
+                                    <TextBlock Text="Above the signatures" Style="{StaticResource FormLabel}" />
+                                    <TextBox Style="{StaticResource FormBox}" MinHeight="48" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top"
+                                             Text="{Binding Acceptance, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Text="Notes under the quote total" Style="{StaticResource FormLabel}" />
+                                    <TextBox Style="{StaticResource FormBox}" MinHeight="48" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top"
+                                             Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </ScrollViewer>
+
             <!-- ══ The open quote: Client | Designs | Drawing ═══════════ -->
             <DockPanel Background="{StaticResource PageBackgroundBrush}"
                        Visibility="{Binding Page, Converter={StaticResource EnumToVisibility}, ConverterParameter=Quote}">
@@ -1288,6 +1886,21 @@
                     <DockPanel>
                         <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Content="Open quote…" VerticalAlignment="Center"
                                 Command="{Binding OpenProjectCommand}" ToolTip="Open a saved quote (Ctrl+O)" />
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"
+                                    Visibility="{Binding Access.CanEditQuotes, Converter={StaticResource BoolToVisibility}}">
+                            <Button Style="{StaticResource SecondaryButton}" Content="New revision" Command="{Binding NewRevisionCommand}"
+                                    ToolTip="Keep the saved quote as a revision and continue as the next (R1, R2…)" />
+                            <Button Style="{StaticResource SecondaryButton}" Content="Convert to order" Command="{Binding ConvertToOrderCommand}"
+                                    ToolTip="Mark the quote won and give it an order number"
+                                    Visibility="{Binding IsOrder, Converter={StaticResource InverseBoolToVisibility}}" />
+                        </StackPanel>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Content="Quotation PDF…" VerticalAlignment="Center" Margin="6,0,6,0"
+                                Command="{Binding ExportQuotationCommand}" ToolTip="Make the quotation of this quote as a PDF, with your setup"
+                                Visibility="{Binding Access.CanMakeQuotation, Converter={StaticResource BoolToVisibility}}" />
+                        <Border DockPanel.Dock="Right" CornerRadius="10" Padding="10,3" Margin="0,0,10,0" Background="#E8F6EE" VerticalAlignment="Center"
+                                Visibility="{Binding IsOrder, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="{Binding OrderText}" FontWeight="SemiBold" FontSize="11" Foreground="#1D6B3A" />
+                        </Border>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="{Binding QuoteHeader}" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextBrush}"
                                        TextTrimming="CharacterEllipsis" />
@@ -1441,6 +2054,30 @@
                                     <TextBlock Text="History" Style="{StaticResource CardTitle}" />
                                     <TextBlock Text="{Binding QuoteAuthorsText}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,6" />
                                     <ItemsControl ItemsSource="{Binding QuoteHistory}" ItemTemplate="{StaticResource HistoryLine}" />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Earlier revisions of the quote -->
+                            <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,14,0,0"
+                                    DataContext="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    Visibility="{Binding HasQuoteRevisions, Converter={StaticResource BoolToVisibility}}">
+                                <StackPanel>
+                                    <TextBlock Text="Earlier revisions" Style="{StaticResource CardTitle}" />
+                                    <TextBlock Text="Kept as they were when the next revision was started. Open one as a copy to look at it or start again from it."
+                                               FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,6" TextWrapping="Wrap" />
+                                    <ItemsControl ItemsSource="{Binding QuoteRevisions}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border BorderBrush="#F0F2F5" BorderThickness="0,1,0,0" Padding="0,6">
+                                                    <DockPanel>
+                                                        <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Content="Open a copy" Padding="10,2"
+                                                                Command="{Binding OpenCommand}" />
+                                                        <TextBlock VerticalAlignment="Center" Foreground="#1F2A37"><Run Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold" /><Run Text="   " /><Run Text="{Binding When, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding By, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding Value, Mode=OneWay}" /></TextBlock>
+                                                    </DockPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
                                 </StackPanel>
                             </Border>
                         </StackPanel>

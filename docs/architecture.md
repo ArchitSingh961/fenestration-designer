@@ -21,6 +21,10 @@ Mark.App ──► Mark.Licensing ◄── Mark.LicenceServer (ASP.NET Core)   
 Mark.Designer ──► Mark.Licensing    (AccessViewModel: feature gates and read-only state)
 ```
 
+Quotations (Milestone 15): `Mark.Designer ──► Mark.Reports` (net8.0-windows, PDFsharp/MigraDoc). `Mark.Reports`
+references no other Mark project: it only lays out a finished `QuotationDocument`, which `QuotationBuilder` in the
+designer fills from the quote, its calculation and price.
+
 `Mark.Licensing` (net8.0) references no other Mark project and no WPF, so the server can use it; the server references
 only Mark.Licensing. `Mark.Tests` (net8.0-windows) references Core, Calculation, Data and Designer, plus the licensing
 projects. `ArchitectureTests` fail if

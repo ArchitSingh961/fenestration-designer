@@ -8,7 +8,7 @@ namespace Mark.Designer.ViewModels;
 
 /// <summary>A saved quote as a row of the quote list.</summary>
 public sealed record QuoteRow(Guid Id, string Number, string Name, string Client, QuoteStatus Status, int Designs,
-    int Quantity, string Area, string Value, string Modified, bool IsOpen, string ModifiedBy = "", string CreatedBy = "")
+    int Quantity, string Area, string Value, string Modified, bool IsOpen, string ModifiedBy = "", string CreatedBy = "", string Order = "")
 {
     /// <summary>"Created by Ravi · last saved by Amit" for the tooltip of the Saved by column.</summary>
     public string AuthorsText => CreatedBy.Length == 0 ? "" : $"Created by {CreatedBy} · last saved by {ModifiedBy}";
@@ -142,7 +142,7 @@ public sealed class QuoteListViewModel : ViewModelBase
         foreach (var q in _all)
         {
             if (Filter != QuoteFilter.All && q.Status.ToString() != Filter.ToString()) continue;
-            string haystack = $"{q.QuoteNumber} {q.Name} {q.ClientName} {q.CreatedBy} {q.ModifiedBy}";
+            string haystack = $"{q.QuoteNumber} {q.Name} {q.ClientName} {q.CreatedBy} {q.ModifiedBy} {q.OrderNumber} {q.ClientCity}";
             if (!words.All(w => haystack.Contains(w, StringComparison.OrdinalIgnoreCase))) continue;
             Quotes.Add(ToRow(q, q.Id == openId));
         }
@@ -151,7 +151,7 @@ public sealed class QuoteListViewModel : ViewModelBase
 
     private static QuoteRow ToRow(ProjectSummary q, bool isOpen) => new(
         q.Id,
-        string.IsNullOrEmpty(q.QuoteNumber) ? "—" : q.QuoteNumber,
+        string.IsNullOrEmpty(q.QuoteNumber) ? "—" : q.NumberText,
         q.Name,
         q.ClientName,
         q.Status,
@@ -162,7 +162,8 @@ public sealed class QuoteListViewModel : ViewModelBase
         q.ModifiedUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm", CultureInfo.InvariantCulture),
         isOpen,
         q.ModifiedBy,
-        q.CreatedBy);
+        q.CreatedBy,
+        q.OrderNumber);
 
     private void OpenRow(QuoteRow? row)
     {

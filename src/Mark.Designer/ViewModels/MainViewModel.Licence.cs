@@ -40,7 +40,11 @@ public partial class MainViewModel
     {
         RaisePersistenceCanExecute();
         Canvas.InvalidateContent();
-        if (Store is not null) Store.Projects.User = CurrentUser;
+        if (Store is not null)
+        {
+            Store.Projects.User = CurrentUser;
+            Store.Enquiries.User = CurrentUser;
+        }
         OnPropertyChanged(nameof(HasStaff));
         OnPropertyChanged(nameof(QuoteTotalText));
         Cutting.ShowsCosts = Access.CanSeeQuoteValues;

@@ -13,7 +13,7 @@ internal static class DatabaseSchema
     public const int ApplicationId = 0x46454E31;
 
     /// <summary>The schema version written by this build.</summary>
-    public const int CurrentVersion = 6;
+    public const int CurrentVersion = 7;
 
     /// <summary>Upgrade scripts keyed by the version they upgrade FROM.</summary>
     public static readonly IReadOnlyDictionary<int, string> Upgrades = new Dictionary<int, string>
@@ -22,8 +22,49 @@ internal static class DatabaseSchema
         [2] = Version3,
         [3] = Version4,
         [4] = Version5,
-        [5] = Version6
+        [5] = Version6,
+        [6] = Version7
     };
+
+    /// <summary>
+    /// Version 7 (Milestone 15, sales): enquiries; earlier revisions of quotes; for the quote list and sales charts the
+    /// client's city, when a quote was won or lost, its order number and revision.
+    /// </summary>
+    public const string Version7 = """
+        ALTER TABLE projects ADD COLUMN client_city  TEXT NOT NULL DEFAULT '';
+        ALTER TABLE projects ADD COLUMN decided_utc  TEXT NULL;
+        ALTER TABLE projects ADD COLUMN order_number TEXT NOT NULL DEFAULT '';
+        ALTER TABLE projects ADD COLUMN revision     INTEGER NOT NULL DEFAULT 0;
+        CREATE TABLE enquiries (
+            id             TEXT PRIMARY KEY NOT NULL,
+            number         TEXT NOT NULL,
+            created_utc    TEXT NOT NULL,
+            modified_utc   TEXT NOT NULL,
+            created_by     TEXT NOT NULL,
+            stage          TEXT NOT NULL,
+            source         TEXT NOT NULL,
+            owner          TEXT NOT NULL,
+            client_name    TEXT NOT NULL,
+            client_city    TEXT NOT NULL,
+            client_phone   TEXT NOT NULL,
+            expected_value TEXT NULL,
+            follow_up      TEXT NULL,
+            quote_id       TEXT NULL,
+            document_json  TEXT NOT NULL
+        );
+        CREATE INDEX ix_enquiries_created ON enquiries (created_utc);
+        CREATE INDEX ix_enquiries_quote ON enquiries (quote_id);
+        CREATE TABLE project_revisions (
+            project_id     TEXT NOT NULL,
+            revision       INTEGER NOT NULL,
+            document_json  TEXT NOT NULL,
+            value          TEXT NULL,
+            currency       TEXT NOT NULL,
+            saved_utc      TEXT NOT NULL,
+            saved_by       TEXT NOT NULL,
+            PRIMARY KEY (project_id, revision)
+        );
+        """;
 
     /// <summary>Version 6: how each glass is drawn (its pattern and colour), as JSON.</summary>
     public const string Version6 = """

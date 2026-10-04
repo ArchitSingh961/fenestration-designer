@@ -14,6 +14,7 @@
     <ProjectReference Include="..\Mark.Calculation\Mark.Calculation.csproj" />
     <ProjectReference Include="..\Mark.Data\Mark.Data.csproj" />
     <ProjectReference Include="..\Mark.Licensing\Mark.Licensing.csproj" />
+    <ProjectReference Include="..\Mark.Reports\Mark.Reports.csproj" />
   </ItemGroup>
 
 </Project>

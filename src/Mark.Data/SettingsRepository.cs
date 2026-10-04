@@ -60,6 +60,41 @@ public sealed class SettingsRepository
         });
     }
 
+    private const string QuotationKey = "quotation.settings";
+
+    /// <summary>What the company prints on its quotations (the defaults until it is set up).</summary>
+    public Mark.Core.Quotes.QuotationSettings LoadQuotationSettings()
+        => _database.Guard("read the settings", () =>
+        {
+            using var connection = _database.Connect();
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT value_json FROM app_settings WHERE key = $key";
+            command.Parameters.AddWithValue("$key", QuotationKey);
+            return command.ExecuteScalar() is string json
+                ? System.Text.Json.JsonSerializer.Deserialize<Mark.Core.Quotes.QuotationSettings>(json, QuotationJson) ?? new()
+                : new Mark.Core.Quotes.QuotationSettings();
+        });
+
+    public void SaveQuotationSettings(Mark.Core.Quotes.QuotationSettings settings)
+        => _database.Guard("save the settings", () =>
+        {
+            ArgumentNullException.ThrowIfNull(settings);
+            using var connection = _database.Connect();
+            using var command = connection.CreateCommand();
+            command.CommandText = """
+                INSERT INTO app_settings (key, value_json) VALUES ($key, $value)
+                ON CONFLICT (key) DO UPDATE SET value_json = excluded.value_json
+                """;
+            command.Parameters.AddWithValue("$key", QuotationKey);
+            command.Parameters.AddWithValue("$value", System.Text.Json.JsonSerializer.Serialize(settings, QuotationJson));
+            command.ExecuteNonQuery();
+        });
+
+    private static readonly System.Text.Json.JsonSerializerOptions QuotationJson = new()
+    {
+        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+    };
+
     private const string CatalogueHashKey = "catalogue.hash";
     private const string OwnItemsKey = "catalogue.ownItems";
 

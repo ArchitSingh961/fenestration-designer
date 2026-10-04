@@ -27,8 +27,11 @@ public sealed class SqliteProjectRepository : IProjectRepository
     /// <summary>Quote numbers look like "QT-00012".</summary>
     public const string QuoteNumberPrefix = "QT-";
 
+    /// <summary>Order numbers look like "OR-00003".</summary>
+    public const string OrderNumberPrefix = "OR-";
+
     /// <summary>Written to <c>summary_version</c> by this build; older rows are recomputed when the store opens.</summary>
-    private const int SummaryVersion = 1;
+    private const int SummaryVersion = 2;
 
     public ProjectUser User { get; set; } = ProjectUser.Unknown;
 
@@ -39,6 +42,7 @@ public sealed class SqliteProjectRepository : IProjectRepository
         ArgumentNullException.ThrowIfNull(project);
         string now = Timestamp(_utcNow());
         string originalNumber = project.Quote.Number;
+        string originalOrder = project.Quote.OrderNumber;
 
         try
         {
@@ -50,32 +54,40 @@ public sealed class SqliteProjectRepository : IProjectRepository
                 // A new quote takes the next number inside the same transaction, so two saves never share one.
                 if (string.IsNullOrWhiteSpace(project.Quote.Number))
                     project.Quote.Number = ReadNumberOf(connection, transaction, project.Id) ?? NextQuoteNumber(connection, transaction);
+                if (project.Quote.OrderedUtc is not null && string.IsNullOrWhiteSpace(project.Quote.OrderNumber))
+                    project.Quote.OrderNumber = NextNumber(connection, transaction, "projects", "order_number", OrderNumberPrefix);
 
                 string document = ProjectSerializer.Serialize(project);
                 var totals = QuoteTotals.Of(project);
                 var before = ReadSummaryOf(connection, transaction, project.Id);
                 string user = User.DisplayName;
+                // Won or lost: when it was decided (kept while it stays decided); active again: not decided.
+                string? decided = project.Quote.Status == QuoteStatus.Active ? null
+                    : before is { Status: not nameof(QuoteStatus.Active) } && before.DecidedUtc is { } kept ? kept : now;
                 Run(connection, transaction, """
                     INSERT INTO projects (id, name, format_version, document_json, created_utc, modified_utc, quote_number,
-                        client_name, status, design_count, quantity, area_m2, value, currency, summary_version, created_by, modified_by)
+                        client_name, status, design_count, quantity, area_m2, value, currency, summary_version, created_by, modified_by,
+                        client_city, decided_utc, order_number, revision)
                     VALUES ($id, $name, $version, $document, $now, $now, $number, $client, $status, $designs, $quantity,
-                        $area, $value, $currency, $summary, $user, $user)
+                        $area, $value, $currency, $summary, $user, $user, $city, $decided, $order, $revision)
                     ON CONFLICT (id) DO UPDATE SET name = excluded.name, format_version = excluded.format_version,
                         document_json = excluded.document_json, modified_utc = excluded.modified_utc,
                         quote_number = excluded.quote_number, client_name = excluded.client_name, status = excluded.status,
                         design_count = excluded.design_count, quantity = excluded.quantity, area_m2 = excluded.area_m2,
                         value = excluded.value, currency = excluded.currency, summary_version = excluded.summary_version,
-                        modified_by = excluded.modified_by
+                        modified_by = excluded.modified_by, client_city = excluded.client_city, decided_utc = excluded.decided_utc,
+                        order_number = excluded.order_number, revision = excluded.revision
                     """,
                     ("$id", Key(project.Id)), ("$name", project.Name), ("$version", ProjectFormatVersion.Current),
                     ("$document", document), ("$now", now), ("$number", project.Quote.Number),
                     ("$client", project.Quote.Client.DisplayName), ("$status", project.Quote.Status.ToString()),
                     ("$designs", totals.Designs), ("$quantity", totals.Quantity), ("$area", totals.AreaM2),
                     ("$value", value?.Amount.ToString(CultureInfo.InvariantCulture)), ("$currency", value?.Currency ?? ""),
-                    ("$summary", SummaryVersion), ("$user", user));
+                    ("$summary", SummaryVersion), ("$user", user), ("$city", project.Quote.Client.City.Trim()), ("$decided", decided),
+                    ("$order", project.Quote.OrderNumber), ("$revision", project.Quote.Revision));
 
                 var after = new SavedSummary(project.Name, project.Quote.Client.DisplayName, project.Quote.Status.ToString(), totals.Designs,
-                    value?.Amount, value?.Currency ?? "");
+                    value?.Amount, value?.Currency ?? "", decided, project.Quote.OrderNumber, project.Quote.Revision);
                 AddHistory(connection, transaction, project.Id, project.Quote.Number, project.Name, now,
                     before is null ? ProjectAction.Created : ProjectAction.Saved, before is null ? "" : Changes(before, after));
 
@@ -90,24 +102,28 @@ public sealed class SqliteProjectRepository : IProjectRepository
         }
         catch
         {
-            project.Quote.Number = originalNumber;   // nothing was saved, so the number was not taken
+            project.Quote.Number = originalNumber;   // nothing was saved, so the numbers were not taken
+            project.Quote.OrderNumber = originalOrder;
             throw;
         }
     }
 
     /// <summary>What the quote list showed for a saved quote, to say what a save changed.</summary>
-    private sealed record SavedSummary(string Name, string Client, string Status, int Designs, decimal? Value, string Currency);
+    private sealed record SavedSummary(string Name, string Client, string Status, int Designs, decimal? Value, string Currency,
+        string? DecidedUtc = null, string Order = "", int Revision = 0);
 
     private static SavedSummary? ReadSummaryOf(SqliteConnection connection, SqliteTransaction transaction, Guid id)
     {
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
-        command.CommandText = "SELECT name, client_name, status, design_count, value, currency FROM projects WHERE id = $id";
+        command.CommandText =
+            "SELECT name, client_name, status, design_count, value, currency, decided_utc, order_number, revision FROM projects WHERE id = $id";
         command.Parameters.AddWithValue("$id", Key(id));
         using var r = command.ExecuteReader();
         return r.Read()
             ? new SavedSummary(r.GetString(0), r.GetString(1), r.GetString(2), r.GetInt32(3),
-                r.IsDBNull(4) ? null : decimal.Parse(r.GetString(4), NumberStyles.Number, CultureInfo.InvariantCulture), r.GetString(5))
+                r.IsDBNull(4) ? null : decimal.Parse(r.GetString(4), NumberStyles.Number, CultureInfo.InvariantCulture), r.GetString(5),
+                r.IsDBNull(6) ? null : r.GetString(6), r.GetString(7), r.GetInt32(8))
             : null;
     }
 
@@ -120,6 +136,8 @@ public sealed class SqliteProjectRepository : IProjectRepository
             parts.Add(before.Client.Length == 0 ? $"Client {after.Client}" : $"Client {before.Client} → {(after.Client.Length == 0 ? "none" : after.Client)}");
         if (before.Status != after.Status) parts.Add($"Status {before.Status} → {after.Status}");
         if (before.Designs != after.Designs) parts.Add($"{before.Designs} → {after.Designs} design{(after.Designs == 1 ? "" : "s")}");
+        if (before.Order.Length == 0 && after.Order.Length > 0) parts.Add($"Order {after.Order}");
+        if (after.Revision > before.Revision) parts.Add($"Revision R{after.Revision}");
         if (after.Value is { } value && before.Value != value)
             parts.Add(before.Value is { } old
                 ? $"Value {Money(old)} → {Money(value)} {after.Currency}".TrimEnd()
@@ -137,6 +155,55 @@ public sealed class SqliteProjectRepository : IProjectRepository
             """,
             ("$id", Key(id)), ("$number", number), ("$name", name), ("$time", time), ("$userId", User.UserId), ("$userName", User.Name),
             ("$action", action.ToString()), ("$detail", detail));
+
+    // ── Revisions ───────────────────────────────────────────────────
+
+    public void KeepRevision(Guid projectId) => _database.Guard("keep the revision", () =>
+    {
+        using var connection = _database.Connect();
+        using var transaction = connection.BeginTransaction();
+        int kept = Run(connection, transaction, """
+            INSERT OR REPLACE INTO project_revisions (project_id, revision, document_json, value, currency, saved_utc, saved_by)
+            SELECT id, revision, document_json, value, currency, modified_utc, modified_by FROM projects WHERE id = $id
+            """, ("$id", Key(projectId)));
+        if (kept == 0) throw new DataStoreException("Save the quote first: only a saved quote can get a new revision.");
+        transaction.Commit();
+    });
+
+    public IReadOnlyList<ProjectRevision> Revisions(Guid projectId) => _database.Guard("read the revisions", () =>
+    {
+        using var connection = _database.Connect();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT revision, saved_utc, saved_by, value, currency FROM project_revisions WHERE project_id = $id ORDER BY revision";
+        command.Parameters.AddWithValue("$id", Key(projectId));
+        using var r = command.ExecuteReader();
+        var list = new List<ProjectRevision>();
+        while (r.Read())
+            list.Add(new ProjectRevision(projectId, r.GetInt32(0), ParseTimestamp(r.GetString(1)), r.GetString(2),
+                r.IsDBNull(3) ? null : decimal.Parse(r.GetString(3), NumberStyles.Number, CultureInfo.InvariantCulture), r.GetString(4)));
+        return (IReadOnlyList<ProjectRevision>)list.AsReadOnly();
+    });
+
+    public Project LoadRevision(Guid projectId, int revision)
+    {
+        string document = _database.Guard("open the revision", () =>
+        {
+            using var connection = _database.Connect();
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT document_json FROM project_revisions WHERE project_id = $id AND revision = $revision";
+            command.Parameters.AddWithValue("$id", Key(projectId));
+            command.Parameters.AddWithValue("$revision", revision);
+            return command.ExecuteScalar() as string ?? throw new DataStoreException($"Revision R{revision} is not kept.");
+        });
+        try
+        {
+            return ProjectSerializer.Deserialize(document);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
+        {
+            throw new DataStoreException($"Revision R{revision} is damaged and cannot be opened: {ex.Message}", ex);
+        }
+    }
 
     public IReadOnlyList<ProjectHistoryEntry> History(Guid projectId)
         => HistoryRows("WHERE project_id = $id ORDER BY time_utc DESC, id DESC", ("$id", Key(projectId)));
@@ -174,19 +241,23 @@ public sealed class SqliteProjectRepository : IProjectRepository
 
     /// <summary>QT- followed by one more than the highest number in use (at least 5 digits).</summary>
     private static string NextQuoteNumber(SqliteConnection connection, SqliteTransaction? transaction)
+        => NextNumber(connection, transaction, "projects", "quote_number", QuoteNumberPrefix);
+
+    /// <summary>The prefix followed by one more than the highest number in use in <paramref name="column"/> (at least 5 digits).</summary>
+    internal static string NextNumber(SqliteConnection connection, SqliteTransaction? transaction, string table, string column, string prefix)
     {
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
-        command.CommandText = "SELECT quote_number FROM projects WHERE quote_number LIKE 'QT-%'";
+        command.CommandText = $"SELECT {column} FROM {table} WHERE {column} LIKE $prefix";
+        command.Parameters.AddWithValue("$prefix", prefix + "%");
         long highest = 0;
         using (var reader = command.ExecuteReader())
         {
             while (reader.Read())
-                if (long.TryParse(reader.GetString(0).AsSpan(QuoteNumberPrefix.Length), NumberStyles.None,
-                        CultureInfo.InvariantCulture, out long n))
+                if (long.TryParse(reader.GetString(0).AsSpan(prefix.Length), NumberStyles.None, CultureInfo.InvariantCulture, out long n))
                     highest = Math.Max(highest, n);
         }
-        return QuoteNumberPrefix + (highest + 1).ToString("D5", CultureInfo.InvariantCulture);
+        return prefix + (highest + 1).ToString("D5", CultureInfo.InvariantCulture);
     }
 
     /// <summary>
@@ -227,9 +298,11 @@ public sealed class SqliteProjectRepository : IProjectRepository
             updated += Run(connection, transaction, """
                 UPDATE projects SET document_json = $document, quote_number = $number, client_name = $client,
                     status = $status, design_count = $designs, quantity = $quantity, area_m2 = $area,
-                    summary_version = $summary
+                    summary_version = $summary, client_city = $city, order_number = $order, revision = $revision,
+                    decided_utc = CASE WHEN $status = 'Active' THEN NULL ELSE COALESCE(decided_utc, modified_utc) END
                 WHERE id = $id
                 """,
+                ("$city", project.Quote.Client.City.Trim()), ("$order", project.Quote.OrderNumber), ("$revision", project.Quote.Revision),
                 ("$id", id), ("$document", ProjectSerializer.Serialize(project)), ("$number", project.Quote.Number),
                 ("$client", project.Quote.Client.DisplayName), ("$status", project.Quote.Status.ToString()),
                 ("$designs", totals.Designs), ("$quantity", totals.Quantity), ("$area", totals.AreaM2),
@@ -277,7 +350,7 @@ public sealed class SqliteProjectRepository : IProjectRepository
 
     private const string SummaryColumns = """
         p.id, p.name, p.created_utc, p.modified_utc, p.quote_number, p.client_name, p.status, p.design_count, p.quantity,
-        p.area_m2, p.value, p.currency, p.created_by, p.modified_by
+        p.area_m2, p.value, p.currency, p.created_by, p.modified_by, p.client_city, p.decided_utc, p.order_number, p.revision
         """;
 
     public IReadOnlyList<ProjectSummary> List()
@@ -358,7 +431,11 @@ public sealed class SqliteProjectRepository : IProjectRepository
                     Value = r.IsDBNull(10) ? null : decimal.Parse(r.GetString(10), NumberStyles.Number, CultureInfo.InvariantCulture),
                     Currency = r.GetString(11),
                     CreatedBy = r.GetString(12),
-                    ModifiedBy = r.GetString(13)
+                    ModifiedBy = r.GetString(13),
+                    ClientCity = r.GetString(14),
+                    DecidedUtc = r.IsDBNull(15) ? null : ParseTimestamp(r.GetString(15)),
+                    OrderNumber = r.GetString(16),
+                    Revision = r.GetInt32(17)
                 });
             return (IReadOnlyList<ProjectSummary>)list.AsReadOnly();
         });

@@ -25,6 +25,7 @@ public partial class MainViewModel
         Store = store;
         Dialogs = dialogs;
         store.Projects.User = CurrentUser;
+        store.Enquiries.User = CurrentUser;
         store.Library.Changed += ReplaceLibrary;
         // The first new quote was created before the store was known: give it the company's default pricing.
         Project.Pricing = DefaultPricing();
@@ -146,6 +147,7 @@ public partial class MainViewModel
         {
             Store!.Projects.Save(Project, QuoteValueOf());
             IsDirty = false;
+            SyncEnquiry();
             OnPropertyChanged(nameof(Title));
             RefreshQuoteViews();
             RefreshHistory();

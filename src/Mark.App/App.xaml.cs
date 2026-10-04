@@ -106,6 +106,19 @@ public partial class App : Application
         if (licence.CanManageStaff)
             mainViewModel.Staff = new StaffViewModel(licence, dialogs.Confirm);
 
+        // A written quotation opens in the computer's PDF viewer.
+        mainViewModel.OpenDocument = path =>
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+            }
+            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+            {
+                // No viewer: the file is saved where the user chose.
+            }
+        };
+
         var window = new MainWindow { DataContext = mainViewModel };
         MainWindow = window;
         ShutdownMode = ShutdownMode.OnMainWindowClose;

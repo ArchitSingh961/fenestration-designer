@@ -61,6 +61,7 @@ public partial class MainViewModel
         }
         OnPropertyChanged(nameof(HasQuoteHistory));
         OnPropertyChanged(nameof(QuoteAuthorsText));
+        RefreshRevisions();
     }
 
     private static string Day(DateTime utc) => utc.ToLocalTime().ToString("d MMM yyyy", CultureInfo.InvariantCulture);

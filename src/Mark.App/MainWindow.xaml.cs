@@ -16,6 +16,13 @@ public partial class MainWindow : Window
 
     private void Exit_Click(object sender, RoutedEventArgs e) => Close();
 
+    /// <summary>A double-click on an enquiry opens it in the form.</summary>
+    private void EnquiryRow_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (sender is System.Windows.Controls.ListViewItem { DataContext: EnquiryRow row } && DataContext is MainViewModel vm)
+            vm.Enquiries.EditCommand.Execute(row);
+    }
+
     /// <summary>Give the viewport keyboard focus so its shortcuts (F, G, Space-pan) work immediately.</summary>
     private void Window_Loaded(object sender, RoutedEventArgs e) => Viewport.Focus();
 

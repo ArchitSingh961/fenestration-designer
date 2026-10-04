@@ -63,6 +63,7 @@ docs/
 ├── licensing.md                accounts, sign-in, licences, packages, keys, MARK Owner, running the licence server
 ├── catalogue.md                product systems, used with, reinforcement, bundles, the owner's catalogue
 ├── areas.md                    areas and tabs, staff logins and permissions, who did what
+├── sales.md                    enquiries, orders and revisions, the quotation PDF, sales charts
 ├── roadmap.md                  the milestone plan
 └── geometry.md                 coordinate system, tolerance, primitives, viewport math, grid
 ```
@@ -75,6 +76,14 @@ validity, package, add-ons, computers), then sign in to **MARK** with it. The ad
 computer or delete an account at any time, and generate **licence keys** with a validity; MARK follows at its next
 check-in and becomes read-only when the account is suspended or expired. Features outside the company's package are
 shown locked. See [docs/licensing.md](docs/licensing.md).
+
+## Sales
+
+**Sales › Enquiries** keeps every enquiry (client and site, stage, source, salesperson, value, follow-up) and turns it
+into a quote. A saved quote can get **revisions** (QT-00012 R1…), be **converted to an order** (OR-00001) and be written
+as a **quotation PDF** in the usual layout — company header, covering letter, each design with its drawing and values,
+quote total with GST, terms with bank details and signatures — from **Sales › Quotation setup**. The dashboard shows
+enquiries, quotes, won and lost by week or month, and sales by person and city. See [docs/sales.md](docs/sales.md).
 
 ## Areas, staff and who did what
 

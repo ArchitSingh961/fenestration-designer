@@ -81,6 +81,9 @@ public sealed class AccessViewModel : ViewModelBase
     public bool CanUseLibrary => CanManageLibrary || (IsCatalogueManaged && (!IsStaff || Allows(Features.Costing)));
 
     public bool CanUseDrawing => Allows(Features.Drawing);
+    public bool CanMakeQuotation => Allows(Features.QuotationPdf);
+    public bool CanSeeSalesCharts => Allows(Features.SalesCharts);
+    public string SalesChartsLock => Lock(Features.SalesCharts);
     public bool CanUseOpenings => Allows(Features.Openings);
     public bool CanUseDesignLibrary => Allows(Features.DesignLibrary);
     public bool CanUseProjectFiles => Allows(Features.ProjectFiles);

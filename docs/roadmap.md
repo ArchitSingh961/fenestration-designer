@@ -31,6 +31,7 @@ used unless changed before that milestone starts.
 | 13 | Product catalogue, systems and bundles | Owner's master catalogue in MARK Owner; systems (uPVC / Aluminium) with default profiles and glass range; "used with"; steel reinforcement; bundles per profile and hardware sets per opening type (by size); per-company and per-type selection; delivered at check-in; prices-only library in MARK (see catalogue.md) |
 | 14 | Areas, staff logins and who did what | Area bar (Sales, Design, Pricing, Library, Production, Orders, Purchasing, Inventory, Accounts) with tabs; staff logins with their own features, up to the account's users; staff see only what they were given; quotes record who created and saved them, with a history (see areas.md) |
 | 13+ | A company's own items | Products the owner makes for one company only (profiles, glass, hardware, systems, bundles), using catalogue items, delivered with its catalogue (see catalogue.md) |
+| 15 | Sales | Enquiries (two-step form, stages, sources, follow-ups) → quote → order; quote revisions; quotation PDF in the usual layout with the company's setup; sales charts by week/month, person and city (see sales.md) |
 | — | Along the way | Product renamed to MARK; colour-coded bill of materials; rail and drop-down fixes |
 
 ---
@@ -135,7 +136,13 @@ database.
 
 ---
 
-## 15 — Sales
+## 15 — Sales — done
+
+Built as planned; see [sales.md](sales.md). Decisions taken: the quotation layout follows the usual Indian fabricator
+quotation (letter, two designs a page with drawing and computed values, quote total, terms with bank details and both
+signatures); everything printed comes from the company's Quotation setup and the MARK account; areas in square feet by
+default; an order is a number on the won quote until Milestone 17; enquiries and quotation PDF are in the Professional
+package for new servers (existing servers: add them to the packages in MARK Owner).
 
 - **Enquiry form** in two steps (client and site; stage, source, owner, expected value, dates).
 - Enquiry → quote → **order** conversion; quote revisions.

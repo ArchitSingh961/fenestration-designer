@@ -59,12 +59,17 @@ public static partial class QuoteEditor
             return EditResult.Fail("A phone number may contain digits, spaces, +, - and brackets only.");
 
         project.Name = cleanName;
+        // Revision, order and enquiry are kept unless the edit sets them (the client form never does).
         project.Quote = new QuoteInfo
         {
             Number = project.Quote.Number,
             Status = quote.Status,
             Client = client,
-            Notes = notes
+            Notes = notes,
+            Revision = quote.Revision != 0 ? quote.Revision : project.Quote.Revision,
+            OrderNumber = project.Quote.OrderNumber.Length > 0 ? project.Quote.OrderNumber : quote.OrderNumber,
+            OrderedUtc = quote.OrderedUtc ?? project.Quote.OrderedUtc,
+            EnquiryId = quote.EnquiryId ?? project.Quote.EnquiryId
         };
         return EditResult.Ok;
 

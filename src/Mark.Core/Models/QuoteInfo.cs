@@ -80,6 +80,21 @@ public sealed class QuoteInfo
     /// <summary>Free text: the client's requirements, site conditions, follow-ups.</summary>
     public string Notes { get; set; } = "";
 
+    /// <summary>The revision: 0 for the first quote, 1 for "R1" and so on (earlier revisions are kept by the database).</summary>
+    public int Revision { get; set; }
+
+    /// <summary>The order number ("OR-00003") once the quote became an order; empty until then.</summary>
+    public string OrderNumber { get; set; } = "";
+
+    /// <summary>When the quote was converted to an order (UTC), or null.</summary>
+    public DateTime? OrderedUtc { get; set; }
+
+    /// <summary>The enquiry the quote was made from, or null.</summary>
+    public Guid? EnquiryId { get; set; }
+
+    /// <summary>"QT-00012 R1": the number with its revision.</summary>
+    public string NumberText => Revision > 0 && Number.Length > 0 ? $"{Number} R{Revision}" : Number;
+
     public QuoteInfo Copy()
     {
         var copy = (QuoteInfo)MemberwiseClone();

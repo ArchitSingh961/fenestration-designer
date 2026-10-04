@@ -25,6 +25,28 @@ public sealed record ProjectSummary(Guid Id, string Name, DateTime CreatedUtc, D
 
     /// <summary>Who saved it last ("" before Milestone 14).</summary>
     public string ModifiedBy { get; init; } = "";
+
+    /// <summary>The client's city (for sales by city).</summary>
+    public string ClientCity { get; init; } = "";
+
+    /// <summary>When the quote was won or lost (null while active).</summary>
+    public DateTime? DecidedUtc { get; init; }
+
+    /// <summary>The order number once it became an order, or "".</summary>
+    public string OrderNumber { get; init; } = "";
+
+    /// <summary>0 for the first quote, 1 for R1…</summary>
+    public int Revision { get; init; }
+
+    /// <summary>"QT-00012 R1".</summary>
+    public string NumberText => Revision > 0 && QuoteNumber.Length > 0 ? $"{QuoteNumber} R{Revision}" : QuoteNumber;
+}
+
+/// <summary>An earlier revision of a quote, as it was saved before the next revision was started.</summary>
+public sealed record ProjectRevision(Guid ProjectId, int Revision, DateTime SavedUtc, string SavedBy, decimal? Value, string Currency)
+{
+    /// <summary>"R0" for the first quote, "R1"…</summary>
+    public string Name => $"R{Revision}";
 }
 
 /// <summary>Who is working in MARK: recorded with every saved quote and in its history.</summary>
@@ -76,6 +98,19 @@ public interface IProjectRepository
 
     /// <summary>The latest history of all quotes, newest first (at most <paramref name="count"/> lines).</summary>
     IReadOnlyList<ProjectHistoryEntry> RecentHistory(int count);
+
+    /// <summary>
+    /// Keeps the saved version of a quote as a revision (its current revision number) before the next one is started.
+    /// </summary>
+    /// <exception cref="DataStoreException">The quote is not saved.</exception>
+    void KeepRevision(Guid projectId);
+
+    /// <summary>The kept revisions of a quote, oldest first.</summary>
+    IReadOnlyList<ProjectRevision> Revisions(Guid projectId);
+
+    /// <summary>A kept revision as it was saved.</summary>
+    /// <exception cref="DataStoreException">No such revision.</exception>
+    Project LoadRevision(Guid projectId, int revision);
 
     /// <summary>Inserts the project, or replaces the saved version with the same <see cref="Project.Id"/> (one transaction).</summary>
     void Save(Project project) => Save(project, null);

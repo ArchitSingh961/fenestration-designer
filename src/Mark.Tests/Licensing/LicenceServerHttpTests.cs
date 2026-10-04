@@ -132,4 +132,51 @@ public class LicenceServerHttpTests : IAsyncLifetime
         Assert.Throws<ArgumentException>(() => JsonApi.NormaliseUrl(""));
         Assert.Throws<ArgumentException>(() => JsonApi.NormaliseUrl("ftp://x"));
     }
+    [Fact]
+    public async Task TheAccountPage_OpensInPlaceOfTheList_AndBackLetsTheSameCompanyOpenAgain()
+    {
+        using var owner = new OwnerApiClient(_url);
+        await owner.SetUpAsync(new AdminSetupRequest("owner", "admin-pass", "Archit"));
+        var packages = await owner.PackagesAsync();
+        var types = await owner.CompanyTypesAsync();
+        await owner.CreateCompanyAsync(new CompanyEdit("Shree Windows", null, types.First().Id, "Ravi", "shree", "secret1",
+            new[] { new ProductLicence(Product.Upvc, DateTime.UtcNow.AddYears(1)) }, packages.First().Id, DateTime.UtcNow.AddYears(1), 2,
+            Array.Empty<AddOn>(), Array.Empty<string>(), null));
+        var page = new Mark.Owner.ViewModels.CompaniesViewModel(owner, new NoDialogs(), () => { }, () => packages, () => types);
+        await page.LoadAsync();
+
+        page.Selected = page.Companies.Single();
+        await Until(() => page.HasEditor);
+        Assert.Equal("Shree Windows", page.Editor!.HeaderName);
+        Assert.Equal("SW", page.Editor.Initials);
+        Assert.StartsWith("User ID shree", page.Editor.SubtitleText);
+
+        page.CancelCommand.Execute(null);                                   // ← All companies
+        Assert.False(page.HasEditor);
+        Assert.Null(page.Selected);
+
+        page.Selected = page.Companies.Single();                            // the same one again
+        await Until(() => page.HasEditor);
+
+        page.NewAccountCommand.Execute(null);
+        Assert.Equal("New account", page.Editor!.HeaderName);
+        Assert.Equal("+", page.Editor.Initials);
+        page.Editor.Name = "Om Glass House";
+        Assert.Equal("Om Glass House", page.Editor.HeaderName);
+        Assert.Equal("OG", page.Editor.Initials);
+    }
+
+    private static async Task Until(Func<bool> condition)
+    {
+        for (int i = 0; i < 100 && !condition(); i++)
+            await Task.Delay(50);
+        Assert.True(condition());
+    }
+
+    private sealed class NoDialogs : Mark.Owner.ViewModels.IOwnerDialogs
+    {
+        public bool Confirm(string title, string message) => true;
+        public string? ChooseImageFile() => null;
+        public void CopyText(string text) { }
+    }
 }

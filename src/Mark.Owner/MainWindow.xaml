@@ -133,31 +133,30 @@
 
         <Grid>
             <!-- ══ Companies ═══════════════════════════════════════════ -->
-            <Grid x:Name="CompaniesPage" DataContext="{Binding Companies}" Margin="20,16,20,16"
+            <Grid x:Name="CompaniesPage" DataContext="{Binding Companies}"
                   Visibility="{Binding DataContext.Section, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=Companies}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
 
-                <DockPanel>
-                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
-                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <!-- The list of companies (hidden while an account is open) -->
+                <DockPanel Margin="24,18,24,20" Visibility="{Binding HasEditor, Converter={StaticResource InverseBoolToVisibility}}">
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,14">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                             <Button Style="{StaticResource SecondaryButton}" Content="Refresh" Command="{Binding RefreshCommand}" />
-                            <Button Style="{StaticResource PrimaryButton}" Content="+ New account" Command="{Binding NewAccountCommand}" />
+                            <Button Style="{StaticResource PrimaryButton}" Content="+ New account" Padding="16,7" Command="{Binding NewAccountCommand}" />
                         </StackPanel>
                         <StackPanel>
                             <TextBlock Text="Companies" Style="{StaticResource PageTitle}" HorizontalAlignment="Left" />
-                            <TextBlock Text="{Binding SummaryText}" Foreground="{StaticResource MutedTextBrush}" />
+                            <TextBlock Text="{Binding SummaryText}" Foreground="{StaticResource SubtleTextBrush}" Margin="0,2,0,0" />
                         </StackPanel>
                     </DockPanel>
                     <Border DockPanel.Dock="Top" Style="{StaticResource PageMessage}">
                         <TextBlock Text="{Binding Message}" Style="{StaticResource PageMessageText}" />
                     </Border>
-                    <Grid DockPanel.Dock="Top" Margin="0,0,0,10">
-                        <TextBox x:Name="SearchBox" Style="{StaticResource FormBox}" Margin="0"
+                    <Grid DockPanel.Dock="Top" Margin="0,0,0,12" MaxWidth="520" HorizontalAlignment="Left" Width="520">
+                        <TextBox x:Name="SearchBox" Style="{StaticResource FormBox}" Margin="0" Padding="30,7,8,7"
                                  Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" ToolTip="Search by company, User ID or type" />
-                        <TextBlock Text="Search companies, User IDs or types" Margin="9,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                        <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="13" Margin="10,0,0,0" VerticalAlignment="Center"
+                                   IsHitTestVisible="False" Foreground="{StaticResource SubtleTextBrush}" />
+                        <TextBlock Text="Search companies, User IDs or types" Margin="32,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
                                    Foreground="{StaticResource MutedTextBrush}">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
@@ -172,33 +171,35 @@
                         </TextBlock>
                     </Grid>
 
-                    <Border Style="{StaticResource Card}">
+                    <Border Style="{StaticResource Card}" CornerRadius="8">
                         <DockPanel>
                             <!-- Column headings -->
-                            <Grid DockPanel.Dock="Top" Margin="14,10,14,6" TextElement.FontSize="11" TextElement.Foreground="{StaticResource HeaderTextBrush}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="2.4*" />
-                                    <ColumnDefinition Width="1.3*" />
-                                    <ColumnDefinition Width="1.1*" />
-                                    <ColumnDefinition Width="1*" />
-                                    <ColumnDefinition Width="0.8*" />
-                                    <ColumnDefinition Width="1.1*" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="COMPANY" />
-                                <TextBlock Grid.Column="1" Text="PRODUCTS" />
-                                <TextBlock Grid.Column="2" Text="PACKAGE" />
-                                <TextBlock Grid.Column="3" Text="VALID UNTIL" />
-                                <TextBlock Grid.Column="4" Text="COMPUTERS" />
-                                <TextBlock Grid.Column="5" Text="STATUS" />
-                            </Grid>
-                            <TextBlock DockPanel.Dock="Top" Margin="16,24" TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}"
+                            <Border DockPanel.Dock="Top" Background="#F7F8FA" BorderBrush="#E8EBEF" BorderThickness="0,0,0,1" CornerRadius="8,8,0,0" Padding="18,10">
+                                <Grid TextElement.FontSize="11" TextElement.FontWeight="SemiBold" TextElement.Foreground="{StaticResource SubtleTextBrush}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2.4*" />
+                                        <ColumnDefinition Width="1.3*" />
+                                        <ColumnDefinition Width="1.1*" />
+                                        <ColumnDefinition Width="1*" />
+                                        <ColumnDefinition Width="0.8*" />
+                                        <ColumnDefinition Width="1.1*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="COMPANY" />
+                                    <TextBlock Grid.Column="1" Text="PRODUCTS" />
+                                    <TextBlock Grid.Column="2" Text="PACKAGE" />
+                                    <TextBlock Grid.Column="3" Text="VALID UNTIL" />
+                                    <TextBlock Grid.Column="4" Text="COMPUTERS" />
+                                    <TextBlock Grid.Column="5" Text="STATUS" />
+                                </Grid>
+                            </Border>
+                            <TextBlock DockPanel.Dock="Top" Margin="18,28" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}"
                                        Text="No companies yet. Choose + New account to create the first one: you set its name, type, products, package, validity, and the User ID and password it signs in to MARK with."
                                        Visibility="{Binding Companies.Count, Converter={StaticResource CountToCollapsed}}" />
-                            <ListBox ItemsSource="{Binding Companies}" SelectedItem="{Binding Selected}" BorderThickness="0"
-                                     HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox ItemsSource="{Binding Companies}" SelectedItem="{Binding Selected}" Style="{StaticResource SideList}"
+                                     ToolTip="Click a company to open its account">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
-                                        <Grid Margin="4,5">
+                                        <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="2.4*" />
                                                 <ColumnDefinition Width="1.3*" />
@@ -208,25 +209,29 @@
                                                 <ColumnDefinition Width="1.1*" />
                                             </Grid.ColumnDefinitions>
                                             <DockPanel>
-                                                <Border DockPanel.Dock="Left" Width="32" Height="32" CornerRadius="16" Background="#E8EEF7" Margin="0,0,10,0">
+                                                <Border DockPanel.Dock="Left" Width="34" Height="34" CornerRadius="17" Background="#E8EEF7" Margin="0,0,12,0">
                                                     <TextBlock Text="{Binding Initials}" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"
                                                                HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                 </Border>
                                                 <StackPanel VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#1F2A37" TextTrimming="CharacterEllipsis" />
-                                                    <TextBlock FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextTrimming="CharacterEllipsis">
+                                                    <TextBlock FontSize="11" Foreground="{StaticResource SubtleTextBrush}" TextTrimming="CharacterEllipsis" Margin="0,1,0,0">
                                                         <Run Text="{Binding UserIdText, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding TypeText, Mode=OneWay}" />
                                                     </TextBlock>
                                                 </StackPanel>
                                             </DockPanel>
-                                            <TextBlock Grid.Column="1" Text="{Binding ProductsText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Grid.Column="2" Text="{Binding PackageText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Column="1" Text="{Binding ProductsText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" />
+                                            <TextBlock Grid.Column="2" Text="{Binding PackageText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" />
                                             <TextBlock Grid.Column="3" Text="{Binding ValidUntilText}" VerticalAlignment="Center" />
                                             <TextBlock Grid.Column="4" Text="{Binding ComputersText}" VerticalAlignment="Center"
                                                        ToolTip="{Binding LastCheckInText, StringFormat=Last check-in: {0}}" />
-                                            <Border Grid.Column="5" Style="{StaticResource StatePill}" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding StateText}" FontSize="11" FontWeight="SemiBold" />
-                                            </Border>
+                                            <DockPanel Grid.Column="5">
+                                                <TextBlock DockPanel.Dock="Right" Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center"
+                                                           Foreground="{StaticResource MutedTextBrush}" />
+                                                <Border Style="{StaticResource StatePill}" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding StateText}" FontSize="11" FontWeight="SemiBold" />
+                                                </Border>
+                                            </DockPanel>
                                         </Grid>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
@@ -235,159 +240,860 @@
                     </Border>
                 </DockPanel>
 
-                <!-- Account editor -->
-                <Border Grid.Column="1" Width="560" Margin="16,0,0,0" Style="{StaticResource Card}"
-                        Visibility="{Binding HasEditor, Converter={StaticResource BoolToVisibility}}">
-                    <DockPanel DataContext="{Binding Editor}">
-                        <Border DockPanel.Dock="Bottom" BorderBrush="#E3E6EA" BorderThickness="0,1,0,0" Padding="16,10">
+                <!-- The account page: a new account or an opened one, in place of the list -->
+                <DockPanel Visibility="{Binding HasEditor, Converter={StaticResource BoolToVisibility}}">
+                    <DockPanel x:Name="AccountPage" DataContext="{Binding Editor}" DataContextChanged="AccountPage_DataContextChanged">
+                        <!-- Top bar: back, where you are, cancel and save -->
+                        <Border DockPanel.Dock="Top" Background="White" BorderBrush="#E1E5EB" BorderThickness="0,0,0,1" Padding="14,10,20,10">
                             <DockPanel>
-                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                                    <Button Style="{StaticResource SecondaryButton}" Content="Cancel"
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Style="{StaticResource SecondaryButton}" Content="Cancel" Padding="14,6"
+                                            ToolTip="Back to the list without saving"
                                             Command="{Binding DataContext.CancelCommand, ElementName=CompaniesPage}" />
-                                    <Button Style="{StaticResource PrimaryButton}" Content="Save account"
-                                            Command="{Binding DataContext.SaveCommand, ElementName=CompaniesPage}" />
+                                    <Button Style="{StaticResource PrimaryButton}" Padding="18,7" Margin="8,0,0,0"
+                                            Command="{Binding DataContext.SaveCommand, ElementName=CompaniesPage}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,1,8,0" />
+                                            <TextBlock Text="Save account" FontWeight="SemiBold" />
+                                        </StackPanel>
+                                    </Button>
                                 </StackPanel>
-                                <StackPanel Orientation="Horizontal" Visibility="{Binding IsNew, Converter={StaticResource InverseBoolToVisibility}}">
-                                    <Button Style="{StaticResource SecondaryButton}" Margin="0"
-                                            Content="{Binding DataContext.SuspendText, ElementName=CompaniesPage}"
-                                            Command="{Binding DataContext.ToggleSuspendCommand, ElementName=CompaniesPage}" />
-                                    <Button Style="{StaticResource DangerButton}" Content="Delete"
-                                            Command="{Binding DataContext.DeleteCommand, ElementName=CompaniesPage}" />
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Style="{StaticResource BackButton}" Content="All companies"
+                                            Command="{Binding DataContext.CancelCommand, ElementName=CompaniesPage}" />
+                                    <TextBlock Text="/" Foreground="{StaticResource MutedTextBrush}" Margin="4,0,10,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding HeaderName}" FontWeight="SemiBold" Foreground="#1F2A37" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" MaxWidth="480" />
                                 </StackPanel>
                             </DockPanel>
                         </Border>
 
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
-                            <StackPanel Margin="18,14,18,14">
-                                <DockPanel>
-                                    <Border DockPanel.Dock="Right" CornerRadius="9" Padding="8,1" Background="#FBECEC" VerticalAlignment="Center"
+                        <!-- Side panel: who it is, the sections, the account actions -->
+                        <Border DockPanel.Dock="Left" Width="248" Background="White" BorderBrush="#E1E5EB" BorderThickness="0,0,1,0">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Top" Margin="20,20,20,14">
+                                    <Border Width="52" Height="52" CornerRadius="26" Background="#E8EEF7" HorizontalAlignment="Left">
+                                        <Grid>
+                                            <TextBlock Text="{Binding Initials}" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       Visibility="{Binding HasLogo, Converter={StaticResource InverseBoolToVisibility}}" />
+                                            <Border CornerRadius="26" Background="White" BorderBrush="#E1E5EB" BorderThickness="1"
+                                                    Visibility="{Binding HasLogo, Converter={StaticResource BoolToVisibility}}">
+                                                <Image Source="{Binding Logo}" Margin="8" Stretch="Uniform" />
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                    <TextBlock Text="{Binding HeaderName}" FontSize="16" FontWeight="SemiBold" Foreground="#1F2A37" Margin="0,12,0,0"
+                                               TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding SubtitleText}" Style="{StaticResource FieldHelp}" Margin="0,3,0,0" />
+                                    <Border CornerRadius="9" Padding="8,2" Background="#FBECEC" HorizontalAlignment="Left" Margin="0,8,0,0"
                                             Visibility="{Binding IsSuspended, Converter={StaticResource BoolToVisibility}}">
                                         <TextBlock Text="Suspended" FontSize="11" FontWeight="SemiBold" Foreground="#A32020" />
                                     </Border>
-                                    <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold" Foreground="#1F2A37" TextTrimming="CharacterEllipsis" />
-                                </DockPanel>
+                                </StackPanel>
+
+                                <!-- Account actions (an existing account only) -->
+                                <Border DockPanel.Dock="Bottom" BorderBrush="#EEF0F3" BorderThickness="0,1,0,0" Padding="20,14,20,18"
+                                        Visibility="{Binding IsNew, Converter={StaticResource InverseBoolToVisibility}}">
+                                    <StackPanel>
+                                        <TextBlock Text="ACCOUNT" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,0,8" />
+                                        <Button Style="{StaticResource SecondaryButton}" Margin="0,0,0,6" Padding="12,6" HorizontalContentAlignment="Left"
+                                                Content="{Binding DataContext.SuspendText, ElementName=CompaniesPage}"
+                                                ToolTip="Suspended: MARK becomes read-only on their computers at the next check-in"
+                                                Command="{Binding DataContext.ToggleSuspendCommand, ElementName=CompaniesPage}" />
+                                        <Button Style="{StaticResource DangerButton}" Margin="0" Padding="12,6" Content="Delete account…"
+                                                Command="{Binding DataContext.DeleteCommand, ElementName=CompaniesPage}" />
+                                    </StackPanel>
+                                </Border>
+
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                                    <StackPanel x:Name="SectionNav" Margin="10,4,12,12">
+                                        <TextBlock Text="SECTIONS" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource SubtleTextBrush}" Margin="12,0,0,6" />
+                                        <RadioButton x:Name="NavCompany" Style="{StaticResource SideNavItem}" GroupName="AccountSections" Tag="&#xE80F;"
+                                                     Content="Company" IsChecked="True" Click="SectionNav_Click" />
+                                        <RadioButton x:Name="NavSignIn" Style="{StaticResource SideNavItem}" GroupName="AccountSections" Tag="&#xE77B;"
+                                                     Content="Sign-in for MARK" Click="SectionNav_Click" />
+                                        <RadioButton x:Name="NavProducts" Style="{StaticResource SideNavItem}" GroupName="AccountSections" Tag="&#xE7B8;"
+                                                     Content="Products" Click="SectionNav_Click" />
+                                        <RadioButton x:Name="NavPackage" Style="{StaticResource SideNavItem}" GroupName="AccountSections" Tag="&#xE787;"
+                                                     Content="Package and validity" Click="SectionNav_Click" />
+                                        <RadioButton x:Name="NavFeatures" Style="{StaticResource SideNavItem}" GroupName="AccountSections" Tag="&#xE71D;"
+                                                     Content="Features" Click="SectionNav_Click" />
+                                        <RadioButton x:Name="NavCatalogue" Style="{StaticResource SideNavItem}" GroupName="AccountSections" Tag="&#xE8F1;"
+                                                     Content="Catalogue" Click="SectionNav_Click" />
+                                        <RadioButton x:Name="NavQuotation" Style="{StaticResource SideNavItem}" GroupName="AccountSections" Tag="&#xE8A5;"
+                                                     Content="Quotation details" Click="SectionNav_Click" />
+                                        <RadioButton x:Name="NavComputers" Style="{StaticResource SideNavItem}" GroupName="AccountSections" Tag="&#xE7F4;"
+                                                     Content="Computers and staff" Click="SectionNav_Click"
+                                                     Visibility="{Binding IsNew, Converter={StaticResource InverseBoolToVisibility}}" />
+                                        <RadioButton x:Name="NavNotes" Style="{StaticResource SideNavItem}" GroupName="AccountSections" Tag="&#xE70B;"
+                                                     Content="Notes" Click="SectionNav_Click" />
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </DockPanel>
+                        </Border>
+
+                        <!-- The message of the last action, always in sight -->
+                        <Border DockPanel.Dock="Top" DataContext="{Binding DataContext, ElementName=CompaniesPage}" Style="{StaticResource PageMessage}"
+                                Margin="28,14,28,0" MaxWidth="1040">
+                            <TextBlock Text="{Binding Message}" Style="{StaticResource PageMessageText}" />
+                        </Border>
+
+                        <!-- The sections -->
+                        <ScrollViewer x:Name="EditorScroll" VerticalScrollBarVisibility="Auto" Focusable="False" ScrollChanged="EditorScroll_ScrollChanged">
+                            <StackPanel x:Name="EditorContent" Margin="28,18,28,28" MaxWidth="1040">
 
                                 <!-- Company -->
-                                <TextBlock Text="COMPANY" Style="{StaticResource SectionTitle}" />
-                                <DockPanel>
-                                    <StackPanel DockPanel.Dock="Right" Width="120" Margin="14,0,0,0">
-                                        <Border Height="72" CornerRadius="6" BorderBrush="#DDE1E6" BorderThickness="1" Background="#FAFBFC">
-                                            <Grid>
-                                                <TextBlock Text="No logo" Foreground="{StaticResource MutedTextBrush}" FontSize="11"
-                                                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                           Visibility="{Binding HasLogo, Converter={StaticResource InverseBoolToVisibility}}" />
-                                                <Image Source="{Binding Logo}" Margin="6" Stretch="Uniform" />
-                                            </Grid>
-                                        </Border>
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0">
-                                            <Button Style="{StaticResource SmallButton}" Margin="0" Content="Choose..."
-                                                    Command="{Binding DataContext.ChooseLogoCommand, ElementName=CompaniesPage}" />
-                                            <Button Style="{StaticResource SmallButton}" Content="Remove"
-                                                    Command="{Binding DataContext.RemoveLogoCommand, ElementName=CompaniesPage}" />
+                                <HeaderedContentControl x:Name="SecCompany" Style="{StaticResource FormSection}" Tag="&#xE80F;" Header="Company"
+                                                        AutomationProperties.HelpText="The name and logo MARK shows on the company's screens and quotations.">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="160" />
+                                            <ColumnDefinition Width="24" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="16" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="Logo" Style="{StaticResource FormLabel}" />
+                                            <Border Style="{StaticResource PictureBox}" Height="96">
+                                                <Grid>
+                                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                Visibility="{Binding HasLogo, Converter={StaticResource InverseBoolToVisibility}}">
+                                                        <TextBlock Text="&#xE91B;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center"
+                                                                   Foreground="{StaticResource MutedTextBrush}" />
+                                                        <TextBlock Text="No logo" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,4,0,0" />
+                                                    </StackPanel>
+                                                    <Image Source="{Binding Logo}" Margin="8" Stretch="Uniform" />
+                                                </Grid>
+                                            </Border>
+                                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                                <Button Style="{StaticResource SmallButton}" Margin="0" Content="Choose…"
+                                                        Command="{Binding DataContext.ChooseLogoCommand, ElementName=CompaniesPage}" />
+                                                <Button Style="{StaticResource SmallButton}" Margin="6,0,0,0" Content="Remove"
+                                                        Command="{Binding DataContext.RemoveLogoCommand, ElementName=CompaniesPage}" />
+                                            </StackPanel>
                                         </StackPanel>
-                                    </StackPanel>
-                                    <StackPanel>
-                                        <TextBlock Text="Company name *" Style="{StaticResource FormLabel}" />
-                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
-                                        <TextBlock Text="Company type" Style="{StaticResource FormLabel}" />
-                                        <ComboBox ItemsSource="{Binding CompanyTypes}" SelectedItem="{Binding CompanyType}" DisplayMemberPath="Name"
-                                                  Padding="6,4" Margin="0,0,0,4" />
-                                        <TextBlock Text="For a new account, the type fills in the products, package and validity." FontSize="10"
-                                                   Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap"
-                                                   Visibility="{Binding IsNew, Converter={StaticResource BoolToVisibility}}" />
-                                    </StackPanel>
-                                </DockPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Company name *" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Padding="8,6" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="4">
+                                            <TextBlock Text="Company type" Style="{StaticResource FormLabel}" />
+                                            <ComboBox ItemsSource="{Binding CompanyTypes}" SelectedItem="{Binding CompanyType}" DisplayMemberPath="Name"
+                                                      Padding="8,6" Margin="0,0,0,6" />
+                                            <TextBlock Text="For a new account, the type fills in the products, package and validity." Style="{StaticResource FieldHelp}"
+                                                       Visibility="{Binding IsNew, Converter={StaticResource BoolToVisibility}}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </HeaderedContentControl>
 
                                 <!-- Sign-in -->
-                                <TextBlock Text="SIGN-IN FOR MARK" Style="{StaticResource SectionTitle}" />
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="12" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel>
-                                        <TextBlock Text="Account owner's name" Style="{StaticResource FormLabel}" />
-                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding OwnerName, UpdateSourceTrigger=PropertyChanged}" />
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="2">
-                                        <TextBlock Text="User ID *" Style="{StaticResource FormLabel}" />
-                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding OwnerUserId, UpdateSourceTrigger=PropertyChanged}" />
-                                    </StackPanel>
-                                </Grid>
-                                <TextBlock Text="{Binding PasswordLabel}" Style="{StaticResource FormLabel}" />
-                                <TextBox Style="{StaticResource FormBox}" FontFamily="Consolas" Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}" />
+                                <HeaderedContentControl x:Name="SecSignIn" Style="{StaticResource FormSection}" Tag="&#xE77B;" Header="Sign-in for MARK"
+                                                        AutomationProperties.HelpText="The account owner signs in to MARK with this User ID and password, and can add staff logins there.">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="16" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="16" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="Account owner's name" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Padding="8,6" Text="{Binding OwnerName, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="User ID *" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Padding="8,6" Text="{Binding OwnerUserId, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="4">
+                                            <TextBlock Text="{Binding PasswordLabel}" Style="{StaticResource FormLabel}" TextTrimming="CharacterEllipsis" />
+                                            <TextBox Style="{StaticResource FormBox}" Padding="8,6" FontFamily="Consolas" Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </HeaderedContentControl>
 
                                 <!-- Products -->
-                                <TextBlock Text="PRODUCTS (EACH SOLD SEPARATELY)" Style="{StaticResource SectionTitle}" />
-                                <ItemsControl ItemsSource="{Binding Products}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border BorderBrush="#E3E6EA" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,6">
-                                                <StackPanel>
-                                                    <DockPanel>
-                                                        <CheckBox DockPanel.Dock="Right" Content="Suspended" IsChecked="{Binding IsSuspended}" VerticalAlignment="Center"
-                                                                  IsEnabled="{Binding IsIncluded}" />
-                                                        <CheckBox IsChecked="{Binding IsIncluded}" VerticalAlignment="Center">
-                                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                                                        </CheckBox>
-                                                    </DockPanel>
-                                                    <StackPanel Orientation="Horizontal" Margin="22,6,0,0" IsEnabled="{Binding IsIncluded}">
-                                                        <TextBlock Text="Valid until" Style="{StaticResource FieldLabel}" Width="62" />
-                                                        <DatePicker SelectedDate="{Binding ValidUntil}" Width="130" />
+                                <HeaderedContentControl x:Name="SecProducts" Style="{StaticResource FormSection}" Tag="&#xE7B8;" Header="Products"
+                                                        AutomationProperties.HelpText="Each product is sold separately, with its own end date. Tick the ones the company buys.">
+                                    <ItemsControl ItemsSource="{Binding Products}" Focusable="False">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="2" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border BorderBrush="#E1E5EB" BorderThickness="1" CornerRadius="8" Padding="14,12" Margin="0,0,12,12">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Background" Value="White" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsIncluded}" Value="True">
+                                                                    <Setter Property="Background" Value="#F7FAFF" />
+                                                                    <Setter Property="BorderBrush" Value="#BFD5F5" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                    <StackPanel>
+                                                        <DockPanel>
+                                                            <CheckBox DockPanel.Dock="Right" Content="Suspended" IsChecked="{Binding IsSuspended}" VerticalAlignment="Center"
+                                                                      IsEnabled="{Binding IsIncluded}" />
+                                                            <CheckBox IsChecked="{Binding IsIncluded}" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13" />
+                                                            </CheckBox>
+                                                        </DockPanel>
+                                                        <StackPanel Margin="22,10,0,0" IsEnabled="{Binding IsIncluded}">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="Valid until" Style="{StaticResource FieldLabel}" Width="66" VerticalAlignment="Center" />
+                                                                <DatePicker SelectedDate="{Binding ValidUntil}" Width="140" />
+                                                            </StackPanel>
+                                                            <DockPanel Margin="0,8,0,0">
+                                                                <TextBlock Text="Extend" Style="{StaticResource FieldLabel}" Width="66" VerticalAlignment="Center" />
+                                                                <ItemsControl ItemsSource="{Binding DataContext.ValidityChoices, ElementName=AccountPage}" Focusable="False">
+                                                                    <ItemsControl.ItemsPanel>
+                                                                        <ItemsPanelTemplate>
+                                                                            <WrapPanel />
+                                                                        </ItemsPanelTemplate>
+                                                                    </ItemsControl.ItemsPanel>
+                                                                    <ItemsControl.ItemTemplate>
+                                                                        <DataTemplate>
+                                                                            <Button Style="{StaticResource SmallButton}" Content="{Binding Name}" ContentStringFormat="+{0}"
+                                                                                    CommandParameter="{Binding}" Margin="0,0,4,4"
+                                                                                    ToolTip="Extend from today or from the current end, whichever is later"
+                                                                                    Command="{Binding DataContext.ExtendCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                                                                        </DataTemplate>
+                                                                    </ItemsControl.ItemTemplate>
+                                                                </ItemsControl>
+                                                            </DockPanel>
+                                                        </StackPanel>
                                                     </StackPanel>
-                                                    <DockPanel Margin="22,6,0,0">
-                                                        <TextBlock Text="Extend" Style="{StaticResource FieldLabel}" Width="62" />
-                                                        <ItemsControl ItemsSource="{Binding DataContext.ValidityChoices, RelativeSource={RelativeSource AncestorType=ScrollViewer}}">
-                                                            <ItemsControl.ItemsPanel>
-                                                                <ItemsPanelTemplate>
-                                                                    <WrapPanel />
-                                                                </ItemsPanelTemplate>
-                                                            </ItemsControl.ItemsPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </HeaderedContentControl>
+
+                                <!-- Package and validity -->
+                                <HeaderedContentControl x:Name="SecPackage" Style="{StaticResource FormSection}" Tag="&#xE787;" Header="Package and validity"
+                                                        AutomationProperties.HelpText="The package gives the features; computers and users are how many may be signed in at once.">
+                                    <StackPanel>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="2*" />
+                                                <ColumnDefinition Width="16" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="16" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="16" />
+                                                <ColumnDefinition Width="1.3*" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <TextBlock Text="Package *" Style="{StaticResource FormLabel}" />
+                                                <ComboBox ItemsSource="{Binding Packages}" SelectedItem="{Binding Package}" DisplayMemberPath="Name" Padding="8,6" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2">
+                                                <TextBlock Text="Computers *" Style="{StaticResource FormLabel}" />
+                                                <TextBox Style="{StaticResource FormBox}" Margin="0" Padding="8,6" Text="{Binding MaxComputersText, UpdateSourceTrigger=PropertyChanged}" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="4" ToolTip="How many people may sign in: the account owner and the staff they add in MARK">
+                                                <TextBlock Text="Users *" Style="{StaticResource FormLabel}" />
+                                                <TextBox Style="{StaticResource FormBox}" Margin="0" Padding="8,6" Text="{Binding MaxUsersText, UpdateSourceTrigger=PropertyChanged}" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="6">
+                                                <TextBlock Text="Account valid until *" Style="{StaticResource FormLabel}" />
+                                                <DatePicker SelectedDate="{Binding ValidUntil}" Padding="4,5" />
+                                            </StackPanel>
+                                        </Grid>
+                                        <DockPanel Margin="0,14,0,0">
+                                            <TextBlock Text="Extend the account" Style="{StaticResource FieldLabel}" Margin="0,0,12,0" VerticalAlignment="Center" />
+                                            <ItemsControl ItemsSource="{Binding ValidityChoices}" Focusable="False">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <WrapPanel />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Button Style="{StaticResource SmallButton}" Content="{Binding Name}" ContentStringFormat="+{0}"
+                                                                CommandParameter="{Binding}" Margin="0,0,6,4" Padding="10,3"
+                                                                ToolTip="Extend from today or from the current end, whichever is later"
+                                                                Command="{Binding DataContext.ExtendCommand, ElementName=AccountPage}" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </HeaderedContentControl>
+
+                                <!-- Features -->
+                                <HeaderedContentControl x:Name="SecFeatures" Style="{StaticResource FormSection}" Tag="&#xE71D;" Header="Features"
+                                                        AutomationProperties.HelpText="The package's features are ticked: untick one to leave it out for this company. Tick another feature to add it on, with its own end date.">
+                                    <ItemsControl ItemsSource="{Binding FeatureGroups}" Focusable="False">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="2" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="#FAFBFC" BorderBrush="#EEF0F3" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,12,12">
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding Area}" Style="{StaticResource SubHeading}" />
+                                                        <ItemsControl ItemsSource="{Binding Features}" Focusable="False">
                                                             <ItemsControl.ItemTemplate>
                                                                 <DataTemplate>
-                                                                    <Button Style="{StaticResource SmallButton}" Content="{Binding Name}" ContentStringFormat="+{0}"
-                                                                            CommandParameter="{Binding}" Margin="0,0,4,2"
-                                                                            ToolTip="Extend from today or from the current end, whichever is later"
-                                                                            Command="{Binding DataContext.ExtendCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                                                                    <DockPanel Margin="0,3">
+                                                                        <DatePicker DockPanel.Dock="Right" SelectedDate="{Binding ValidUntil}" Width="125"
+                                                                                    ToolTip="Last day of the add-on (empty: same as the account)"
+                                                                                    Visibility="{Binding IsAddOn, Converter={StaticResource BoolToVisibility}}" />
+                                                                        <TextBlock DockPanel.Dock="Right" Text="{Binding Tag}" FontSize="10" Margin="8,0" VerticalAlignment="Center"
+                                                                                   Foreground="{StaticResource SubtleTextBrush}" />
+                                                                        <CheckBox IsChecked="{Binding IsIncluded}" IsEnabled="{Binding CanChange}" VerticalAlignment="Center"
+                                                                                  ToolTip="{Binding Description}">
+                                                                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                                                        </CheckBox>
+                                                                    </DockPanel>
                                                                 </DataTemplate>
                                                             </ItemsControl.ItemTemplate>
                                                         </ItemsControl>
-                                                    </DockPanel>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </HeaderedContentControl>
+
+                                <!-- Catalogue -->
+                                <HeaderedContentControl x:Name="SecCatalogue" Style="{StaticResource FormSection}" Tag="&#xE8F1;" Header="Catalogue"
+                                                        AutomationProperties.HelpText="What this company gets from your catalogue. Items made for it alone are on the Catalogue page.">
+                                    <StackPanel>
+                                        <ContentControl Content="{Binding CatalogueChoice}" ContentTemplate="{StaticResource CatalogueChoiceTemplate}" Focusable="False"
+                                                        Visibility="{Binding HasCatalogue, Converter={StaticResource BoolToVisibility}}" />
+                                        <TextBlock Text="No catalogue is published yet. Publish one on the Catalogue page; until then the company keeps its own library."
+                                                   TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}"
+                                                   Visibility="{Binding HasCatalogue, Converter={StaticResource InverseBoolToVisibility}}" />
+                                    </StackPanel>
+                                </HeaderedContentControl>
+
+                                <!-- Quotation details: printed on the company's quotations; only you set them -->
+                                <HeaderedContentControl x:Name="SecQuotation" Style="{StaticResource FormSection}" Tag="&#xE8A5;" Header="Quotation details"
+                                                        AutomationProperties.HelpText="Printed on every page of the company's quotation PDFs. Only you set them: the company does not see or change them in MARK.">
+                                    <StackPanel>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="28" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Details -->
+                                            <StackPanel>
+                                                <TextBlock Text="The company's details" Style="{StaticResource SubHeading}" />
+                                                <TextBlock Text="Line above the company name, e.g. Authorised partner" Style="{StaticResource FormLabel}" />
+                                                <TextBox Style="{StaticResource FormBox}" Padding="8,6" Text="{Binding PartnerLabel, UpdateSourceTrigger=PropertyChanged}" />
+                                                <TextBlock Text="Address (one or more lines)" Style="{StaticResource FormLabel}" />
+                                                <TextBox Style="{StaticResource FormBox}" Padding="8,6" MinHeight="58" TextWrapping="Wrap" AcceptsReturn="True"
+                                                         VerticalContentAlignment="Top" Text="{Binding Address, UpdateSourceTrigger=PropertyChanged}" />
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="12" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel>
+                                                        <TextBlock Text="Contact no." Style="{StaticResource FormLabel}" />
+                                                        <TextBox Style="{StaticResource FormBox}" Padding="8,6" Text="{Binding Phone, UpdateSourceTrigger=PropertyChanged}" />
+                                                        <TextBlock Text="Website" Style="{StaticResource FormLabel}" />
+                                                        <TextBox Style="{StaticResource FormBox}" Padding="8,6" Text="{Binding Website, UpdateSourceTrigger=PropertyChanged}" />
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="2">
+                                                        <TextBlock Text="E-mail" Style="{StaticResource FormLabel}" />
+                                                        <TextBox Style="{StaticResource FormBox}" Padding="8,6" Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" />
+                                                        <TextBlock Text="GSTIN" Style="{StaticResource FormLabel}" />
+                                                        <TextBox Style="{StaticResource FormBox}" Padding="8,6" Text="{Binding Gstin, UpdateSourceTrigger=PropertyChanged}" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </StackPanel>
+
+                                            <!-- Bank -->
+                                            <StackPanel Grid.Column="2">
+                                                <TextBlock Text="Bank details" Style="{StaticResource SubHeading}" />
+                                                <TextBlock Text="Account name" Style="{StaticResource FormLabel}" />
+                                                <TextBox Style="{StaticResource FormBox}" Padding="8,6" Text="{Binding BankAccountName, UpdateSourceTrigger=PropertyChanged}" />
+                                                <TextBlock Text="Account number" Style="{StaticResource FormLabel}" />
+                                                <TextBox Style="{StaticResource FormBox}" Padding="8,6" Text="{Binding BankAccountNumber, UpdateSourceTrigger=PropertyChanged}" />
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="12" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel>
+                                                        <TextBlock Text="Bank" Style="{StaticResource FormLabel}" />
+                                                        <TextBox Style="{StaticResource FormBox}" Padding="8,6" Text="{Binding BankName, UpdateSourceTrigger=PropertyChanged}" />
+                                                        <TextBlock Text="IFSC" Style="{StaticResource FormLabel}" />
+                                                        <TextBox Style="{StaticResource FormBox}" Padding="8,6" Text="{Binding BankIfsc, UpdateSourceTrigger=PropertyChanged}" />
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="2">
+                                                        <TextBlock Text="Branch" Style="{StaticResource FormLabel}" />
+                                                        <TextBox Style="{StaticResource FormBox}" Padding="8,6" Text="{Binding BankBranch, UpdateSourceTrigger=PropertyChanged}" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <Border BorderBrush="#EEF0F3" BorderThickness="0,1,0,0" Margin="0,10,0,14" />
+
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="28" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Brand -->
+                                            <StackPanel>
+                                                <TextBlock Text="Brand" Style="{StaticResource SubHeading}" />
+                                                <TextBlock Text="Top left of every page, e.g. the profile system the company sells. Leave empty for none."
+                                                           Style="{StaticResource FieldHelp}" Margin="0,0,0,4" />
+                                                <TextBlock Text="Brand name" Style="{StaticResource FormLabel}" />
+                                                <TextBox Style="{StaticResource FormBox}" Padding="8,6" Text="{Binding BrandName, UpdateSourceTrigger=PropertyChanged}" />
+                                                <DockPanel>
+                                                    <Border DockPanel.Dock="Left" Style="{StaticResource PictureBox}" Width="160" Height="64" Margin="0,0,14,0">
+                                                        <Grid>
+                                                            <TextBlock Text="No brand logo" FontSize="11" Foreground="{StaticResource MutedTextBrush}"
+                                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                       Visibility="{Binding HasBrandLogo, Converter={StaticResource InverseBoolToVisibility}}" />
+                                                            <Image Source="{Binding BrandLogo}" Stretch="Uniform" Margin="6" />
+                                                        </Grid>
+                                                    </Border>
+                                                    <StackPanel VerticalAlignment="Center">
+                                                        <Button Style="{StaticResource SmallButton}" Content="Choose brand logo…" HorizontalAlignment="Left" Margin="0,0,0,6"
+                                                                Command="{Binding DataContext.ChooseBrandLogoCommand, ElementName=CompaniesPage}" />
+                                                        <Button Style="{StaticResource SmallButton}" Content="Remove" HorizontalAlignment="Left" Margin="0"
+                                                                Command="{Binding DataContext.RemoveBrandLogoCommand, ElementName=CompaniesPage}"
+                                                                Visibility="{Binding HasBrandLogo, Converter={StaticResource BoolToVisibility}}" />
+                                                    </StackPanel>
+                                                </DockPanel>
+                                            </StackPanel>
+
+                                            <!-- Last page -->
+                                            <StackPanel Grid.Column="2">
+                                                <DockPanel Margin="0,0,0,6">
+                                                    <Border DockPanel.Dock="Right" CornerRadius="9" Padding="8,1" Background="#F1F3F6" VerticalAlignment="Center">
+                                                        <TextBlock Text="Optional" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource SubtleTextBrush}" />
+                                                    </Border>
+                                                    <TextBlock Text="Last page picture" Style="{StaticResource SubHeading}" Margin="0" />
+                                                </DockPanel>
+                                                <TextBlock Text="One picture on a page of its own at the end, e.g. care instructions. Leave empty for no last page."
+                                                           Style="{StaticResource FieldHelp}" Margin="0,0,0,10" />
+                                                <DockPanel>
+                                                    <Border DockPanel.Dock="Left" Style="{StaticResource PictureBox}" Width="88" Height="118" Margin="0,0,14,0">
+                                                        <Grid>
+                                                            <TextBlock Text="&#xE8B9;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{StaticResource MutedTextBrush}"
+                                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                       Visibility="{Binding HasExtraPage, Converter={StaticResource InverseBoolToVisibility}}" />
+                                                            <Image Source="{Binding ExtraPage}" Stretch="Uniform" Margin="4" />
+                                                        </Grid>
+                                                    </Border>
+                                                    <StackPanel VerticalAlignment="Center">
+                                                        <Button Style="{StaticResource SmallButton}" Content="Choose picture…" HorizontalAlignment="Left" Margin="0,0,0,6"
+                                                                Command="{Binding DataContext.ChooseExtraPageCommand, ElementName=CompaniesPage}" />
+                                                        <Button Style="{StaticResource SmallButton}" Content="Remove" HorizontalAlignment="Left" Margin="0"
+                                                                Command="{Binding DataContext.RemoveExtraPageCommand, ElementName=CompaniesPage}"
+                                                                Visibility="{Binding HasExtraPage, Converter={StaticResource BoolToVisibility}}" />
+                                                    </StackPanel>
+                                                </DockPanel>
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                </HeaderedContentControl>
+
+                                <!-- Computers and staff (an existing account) -->
+                                <HeaderedContentControl x:Name="SecComputers" Style="{StaticResource FormSection}" Tag="&#xE7F4;" Header="Computers and staff"
+                                                        AutomationProperties.HelpText="Where the company is signed in, and the staff logins its account owner added in MARK."
+                                                        Visibility="{Binding IsNew, Converter={StaticResource InverseBoolToVisibility}}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="28" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="Computers signed in" Style="{StaticResource SubHeading}" />
+                                            <TextBlock Text="None yet." Foreground="{StaticResource SubtleTextBrush}"
+                                                       Visibility="{Binding HasComputers, Converter={StaticResource InverseBoolToVisibility}}" />
+                                            <ItemsControl ItemsSource="{Binding Computers}" Focusable="False">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border BorderBrush="#EEF0F3" BorderThickness="0,0,0,1" Padding="0,8">
+                                                            <DockPanel>
+                                                                <Button DockPanel.Dock="Right" Style="{StaticResource SmallButton}" Content="Free" CommandParameter="{Binding}"
+                                                                        VerticalAlignment="Center" ToolTip="Sign this computer out so another can be used"
+                                                                        Command="{Binding DataContext.FreeComputerCommand, ElementName=CompaniesPage}" />
+                                                                <TextBlock DockPanel.Dock="Left" Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,2,10,0"
+                                                                           Foreground="{StaticResource SubtleTextBrush}" VerticalAlignment="Top" />
+                                                                <StackPanel>
+                                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                                                    <TextBlock FontSize="11" Foreground="{StaticResource SubtleTextBrush}" TextWrapping="Wrap">
+                                                                        <Run Text="{Binding UserId, Mode=OneWay}" /><Run Text=" · last check-in " /><Run Text="{Binding LastCheckInUtc, Mode=OneWay, StringFormat={}{0:d MMM yyyy HH:mm} UTC}" />
+                                                                    </TextBlock>
+                                                                </StackPanel>
+                                                            </DockPanel>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Staff logins" Style="{StaticResource SubHeading}" Margin="0,0,0,2" />
+                                            <TextBlock Text="{Binding UsersInUseText}" Style="{StaticResource FieldHelp}" Margin="0,0,0,6" />
+                                            <TextBlock Text="None. The account owner adds staff in MARK (Account › Staff logins)." TextWrapping="Wrap"
+                                                       Foreground="{StaticResource SubtleTextBrush}"
+                                                       Visibility="{Binding HasStaff, Converter={StaticResource InverseBoolToVisibility}}" />
+                                            <ItemsControl ItemsSource="{Binding Staff}" Focusable="False">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border BorderBrush="#EEF0F3" BorderThickness="0,0,0,1" Padding="0,8">
+                                                            <DockPanel>
+                                                                <Button DockPanel.Dock="Right" Style="{StaticResource SmallButton}" Content="Remove" CommandParameter="{Binding}"
+                                                                        VerticalAlignment="Center" ToolTip="Remove this staff login (MARK on their computers is signed out)"
+                                                                        Command="{Binding DataContext.RemoveStaffCommand, ElementName=CompaniesPage}" />
+                                                                <TextBlock DockPanel.Dock="Left" Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,2,10,0"
+                                                                           Foreground="{StaticResource SubtleTextBrush}" VerticalAlignment="Top" />
+                                                                <StackPanel>
+                                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                                                    <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" TextWrapping="Wrap" />
+                                                                </StackPanel>
+                                                            </DockPanel>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Grid>
+                                </HeaderedContentControl>
+
+                                <!-- Notes -->
+                                <HeaderedContentControl x:Name="SecNotes" Style="{StaticResource FormSection}" Tag="&#xE70B;" Header="Notes"
+                                                        AutomationProperties.HelpText="Only you see these.">
+                                    <TextBox Style="{StaticResource FormBox}" Padding="8,6" Margin="0" MinHeight="80" TextWrapping="Wrap" AcceptsReturn="True"
+                                             VerticalContentAlignment="Top" Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}" />
+                                </HeaderedContentControl>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </DockPanel>
+                </DockPanel>
+            </Grid>
+
+            <!-- ══ Licence keys ════════════════════════════════════════ -->
+            <Grid DataContext="{Binding Keys}"
+                  Visibility="{Binding DataContext.Section, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=Keys}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="340" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Side panel: make keys -->
+                <Border Background="White" BorderBrush="#E1E5EB" BorderThickness="0,0,1,0">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                        <StackPanel Margin="22,20,22,22">
+                            <TextBlock Text="Licence keys" Style="{StaticResource PageTitle}" HorizontalAlignment="Left" />
+                            <TextBlock Style="{StaticResource FieldHelp}" Margin="0,4,0,16"
+                                       Text="A company enters a key on MARK's Account page. It renews the account, a product or a feature until the key's date (counted from today)." />
+
+                            <TextBlock Text="For" Style="{StaticResource FormLabel}" />
+                            <ComboBox ItemsSource="{Binding CompanyChoices}" SelectedItem="{Binding Company}" Padding="8,6" Margin="0,0,0,10" />
+                            <TextBlock Text="Gives" Style="{StaticResource FormLabel}" />
+                            <ComboBox ItemsSource="{Binding Gifts}" SelectedItem="{Binding Gift}" Padding="8,6" Margin="0,0,0,10" />
+                            <StackPanel Visibility="{Binding IsFeatureGift, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="Feature" Style="{StaticResource FormLabel}" />
+                                <ComboBox ItemsSource="{Binding FeatureChoices}" SelectedItem="{Binding Feature}" DisplayMemberPath="Name" Padding="8,6" Margin="0,0,0,10" />
+                            </StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="90" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Valid for" Style="{StaticResource FormLabel}" />
+                                    <ComboBox ItemsSource="{Binding ValidityChoices}" SelectedItem="{Binding Validity}" Padding="8,6" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="How many" Style="{StaticResource FormLabel}" />
+                                    <TextBox Style="{StaticResource FormBox}" Margin="0" Padding="8,6" Text="{Binding CountText, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Text="{Binding ValidUntilText}" Style="{StaticResource FieldHelp}" Margin="0,6,0,10" />
+                            <TextBlock Text="Note (only you see it)" Style="{StaticResource FormLabel}" />
+                            <TextBox Style="{StaticResource FormBox}" Padding="8,6" Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}" />
+                            <Button Style="{StaticResource PrimaryButton}" Margin="0,8,0,0" Padding="16,9" HorizontalAlignment="Stretch" Command="{Binding GenerateCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE8D7;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,1,8,0" />
+                                    <TextBlock Text="Generate keys" FontWeight="SemiBold" />
+                                </StackPanel>
+                            </Button>
+
+                            <Border Background="#F7FAFF" BorderBrush="#BFD5F5" BorderThickness="1" CornerRadius="8" Padding="14,12" Margin="0,18,0,0"
+                                    Visibility="{Binding HasNewKeys, Converter={StaticResource BoolToVisibility}}">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource SmallButton}" Content="Copy all"
+                                                Command="{Binding CopyCommand}" CommandParameter="{Binding NewKeysText}" />
+                                        <TextBlock Text="New keys" Style="{StaticResource SubHeading}" Margin="0" VerticalAlignment="Center" />
+                                    </DockPanel>
+                                    <TextBox Text="{Binding NewKeysText, Mode=OneWay}" IsReadOnly="True" FontFamily="Consolas" FontSize="13" Margin="0,10,0,0"
+                                             TextWrapping="NoWrap" MaxHeight="200" VerticalScrollBarVisibility="Auto" BorderThickness="0" Background="White" Padding="8" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Border>
+
+                <!-- All keys -->
+                <DockPanel Grid.Column="1" Margin="28,20,28,22">
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,14">
+                        <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Content="Refresh" Command="{Binding RefreshCommand}" />
+                        <TextBlock Text="All keys" Style="{StaticResource CardTitle}" FontSize="18" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource PageMessage}">
+                        <TextBlock Text="{Binding Message}" Style="{StaticResource PageMessageText}" />
+                    </Border>
+                    <Border Style="{StaticResource Card}" CornerRadius="8">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Margin="20,24" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}"
+                                       Text="No keys yet. Make some with Generate keys on the left: they are listed here with whom they are for and whether they are used."
+                                       Visibility="{Binding Keys.Count, Converter={StaticResource CountToCollapsed}}" />
+                            <ListBox ItemsSource="{Binding Keys}" Style="{StaticResource SideList}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="230" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding KeyText}" FontFamily="Consolas" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding Note}" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" Margin="0,2,0,0" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Margin="12,0">
+                                                <TextBlock TextTrimming="CharacterEllipsis">
+                                                    <Run Text="{Binding GivesText, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=" until " /><Run Text="{Binding ValidUntilText, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding ForText, Mode=OneWay}" />
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding StateText}" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" Margin="0,2,0,0" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Button Style="{StaticResource SmallButton}" Content="Copy" CommandParameter="{Binding}"
+                                                        Command="{Binding DataContext.CopyCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                        Visibility="{Binding IsUnused, Converter={StaticResource BoolToVisibility}}" />
+                                                <Button Style="{StaticResource SmallButton}" Content="Cancel key" CommandParameter="{Binding}"
+                                                        Command="{Binding DataContext.RevokeCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                        Visibility="{Binding CanRevoke, Converter={StaticResource BoolToVisibility}}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </DockPanel>
+                    </Border>
+                </DockPanel>
+            </Grid>
+
+            <!-- ══ Packages ════════════════════════════════════════════ -->
+            <Grid DataContext="{Binding Packages}"
+                  Visibility="{Binding DataContext.Section, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=Packages}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="320" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Side panel: the packages -->
+                <Border Background="White" BorderBrush="#E1E5EB" BorderThickness="0,0,1,0">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Top" Margin="22,20,22,8">
+                            <TextBlock Text="Packages" Style="{StaticResource PageTitle}" HorizontalAlignment="Left" />
+                            <TextBlock Style="{StaticResource FieldHelp}" Margin="0,4,0,14"
+                                       Text="A package is a set of features you sell. Each company gets one package, plus add-ons or removals in its account." />
+                            <Button Style="{StaticResource PrimaryButton}" Margin="0" Padding="12,8" HorizontalAlignment="Stretch" Content="+ New package"
+                                    Command="{Binding NewCommand}" />
+                        </StackPanel>
+                        <ListBox ItemsSource="{Binding Packages}" SelectedItem="{Binding Selected}" Style="{StaticResource SideList}" Margin="4,0,4,8">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel>
+                                        <DockPanel>
+                                            <Border DockPanel.Dock="Right" CornerRadius="9" Padding="7,1" Background="#F1F3F6" VerticalAlignment="Center">
+                                                <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource SubtleTextBrush}">
+                                                    <Run Text="{Binding Features.Count, Mode=OneWay}" /><Run Text=" features" />
+                                                </TextBlock>
+                                            </Border>
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#1F2A37" TextTrimming="CharacterEllipsis" />
+                                        </DockPanel>
+                                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" Margin="0,3,0,0"
+                                                   MaxHeight="32" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Border>
+
+                <!-- The chosen package -->
+                <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Focusable="False">
+                    <StackPanel Margin="28,20,28,28" MaxWidth="1040">
+                        <Border Style="{StaticResource PageMessage}">
+                            <TextBlock Text="{Binding Message}" Style="{StaticResource PageMessageText}" />
+                        </Border>
+                        <StackPanel Margin="0,60,0,0" HorizontalAlignment="Center" Visibility="{Binding HasEditor, Converter={StaticResource InverseBoolToVisibility}}">
+                            <TextBlock Text="&#xE7B8;" FontFamily="Segoe MDL2 Assets" FontSize="32" HorizontalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" />
+                            <TextBlock Text="Choose a package on the left, or make a new one." Foreground="{StaticResource SubtleTextBrush}" Margin="0,10,0,0" />
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding HasEditor, Converter={StaticResource BoolToVisibility}}">
+                            <DockPanel Margin="0,0,0,16">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Style="{StaticResource DangerButton}" Content="Delete" Command="{Binding DeleteCommand}" />
+                                    <Button Style="{StaticResource PrimaryButton}" Content="Save package" Padding="18,7" Margin="8,0,0,0" Command="{Binding SaveCommand}" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding EditorTitle}" FontSize="20" FontWeight="SemiBold" Foreground="#1F2A37" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding UsedByText}" Style="{StaticResource FieldHelp}" Margin="0,2,0,0" />
+                                </StackPanel>
+                            </DockPanel>
+                            <HeaderedContentControl Style="{StaticResource FormSection}" Tag="&#xE70F;" Header="Details">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="2*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="Name *" Style="{StaticResource FormLabel}" />
+                                        <TextBox Style="{StaticResource FormBox}" Margin="0" Padding="8,6" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Description" Style="{StaticResource FormLabel}" />
+                                        <TextBox Style="{StaticResource FormBox}" Margin="0" Padding="8,6" Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                </Grid>
+                            </HeaderedContentControl>
+                            <HeaderedContentControl Style="{StaticResource FormSection}" Tag="&#xE71D;" Header="Features in this package"
+                                                    AutomationProperties.HelpText="Hover over a feature to see what it does.">
+                                <ItemsControl ItemsSource="{Binding FeatureGroups}" Focusable="False">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <UniformGrid Columns="3" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#FAFBFC" BorderBrush="#EEF0F3" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,12,12">
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Area}" Style="{StaticResource SubHeading}" />
+                                                    <ItemsControl ItemsSource="{Binding Features}" Focusable="False">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <CheckBox IsChecked="{Binding IsChecked}" IsEnabled="{Binding CanChange}" Margin="0,3" ToolTip="{Binding Description}">
+                                                                    <StackPanel Orientation="Horizontal">
+                                                                        <TextBlock Text="{Binding Name}" />
+                                                                        <TextBlock Text="{Binding Tag}" Margin="8,0,0,0" FontSize="10" Foreground="{StaticResource SubtleTextBrush}"
+                                                                                   VerticalAlignment="Center" />
+                                                                    </StackPanel>
+                                                                </CheckBox>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
                                                 </StackPanel>
                                             </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
+                            </HeaderedContentControl>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
 
-                                <!-- Package and validity -->
-                                <TextBlock Text="PACKAGE AND VALIDITY" Style="{StaticResource SectionTitle}" />
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="12" />
-                                        <ColumnDefinition Width="90" />
-                                        <ColumnDefinition Width="12" />
-                                        <ColumnDefinition Width="90" />
-                                    </Grid.ColumnDefinitions>
+            <!-- ══ Company types ═══════════════════════════════════════ -->
+            <Grid DataContext="{Binding CompanyTypes}"
+                  Visibility="{Binding DataContext.Section, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=CompanyTypes}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="320" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Side panel: the types -->
+                <Border Background="White" BorderBrush="#E1E5EB" BorderThickness="0,0,1,0">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Top" Margin="22,20,22,8">
+                            <TextBlock Text="Company types" Style="{StaticResource PageTitle}" HorizontalAlignment="Left" />
+                            <TextBlock Style="{StaticResource FieldHelp}" Margin="0,4,0,14"
+                                       Text="The kinds of companies you sell to. Choosing a type for a new account fills in its products, package and validity." />
+                            <Button Style="{StaticResource PrimaryButton}" Margin="0" Padding="12,8" HorizontalAlignment="Stretch" Content="+ New type"
+                                    Command="{Binding NewCommand}" />
+                        </StackPanel>
+                        <ListBox ItemsSource="{Binding Types}" SelectedItem="{Binding Selected}" Style="{StaticResource SideList}" Margin="4,0,4,8">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
                                     <StackPanel>
-                                        <TextBlock Text="Package *" Style="{StaticResource FormLabel}" />
-                                        <ComboBox ItemsSource="{Binding Packages}" SelectedItem="{Binding Package}" DisplayMemberPath="Name" Padding="6,4" />
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#1F2A37" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" Margin="0,3,0,0" />
                                     </StackPanel>
-                                    <StackPanel Grid.Column="2">
-                                        <TextBlock Text="Computers *" Style="{StaticResource FormLabel}" />
-                                        <TextBox Style="{StaticResource FormBox}" Margin="0" Text="{Binding MaxComputersText, UpdateSourceTrigger=PropertyChanged}" />
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="4" ToolTip="How many people may sign in: the account owner and the staff they add in MARK">
-                                        <TextBlock Text="Users *" Style="{StaticResource FormLabel}" />
-                                        <TextBox Style="{StaticResource FormBox}" Margin="0" Text="{Binding MaxUsersText, UpdateSourceTrigger=PropertyChanged}" />
-                                    </StackPanel>
-                                </Grid>
-                                <TextBlock Text="Account valid until *" Style="{StaticResource FormLabel}" Margin="0,10,0,3" />
-                                <DatePicker SelectedDate="{Binding ValidUntil}" Width="130" HorizontalAlignment="Left" />
-                                <DockPanel Margin="0,6,0,0">
-                                    <TextBlock Text="Extend" Style="{StaticResource FieldLabel}" Width="62" />
-                                    <ItemsControl ItemsSource="{Binding ValidityChoices}">
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Border>
+
+                <!-- The chosen type -->
+                <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Focusable="False">
+                    <StackPanel Margin="28,20,28,28" MaxWidth="1040">
+                        <Border Style="{StaticResource PageMessage}">
+                            <TextBlock Text="{Binding Message}" Style="{StaticResource PageMessageText}" />
+                        </Border>
+                        <StackPanel Margin="0,60,0,0" HorizontalAlignment="Center" Visibility="{Binding HasEditor, Converter={StaticResource InverseBoolToVisibility}}">
+                            <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets" FontSize="32" HorizontalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" />
+                            <TextBlock Text="Choose a company type on the left, or make a new one." Foreground="{StaticResource SubtleTextBrush}" Margin="0,10,0,0" />
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding HasEditor, Converter={StaticResource BoolToVisibility}}">
+                            <DockPanel Margin="0,0,0,16">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Style="{StaticResource DangerButton}" Content="Delete" Command="{Binding DeleteCommand}" />
+                                    <Button Style="{StaticResource PrimaryButton}" Content="Save type" Padding="18,7" Margin="8,0,0,0" Command="{Binding SaveCommand}" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding EditorTitle}" FontSize="20" FontWeight="SemiBold" Foreground="#1F2A37" TextTrimming="CharacterEllipsis"
+                                           VerticalAlignment="Center" />
+                            </DockPanel>
+                            <HeaderedContentControl Style="{StaticResource FormSection}" Tag="&#xE70F;" Header="Details"
+                                                    AutomationProperties.HelpText="What a new account of this type starts with. You can still change it in the account.">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="2*" />
+                                            <ColumnDefinition Width="16" />
+                                            <ColumnDefinition Width="2*" />
+                                            <ColumnDefinition Width="16" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="Name *" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Margin="0" Padding="8,6" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Package" Style="{StaticResource FormLabel}" />
+                                            <ComboBox ItemsSource="{Binding Packages}" SelectedItem="{Binding Package}" DisplayMemberPath="Name" Padding="8,6" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="4">
+                                            <TextBlock Text="Valid for (days)" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Margin="0" Padding="8,6" Text="{Binding ValidityDaysText, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                    </Grid>
+                                    <TextBlock Text="Products" Style="{StaticResource FormLabel}" Margin="0,14,0,6" />
+                                    <ItemsControl ItemsSource="{Binding Products}" Focusable="False">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <WrapPanel />
@@ -395,459 +1101,20 @@
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Button Style="{StaticResource SmallButton}" Content="{Binding Name}" ContentStringFormat="+{0}"
-                                                        CommandParameter="{Binding}" Margin="0,0,4,2"
-                                                        ToolTip="Extend from today or from the current end, whichever is later"
-                                                        Command="{Binding DataContext.ExtendCommand, RelativeSource={RelativeSource AncestorType=ScrollViewer}}" />
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </DockPanel>
-
-                                <!-- Features -->
-                                <TextBlock Text="FEATURES" Style="{StaticResource SectionTitle}" Margin="0,18,0,2" />
-                                <TextBlock Text="The package's features are ticked: untick one to leave it out for this company. Tick another feature to add it on, with its own end date."
-                                           TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,4" />
-                                <ItemsControl ItemsSource="{Binding FeatureGroups}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Margin="0,6,0,0">
-                                                <TextBlock Text="{Binding Area}" FontWeight="SemiBold" Foreground="#4B5563" FontSize="11" Margin="0,0,0,2" />
-                                                <ItemsControl ItemsSource="{Binding Features}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <DockPanel Margin="0,2">
-                                                                <DatePicker DockPanel.Dock="Right" SelectedDate="{Binding ValidUntil}" Width="125"
-                                                                            ToolTip="Last day of the add-on (empty: same as the account)"
-                                                                            Visibility="{Binding IsAddOn, Converter={StaticResource BoolToVisibility}}" />
-                                                                <TextBlock DockPanel.Dock="Right" Text="{Binding Tag}" FontSize="10" Margin="8,0" VerticalAlignment="Center"
-                                                                           Foreground="{StaticResource MutedTextBrush}" />
-                                                                <CheckBox IsChecked="{Binding IsIncluded}" IsEnabled="{Binding CanChange}" VerticalAlignment="Center"
-                                                                          ToolTip="{Binding Description}">
-                                                                    <TextBlock Text="{Binding Name}" />
-                                                                </CheckBox>
-                                                            </DockPanel>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-
-                                <!-- Catalogue -->
-                                <TextBlock Text="CATALOGUE (WHAT THIS COMPANY GETS)" Style="{StaticResource SectionTitle}" Margin="0,18,0,6" />
-                                <ContentControl Content="{Binding CatalogueChoice}" ContentTemplate="{StaticResource CatalogueChoiceTemplate}" Focusable="False"
-                                                Visibility="{Binding HasCatalogue, Converter={StaticResource BoolToVisibility}}" />
-                                <TextBlock Text="No catalogue is published yet. Publish one on the Catalogue page; until then the company keeps its own library."
-                                           TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}"
-                                           Visibility="{Binding HasCatalogue, Converter={StaticResource InverseBoolToVisibility}}" />
-
-                                <!-- Computers -->
-                                <StackPanel Visibility="{Binding IsNew, Converter={StaticResource InverseBoolToVisibility}}">
-                                    <TextBlock Text="COMPUTERS SIGNED IN" Style="{StaticResource SectionTitle}" Margin="0,18,0,6" />
-                                    <TextBlock Text="None yet." Foreground="{StaticResource MutedTextBrush}"
-                                               Visibility="{Binding HasComputers, Converter={StaticResource InverseBoolToVisibility}}" />
-                                    <ItemsControl ItemsSource="{Binding Computers}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border BorderBrush="#E3E6EA" BorderThickness="0,0,0,1" Padding="0,6">
-                                                    <DockPanel>
-                                                        <Button DockPanel.Dock="Right" Style="{StaticResource SmallButton}" Content="Free" CommandParameter="{Binding}"
-                                                                ToolTip="Sign this computer out so another can be used"
-                                                                Command="{Binding DataContext.FreeComputerCommand, ElementName=CompaniesPage}" />
-                                                        <StackPanel>
-                                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                                                            <TextBlock FontSize="11" Foreground="{StaticResource MutedTextBrush}">
-                                                                <Run Text="{Binding UserId, Mode=OneWay}" /><Run Text=" · last check-in " /><Run Text="{Binding LastCheckInUtc, Mode=OneWay, StringFormat={}{0:d MMM yyyy HH:mm} UTC}" />
-                                                            </TextBlock>
-                                                        </StackPanel>
-                                                    </DockPanel>
+                                                <Border BorderBrush="#E1E5EB" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,10,0">
+                                                    <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" FontWeight="SemiBold" />
                                                 </Border>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
                                 </StackPanel>
-
-                                <!-- Staff logins (the account owner adds them in MARK) -->
-                                <StackPanel Visibility="{Binding IsNew, Converter={StaticResource InverseBoolToVisibility}}">
-                                    <TextBlock Text="STAFF LOGINS" Style="{StaticResource SectionTitle}" Margin="0,18,0,2" />
-                                    <TextBlock Text="{Binding UsersInUseText}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,4" />
-                                    <TextBlock Text="None. The account owner adds staff in MARK (Account › Staff logins)." TextWrapping="Wrap"
-                                               Foreground="{StaticResource MutedTextBrush}"
-                                               Visibility="{Binding HasStaff, Converter={StaticResource InverseBoolToVisibility}}" />
-                                    <ItemsControl ItemsSource="{Binding Staff}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border BorderBrush="#E3E6EA" BorderThickness="0,0,0,1" Padding="0,6">
-                                                    <DockPanel>
-                                                        <Button DockPanel.Dock="Right" Style="{StaticResource SmallButton}" Content="Remove" CommandParameter="{Binding}"
-                                                                ToolTip="Remove this staff login (MARK on their computers is signed out)"
-                                                                Command="{Binding DataContext.RemoveStaffCommand, ElementName=CompaniesPage}" />
-                                                        <StackPanel>
-                                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                                                            <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
-                                                        </StackPanel>
-                                                    </DockPanel>
-                                                </Border>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </StackPanel>
-
-                                <!-- Quotation details: printed on the company's quotations; only you set them -->
-                                <TextBlock Text="QUOTATION DETAILS (ON THE COMPANY'S QUOTATIONS)" Style="{StaticResource SectionTitle}" Margin="0,18,0,2" />
-                                <TextBlock Text="Printed at the top of every page of the company's quotation PDFs. Only you can set them; the company sees them in MARK and cannot change them."
-                                           TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,4" />
-                                <TextBlock Text="Line above the company name, e.g. Authorised partner" Style="{StaticResource FormLabel}" />
-                                <TextBox Style="{StaticResource FormBox}" Text="{Binding PartnerLabel, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBlock Text="Address (one or more lines)" Style="{StaticResource FormLabel}" />
-                                <TextBox Style="{StaticResource FormBox}" MinHeight="48" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top"
-                                         Text="{Binding Address, UpdateSourceTrigger=PropertyChanged}" />
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="10" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel>
-                                        <TextBlock Text="Contact no." Style="{StaticResource FormLabel}" />
-                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding Phone, UpdateSourceTrigger=PropertyChanged}" />
-                                        <TextBlock Text="Website" Style="{StaticResource FormLabel}" />
-                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding Website, UpdateSourceTrigger=PropertyChanged}" />
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="2">
-                                        <TextBlock Text="E-mail" Style="{StaticResource FormLabel}" />
-                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" />
-                                        <TextBlock Text="GSTIN" Style="{StaticResource FormLabel}" />
-                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding Gstin, UpdateSourceTrigger=PropertyChanged}" />
-                                    </StackPanel>
-                                </Grid>
-
-                                <TextBlock Text="Brand (top left of every page, e.g. the profile system it sells)" Style="{StaticResource FormLabel}" Margin="0,8,0,3" />
-                                <TextBox Style="{StaticResource FormBox}" Text="{Binding BrandName, UpdateSourceTrigger=PropertyChanged}" />
-                                <DockPanel Margin="0,0,0,6">
-                                    <Border DockPanel.Dock="Left" Width="140" Height="52" BorderBrush="#C9CED6" BorderThickness="1" Margin="0,0,10,0">
-                                        <Image Source="{Binding BrandLogo}" Stretch="Uniform" Margin="3" />
-                                    </Border>
-                                    <StackPanel VerticalAlignment="Center">
-                                        <Button Style="{StaticResource SmallButton}" Content="Choose brand logo…" HorizontalAlignment="Left" Margin="0,0,0,4"
-                                                Command="{Binding DataContext.ChooseBrandLogoCommand, ElementName=CompaniesPage}" />
-                                        <Button Style="{StaticResource SmallButton}" Content="Remove" HorizontalAlignment="Left"
-                                                Command="{Binding DataContext.RemoveBrandLogoCommand, ElementName=CompaniesPage}"
-                                                Visibility="{Binding HasBrandLogo, Converter={StaticResource BoolToVisibility}}" />
-                                    </StackPanel>
-                                </DockPanel>
-
-                                <TextBlock Text="Bank details" Style="{StaticResource FormLabel}" Margin="0,8,0,3" FontWeight="SemiBold" />
-                                <TextBlock Text="Account name" Style="{StaticResource FormLabel}" />
-                                <TextBox Style="{StaticResource FormBox}" Text="{Binding BankAccountName, UpdateSourceTrigger=PropertyChanged}" />
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="10" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel>
-                                        <TextBlock Text="Account number" Style="{StaticResource FormLabel}" />
-                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding BankAccountNumber, UpdateSourceTrigger=PropertyChanged}" />
-                                        <TextBlock Text="IFSC" Style="{StaticResource FormLabel}" />
-                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding BankIfsc, UpdateSourceTrigger=PropertyChanged}" />
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="2">
-                                        <TextBlock Text="Bank" Style="{StaticResource FormLabel}" />
-                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding BankName, UpdateSourceTrigger=PropertyChanged}" />
-                                        <TextBlock Text="Branch" Style="{StaticResource FormLabel}" />
-                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding BankBranch, UpdateSourceTrigger=PropertyChanged}" />
-                                    </StackPanel>
-                                </Grid>
-
-                                <TextBlock Text="Last page picture (optional, e.g. care instructions)" Style="{StaticResource FormLabel}" Margin="0,8,0,3" />
-                                <DockPanel>
-                                    <Border DockPanel.Dock="Left" Width="80" Height="106" BorderBrush="#C9CED6" BorderThickness="1" Margin="0,0,10,0">
-                                        <Image Source="{Binding ExtraPage}" Stretch="Uniform" Margin="3" />
-                                    </Border>
-                                    <StackPanel VerticalAlignment="Center">
-                                        <Button Style="{StaticResource SmallButton}" Content="Choose picture…" HorizontalAlignment="Left" Margin="0,0,0,4"
-                                                Command="{Binding DataContext.ChooseExtraPageCommand, ElementName=CompaniesPage}" />
-                                        <Button Style="{StaticResource SmallButton}" Content="Remove" HorizontalAlignment="Left"
-                                                Command="{Binding DataContext.RemoveExtraPageCommand, ElementName=CompaniesPage}"
-                                                Visibility="{Binding HasExtraPage, Converter={StaticResource BoolToVisibility}}" />
-                                    </StackPanel>
-                                </DockPanel>
-
-                                <TextBlock Text="NOTES (ONLY YOU SEE THESE)" Style="{StaticResource SectionTitle}" Margin="0,18,0,6" />
-                                <TextBox Style="{StaticResource FormBox}" Height="60" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top"
-                                         Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}" />
-                            </StackPanel>
-                        </ScrollViewer>
-                    </DockPanel>
-                </Border>
-            </Grid>
-
-            <!-- ══ Licence keys ════════════════════════════════════════ -->
-            <Grid DataContext="{Binding Keys}" Margin="20,16,20,16"
-                  Visibility="{Binding DataContext.Section, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=Keys}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="380" />
-                    <ColumnDefinition Width="16" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-
-                <StackPanel>
-                    <TextBlock Text="Licence keys" Style="{StaticResource PageTitle}" HorizontalAlignment="Left" Margin="0,0,0,10" />
-                    <Border Style="{StaticResource PageMessage}">
-                        <TextBlock Text="{Binding Message}" Style="{StaticResource PageMessageText}" />
-                    </Border>
-                    <Border Style="{StaticResource Card}" Padding="18,14">
-                        <StackPanel>
-                            <TextBlock Text="Generate keys" Style="{StaticResource CardTitle}" />
-                            <TextBlock Text="A company enters a key on MARK's Account page. It renews the account, a product or a feature until the key's date (counted from today)."
-                                       TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,8" />
-                            <TextBlock Text="For" Style="{StaticResource FormLabel}" />
-                            <ComboBox ItemsSource="{Binding CompanyChoices}" SelectedItem="{Binding Company}" Padding="6,4" Margin="0,0,0,8" />
-                            <TextBlock Text="Gives" Style="{StaticResource FormLabel}" />
-                            <ComboBox ItemsSource="{Binding Gifts}" SelectedItem="{Binding Gift}" Padding="6,4" Margin="0,0,0,8" />
-                            <StackPanel Visibility="{Binding IsFeatureGift, Converter={StaticResource BoolToVisibility}}">
-                                <TextBlock Text="Feature" Style="{StaticResource FormLabel}" />
-                                <ComboBox ItemsSource="{Binding FeatureChoices}" SelectedItem="{Binding Feature}" DisplayMemberPath="Name" Padding="6,4" Margin="0,0,0,8" />
-                            </StackPanel>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="12" />
-                                    <ColumnDefinition Width="80" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel>
-                                    <TextBlock Text="Valid for" Style="{StaticResource FormLabel}" />
-                                    <ComboBox ItemsSource="{Binding ValidityChoices}" SelectedItem="{Binding Validity}" Padding="6,4" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="How many" Style="{StaticResource FormLabel}" />
-                                    <TextBox Style="{StaticResource FormBox}" Margin="0" Text="{Binding CountText, UpdateSourceTrigger=PropertyChanged}" />
-                                </StackPanel>
-                            </Grid>
-                            <TextBlock Text="{Binding ValidUntilText}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,4,0,8" />
-                            <TextBlock Text="Note (only you see it)" Style="{StaticResource FormLabel}" />
-                            <TextBox Style="{StaticResource FormBox}" Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}" />
-                            <Button Style="{StaticResource PrimaryButton}" Margin="0,4,0,0" Padding="16,8" Content="Generate" Command="{Binding GenerateCommand}" />
+                            </HeaderedContentControl>
+                            <HeaderedContentControl Style="{StaticResource FormSection}" Tag="&#xE8F1;" Header="Catalogue for new accounts of this type"
+                                                    Visibility="{Binding HasCatalogue, Converter={StaticResource BoolToVisibility}}">
+                                <ContentControl Content="{Binding CatalogueChoice}" ContentTemplate="{StaticResource CatalogueChoiceTemplate}" Focusable="False" />
+                            </HeaderedContentControl>
                         </StackPanel>
-                    </Border>
-                    <Border Style="{StaticResource Card}" Padding="18,14" Margin="0,12,0,0"
-                            Visibility="{Binding HasNewKeys, Converter={StaticResource BoolToVisibility}}">
-                        <StackPanel>
-                            <DockPanel>
-                                <Button DockPanel.Dock="Right" Style="{StaticResource SmallButton}" Content="Copy all"
-                                        Command="{Binding CopyCommand}" CommandParameter="{Binding NewKeysText}" />
-                                <TextBlock Text="New keys" Style="{StaticResource CardTitle}" />
-                            </DockPanel>
-                            <TextBox Text="{Binding NewKeysText, Mode=OneWay}" IsReadOnly="True" FontFamily="Consolas" FontSize="13" Margin="0,8,0,0"
-                                     TextWrapping="NoWrap" MaxHeight="200" VerticalScrollBarVisibility="Auto" BorderThickness="0" Background="#F6F8FA" Padding="8" />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-
-                <Border Grid.Column="2" Style="{StaticResource Card}">
-                    <DockPanel>
-                        <DockPanel DockPanel.Dock="Top" Margin="16,12,16,6">
-                            <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Content="Refresh" Command="{Binding RefreshCommand}" />
-                            <TextBlock Text="All keys" Style="{StaticResource CardTitle}" VerticalAlignment="Center" />
-                        </DockPanel>
-                        <ListBox ItemsSource="{Binding Keys}" BorderThickness="0" HorizontalContentAlignment="Stretch"
-                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid Margin="8,5">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="230" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding KeyText}" FontFamily="Consolas" FontWeight="SemiBold" />
-                                            <TextBlock Text="{Binding Note}" FontSize="10" Foreground="{StaticResource MutedTextBrush}" />
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="1" Margin="10,0">
-                                            <TextBlock>
-                                                <Run Text="{Binding GivesText, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=" until " /><Run Text="{Binding ValidUntilText, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding ForText, Mode=OneWay}" />
-                                            </TextBlock>
-                                            <TextBlock Text="{Binding StateText}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <Button Style="{StaticResource SmallButton}" Content="Copy" CommandParameter="{Binding}"
-                                                    Command="{Binding DataContext.CopyCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
-                                                    Visibility="{Binding IsUnused, Converter={StaticResource BoolToVisibility}}" />
-                                            <Button Style="{StaticResource SmallButton}" Content="Cancel key" CommandParameter="{Binding}"
-                                                    Command="{Binding DataContext.RevokeCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
-                                                    Visibility="{Binding CanRevoke, Converter={StaticResource BoolToVisibility}}" />
-                                        </StackPanel>
-                                    </Grid>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </DockPanel>
-                </Border>
-            </Grid>
-
-            <!-- ══ Packages ════════════════════════════════════════════ -->
-            <Grid DataContext="{Binding Packages}" Margin="20,16,20,16"
-                  Visibility="{Binding DataContext.Section, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=Packages}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="340" />
-                    <ColumnDefinition Width="16" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <DockPanel>
-                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
-                        <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Content="+ New package" Command="{Binding NewCommand}" />
-                        <TextBlock Text="Packages" Style="{StaticResource PageTitle}" HorizontalAlignment="Left" />
-                    </DockPanel>
-                    <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,10"
-                               Text="A package is a set of features you sell. Each company gets one package, plus add-ons or removals in its account." />
-                    <Border Style="{StaticResource Card}">
-                        <ListBox ItemsSource="{Binding Packages}" SelectedItem="{Binding Selected}" BorderThickness="0" HorizontalContentAlignment="Stretch"
-                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Margin="6,6">
-                                        <DockPanel>
-                                            <TextBlock DockPanel.Dock="Right" FontSize="11" Foreground="{StaticResource MutedTextBrush}">
-                                                <Run Text="{Binding Features.Count, Mode=OneWay}" /><Run Text=" features" />
-                                            </TextBlock>
-                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                                        </DockPanel>
-                                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </Border>
-                </DockPanel>
-                <StackPanel Grid.Column="2">
-                    <Border Style="{StaticResource PageMessage}">
-                        <TextBlock Text="{Binding Message}" Style="{StaticResource PageMessageText}" />
-                    </Border>
-                    <Border Style="{StaticResource Card}" Padding="20,16" Visibility="{Binding HasEditor, Converter={StaticResource BoolToVisibility}}">
-                        <StackPanel>
-                            <DockPanel>
-                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                                    <Button Style="{StaticResource DangerButton}" Content="Delete" Command="{Binding DeleteCommand}" />
-                                    <Button Style="{StaticResource PrimaryButton}" Content="Save package" Command="{Binding SaveCommand}" />
-                                </StackPanel>
-                                <StackPanel>
-                                    <TextBlock Text="{Binding EditorTitle}" FontSize="18" FontWeight="SemiBold" Foreground="#1F2A37" />
-                                    <TextBlock Text="{Binding UsedByText}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
-                                </StackPanel>
-                            </DockPanel>
-                            <Grid Margin="0,10,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="12" />
-                                    <ColumnDefinition Width="2*" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel>
-                                    <TextBlock Text="Name *" Style="{StaticResource FormLabel}" />
-                                    <TextBox Style="{StaticResource FormBox}" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Description" Style="{StaticResource FormLabel}" />
-                                    <TextBox Style="{StaticResource FormBox}" Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" />
-                                </StackPanel>
-                            </Grid>
-                            <TextBlock Text="FEATURES IN THIS PACKAGE" Style="{StaticResource SectionTitle}" />
-                            <ItemsControl ItemsSource="{Binding FeatureGroups}" ItemTemplate="{StaticResource FeatureChoiceGroupTemplate}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <UniformGrid Columns="3" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                            </ItemsControl>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </Grid>
-
-            <!-- ══ Company types ═══════════════════════════════════════ -->
-            <Grid DataContext="{Binding CompanyTypes}" Margin="20,16,20,16"
-                  Visibility="{Binding DataContext.Section, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=CompanyTypes}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="380" />
-                    <ColumnDefinition Width="16" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <DockPanel>
-                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
-                        <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Content="+ New type" Command="{Binding NewCommand}" />
-                        <TextBlock Text="Company types" Style="{StaticResource PageTitle}" HorizontalAlignment="Left" />
-                    </DockPanel>
-                    <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,10"
-                               Text="The kinds of companies you sell to. Choosing a type for a new account fills in its products, package and validity." />
-                    <Border Style="{StaticResource Card}">
-                        <ListBox ItemsSource="{Binding Types}" SelectedItem="{Binding Selected}" BorderThickness="0" HorizontalContentAlignment="Stretch"
-                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Margin="6,6">
-                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                                        <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </Border>
-                </DockPanel>
-                <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Focusable="False">
-                <StackPanel>
-                    <Border Style="{StaticResource PageMessage}">
-                        <TextBlock Text="{Binding Message}" Style="{StaticResource PageMessageText}" />
-                    </Border>
-                    <Border Style="{StaticResource Card}" Padding="20,16" MaxWidth="620" HorizontalAlignment="Left"
-                            Visibility="{Binding HasEditor, Converter={StaticResource BoolToVisibility}}">
-                        <StackPanel Width="560">
-                            <DockPanel>
-                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                                    <Button Style="{StaticResource DangerButton}" Content="Delete" Command="{Binding DeleteCommand}" />
-                                    <Button Style="{StaticResource PrimaryButton}" Content="Save type" Command="{Binding SaveCommand}" />
-                                </StackPanel>
-                                <TextBlock Text="{Binding EditorTitle}" FontSize="18" FontWeight="SemiBold" Foreground="#1F2A37" />
-                            </DockPanel>
-                            <TextBlock Text="Name *" Style="{StaticResource FormLabel}" Margin="0,12,0,3" />
-                            <TextBox Style="{StaticResource FormBox}" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
-                            <TextBlock Text="Products" Style="{StaticResource FormLabel}" />
-                            <ItemsControl ItemsSource="{Binding Products}" Margin="0,0,0,8">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel Orientation="Horizontal" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" Margin="0,0,18,0" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="12" />
-                                    <ColumnDefinition Width="160" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel>
-                                    <TextBlock Text="Package" Style="{StaticResource FormLabel}" />
-                                    <ComboBox ItemsSource="{Binding Packages}" SelectedItem="{Binding Package}" DisplayMemberPath="Name" Padding="6,4" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Valid for (days)" Style="{StaticResource FormLabel}" />
-                                    <TextBox Style="{StaticResource FormBox}" Margin="0" Text="{Binding ValidityDaysText, UpdateSourceTrigger=PropertyChanged}" />
-                                </StackPanel>
-                            </Grid>
-                            <TextBlock Text="CATALOGUE FOR NEW ACCOUNTS OF THIS TYPE" Style="{StaticResource SectionTitle}" Margin="0,18,0,6"
-                                       Visibility="{Binding HasCatalogue, Converter={StaticResource BoolToVisibility}}" />
-                            <ContentControl Content="{Binding CatalogueChoice}" ContentTemplate="{StaticResource CatalogueChoiceTemplate}" Focusable="False"
-                                            Visibility="{Binding HasCatalogue, Converter={StaticResource BoolToVisibility}}" />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
+                    </StackPanel>
                 </ScrollViewer>
             </Grid>
 

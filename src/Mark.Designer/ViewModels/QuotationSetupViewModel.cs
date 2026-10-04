@@ -20,8 +20,8 @@ public sealed class QuotationSetupViewModel : ViewModelBase
     private readonly Func<Mark.Licensing.Api.QuotationProfile?> _profile;
     private QuotationSettings _loaded = new();
 
-    /// <param name="profile">With a MARK account: the details, brand, bank and last page the MARK supplier set (shown
-    /// read-only); null: no account, the company fills them in itself.</param>
+    /// <param name="profile">With a MARK account: the details, brand, bank and last page the MARK supplier set (not shown
+    /// on the page, but printed); null: no account, the company fills them in itself.</param>
     public QuotationSetupViewModel(Func<SettingsRepository?> settings, Func<IDialogService?> dialogs,
         Func<Mark.Licensing.Api.QuotationProfile?>? profile = null)
     {
@@ -136,7 +136,7 @@ public sealed class QuotationSetupViewModel : ViewModelBase
     public bool MessageIsError { get => _messageIsError; private set => SetProperty(ref _messageIsError, value); }
 
     private bool _isManaged;
-    /// <summary>Details, brand, bank details and last page come from the MARK supplier and cannot be changed here.</summary>
+    /// <summary>Details, brand, bank details and last page come from the MARK supplier: the page leaves them out.</summary>
     public bool IsManaged
     {
         get => _isManaged;

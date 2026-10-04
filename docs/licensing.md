@@ -35,7 +35,10 @@ this key (its public half is built into MARK, `LicenceKeys.PublicKey`). It is ne
 ## MARK Owner
 
 - **Companies**: every company with its type, products, package, validity, computers in use and status (Active, Ends
-  in N days, Suspended, Expired). **+ New account** / select a company to open the account editor:
+  in N days, Suspended, Expired). **+ New account** or a click on a company opens its **account page** in place of the
+  list (**← All companies** or **Cancel** goes back, **Save account** saves). A side panel shows the company and lists
+  the sections (a click jumps to one; the one in view is marked), with **Suspend / Reactivate** and **Delete account**
+  at its foot. The sections:
   - company name and logo (only the admin can change them), **company type**;
   - **sign-in for MARK**: account owner's name, **User ID** and **password** (set by the admin; a new password can be
     set at any time and also unlocks the User ID);
@@ -44,9 +47,15 @@ this key (its public half is built into MARK, `LicenceKeys.PublicKey`). It is ne
   - **package**, **account valid until** and the number of **computers**;
   - **features**: the package's features are ticked; untick one to leave it out for this company, tick another to give
     it as an **add-on** with its own end date. Quotes and the frame designer are always included;
-  - **computers signed in**, each with **Free** (signs that computer out so another can be used);
-  - **Suspend / Reactivate** (MARK becomes read-only), **Delete** (the User ID stops working, computers are signed out,
-    unused keys are cancelled), notes only the admin sees.
+  - **catalogue**: what the company gets from the published catalogue;
+  - **quotation details**: the company's details, brand, bank details and an optional last page picture, printed on
+    its quotation PDFs (see [sales.md](sales.md));
+  - **computers and staff**: computers signed in, each with **Free** (signs that computer out so another can be used),
+    and the staff logins;
+  - notes only the admin sees.
+
+  **Suspend / Reactivate** makes MARK read-only; **Delete account** stops the User ID, signs the computers out and
+  cancels unused keys.
 - **Licence keys**: generate keys for one company or any company that give **account validity**, **uPVC**,
   **Aluminium** or **a feature**, valid for 14 days … 2 years **counted from the day the key is generated**. Keys look
   like `MARK-7KQ2M-X9TPA-3HRWD-ZC4NE`, are used once, never shorten anything, and can be cancelled while unused.

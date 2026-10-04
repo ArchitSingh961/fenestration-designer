@@ -243,8 +243,31 @@ public sealed class CompanyEditorViewModel : ViewModelBase
     public string Name
     {
         get => _name;
-        set => SetProperty(ref _name, value);
+        set
+        {
+            if (!SetProperty(ref _name, value)) return;
+            OnPropertyChanged(nameof(HeaderName));
+            OnPropertyChanged(nameof(Initials));
+        }
     }
+
+    /// <summary>The name at the top of the account page, as typed ("New account" while empty).</summary>
+    public string HeaderName => string.IsNullOrWhiteSpace(_name) ? (IsNew ? "New account" : Existing!.Name) : _name.Trim();
+
+    /// <summary>Up to two initials of the name, for the round badge ("+" for a new account without a name).</summary>
+    public string Initials
+    {
+        get
+        {
+            var words = _name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            return words.Length == 0 ? "+" : string.Concat(words.Take(2).Select(w => char.ToUpperInvariant(w[0])));
+        }
+    }
+
+    /// <summary>"User ID shree · valid until 3 Oct 2027 · since 1 Jan 2026", or what to do for a new account.</summary>
+    public string SubtitleText => Existing is { } c
+        ? $"User ID {c.OwnerUserId} · valid until {LicenceDates.Format(c.ValidUntilUtc)} · since {LicenceDates.Format(c.CreatedUtc)}"
+        : "Fill in the sections, then Save account.";
 
     private string? _logoBase64;
     public string? LogoBase64

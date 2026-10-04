@@ -70,6 +70,182 @@
             <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
                 <Setter Property="Foreground" Value="#A32020" />
             </Style>
+
+            <!-- Help lines under titles and fields (darker than MutedTextBrush, so they read well on white). -->
+            <SolidColorBrush x:Key="SubtleTextBrush" Color="#6B7280" />
+            <SolidColorBrush x:Key="SelectedRowBrush" Color="#EAF2FD" />
+            <SolidColorBrush x:Key="HoverRowBrush" Color="#F3F6FA" />
+
+            <!-- A section of a form page: an icon (Tag, Segoe MDL2 glyph), a title (Header), a help line
+                 (AutomationProperties.HelpText) and the fields below. -->
+            <Style x:Key="FormSection" TargetType="HeaderedContentControl">
+                <Setter Property="Focusable" Value="False" />
+                <Setter Property="Margin" Value="0,0,0,16" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="HeaderedContentControl">
+                            <Border Background="White" BorderBrush="#E1E5EB" BorderThickness="1" CornerRadius="8">
+                                <DockPanel>
+                                    <Border DockPanel.Dock="Top" BorderBrush="#EEF0F3" BorderThickness="0,0,0,1" Padding="22,16,22,14">
+                                        <DockPanel>
+                                            <Border DockPanel.Dock="Left" Width="34" Height="34" CornerRadius="8" Background="{StaticResource SelectedRowBrush}"
+                                                    Margin="0,0,14,0" VerticalAlignment="Top">
+                                                <TextBlock Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" FontFamily="Segoe MDL2 Assets"
+                                                           FontSize="15" Foreground="{StaticResource AccentBrush}"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <ContentPresenter ContentSource="Header" TextElement.FontSize="15" TextElement.FontWeight="SemiBold"
+                                                                  TextElement.Foreground="#1F2A37" />
+                                                <TextBlock x:Name="Help" TextWrapping="Wrap" FontSize="11.5" Foreground="{StaticResource SubtleTextBrush}" Margin="0,2,0,0"
+                                                           Text="{Binding (AutomationProperties.HelpText), RelativeSource={RelativeSource TemplatedParent}}" />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </Border>
+                                    <ContentPresenter Margin="22,16,22,20" />
+                                </DockPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="AutomationProperties.HelpText" Value="">
+                                    <Setter TargetName="Help" Property="Visibility" Value="Collapsed" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- A smaller heading inside a section ("Bank details"). -->
+            <Style x:Key="SubHeading" TargetType="TextBlock">
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Foreground" Value="#1F2A37" />
+                <Setter Property="Margin" Value="0,0,0,6" />
+            </Style>
+
+            <Style x:Key="FieldHelp" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="Foreground" Value="{StaticResource SubtleTextBrush}" />
+            </Style>
+
+            <!-- The section menu at the left of a form page: an icon (Tag), the name, a blue bar on the current one. -->
+            <Style x:Key="SideNavItem" TargetType="RadioButton">
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Foreground" Value="#374151" />
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Grid Margin="0,1">
+                                <Border x:Name="Bd" Background="Transparent" CornerRadius="6" Padding="12,9">
+                                    <DockPanel>
+                                        <TextBlock x:Name="Icon" DockPanel.Dock="Left" Width="20" Margin="0,0,10,0" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                                   Foreground="{StaticResource SubtleTextBrush}" VerticalAlignment="Center"
+                                                   Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" />
+                                        <ContentPresenter VerticalAlignment="Center" />
+                                    </DockPanel>
+                                </Border>
+                                <Border x:Name="Bar" Width="3" HorizontalAlignment="Left" Margin="0,8" CornerRadius="2"
+                                        Background="{StaticResource AccentBrush}" Visibility="Collapsed" />
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverRowBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverRowBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource SelectedRowBrush}" />
+                                    <Setter TargetName="Bar" Property="Visibility" Value="Visible" />
+                                    <Setter TargetName="Icon" Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                    <Setter Property="Foreground" Value="#174EA6" />
+                                    <Setter Property="FontWeight" Value="SemiBold" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- A row of a list in a side panel or table: roomy, a light hover, blue with a bar when chosen. -->
+            <Style x:Key="SideListItem" TargetType="ListBoxItem">
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListBoxItem">
+                            <Grid Margin="6,2">
+                                <Border x:Name="Bd" Background="Transparent" CornerRadius="6" Padding="12,10">
+                                    <ContentPresenter />
+                                </Border>
+                                <Border x:Name="Bar" Width="3" HorizontalAlignment="Left" Margin="0,9" CornerRadius="2"
+                                        Background="{StaticResource AccentBrush}" Visibility="Collapsed" />
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverRowBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverRowBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource SelectedRowBrush}" />
+                                    <Setter TargetName="Bar" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="SideList" TargetType="ListBox">
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Padding" Value="0,6" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+                <Setter Property="ItemContainerStyle" Value="{StaticResource SideListItem}" />
+            </Style>
+
+            <!-- The heading strip of a side panel: title, a count or help line, and an action on the right. -->
+            <Style x:Key="PanelTitle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Foreground" Value="#1F2A37" />
+            </Style>
+
+            <!-- "← All companies": a quiet link-like button. -->
+            <Style x:Key="BackButton" TargetType="Button">
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="Transparent" CornerRadius="4" Padding="8,5">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,1,8,0" />
+                                    <ContentPresenter VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverRowBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- A box for a picture (logo, brand logo, last page). -->
+            <Style x:Key="PictureBox" TargetType="Border">
+                <Setter Property="CornerRadius" Value="6" />
+                <Setter Property="BorderBrush" Value="#D5DAE1" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Background" Value="#FAFBFC" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

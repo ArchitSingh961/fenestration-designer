@@ -47,8 +47,8 @@ public sealed class CompanyRow
 }
 
 /// <summary>
-/// The Companies page of MARK Owner: every client company at a glance, search, and the account editor (new account,
-/// change, suspend or reactivate, free a computer, delete).
+/// The Companies page of MARK Owner: every client company at a glance, search, and the account page that opens in its
+/// place (new account, change, suspend or reactivate, free a computer, delete).
 /// </summary>
 public sealed class CompaniesViewModel : OwnerPage
 {
@@ -70,7 +70,7 @@ public sealed class CompaniesViewModel : OwnerPage
         NewAccountCommand = new RelayCommand(NewAccount);
         RefreshCommand = new AsyncCommand(LoadAsync);
         SaveCommand = new AsyncCommand(SaveAsync, () => Editor is not null);
-        CancelCommand = new RelayCommand(() => Editor = null, () => Editor is not null);
+        CancelCommand = new RelayCommand(CloseEditor, () => Editor is not null);
         ToggleSuspendCommand = new AsyncCommand(ToggleSuspendAsync, () => Editor is { IsNew: false });
         DeleteCommand = new AsyncCommand(DeleteAsync, () => Editor is { IsNew: false });
         FreeComputerCommand = new RelayCommand(async p => await FreeComputerAsync(p as ComputerInfo));
@@ -137,7 +137,7 @@ public sealed class CompaniesViewModel : OwnerPage
             OnPropertyChanged(nameof(SuspendText));
             foreach (var command in new[] { SaveCommand, ToggleSuspendCommand, DeleteCommand })
                 ((AsyncCommand)command).RaiseCanExecuteChanged();
-            foreach (var command in new[] { CancelCommand, ChooseLogoCommand, RemoveLogoCommand })
+            foreach (var command in new[] { CancelCommand, ChooseLogoCommand, RemoveLogoCommand, ChooseBrandLogoCommand, ChooseExtraPageCommand })
                 ((RelayCommand)command).RaiseCanExecuteChanged();
         }
     }
@@ -174,6 +174,15 @@ public sealed class CompaniesViewModel : OwnerPage
             Companies.Add(row);
         _selected = Companies.FirstOrDefault(c => c.Id == keep);
         OnPropertyChanged(nameof(Selected));
+    }
+
+    /// <summary>Back to the list (unsaved changes are dropped); the same company can then be opened again.</summary>
+    private void CloseEditor()
+    {
+        Editor = null;
+        _selected = null;
+        OnPropertyChanged(nameof(Selected));
+        Show(null);
     }
 
     private void NewAccount()

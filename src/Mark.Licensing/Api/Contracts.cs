@@ -98,6 +98,37 @@ public sealed record CompanyCatalogue(IReadOnlyList<string> SystemIds, IReadOnly
     public bool IsEmpty => SystemIds.Count == 0 && ItemIds.Count == 0;
 }
 
+/// <summary>
+/// What the admin sets for a company's quotations (Milestone 15): the details printed at the top of every page, the brand,
+/// the bank details and an optional last-page picture. Only the admin changes them; MARK shows them read-only.
+/// </summary>
+public sealed record QuotationProfile
+{
+    public string PartnerLabel { get; init; } = "";
+    public string Address { get; init; } = "";
+    public string Phone { get; init; } = "";
+    public string Email { get; init; } = "";
+    public string Website { get; init; } = "";
+    public string Gstin { get; init; } = "";
+    public string BrandName { get; init; } = "";
+    public string? BrandLogoBase64 { get; init; }
+    public string BankAccountName { get; init; } = "";
+    public string BankAccountNumber { get; init; } = "";
+    public string BankName { get; init; } = "";
+    public string BankIfsc { get; init; } = "";
+    public string BankBranch { get; init; } = "";
+
+    /// <summary>An optional last page with one picture (e.g. care instructions), base64.</summary>
+    public string? ExtraPageBase64 { get; init; }
+
+    public static QuotationProfile Empty { get; } = new();
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsEmpty => this == Empty;
+}
+
+public sealed record ProfileResponse(string ProfileJson);
+
 /// <summary>The owner's master catalogue: a library file (JSON), its version and when it was published.</summary>
 public sealed record CatalogueInfo(int Version, DateTime? PublishedUtc, string? LibraryJson);
 
@@ -153,7 +184,8 @@ public sealed record CompanyDetail(
     CompanyCatalogue? Catalogue = null,
     int MaxUsers = 1,
     IReadOnlyList<StaffInfo>? Staff = null,
-    string? OwnItemsSummary = null);
+    string? OwnItemsSummary = null,
+    QuotationProfile? Profile = null);
 
 /// <summary>A new account, or the changes to one.</summary>
 /// <param name="OwnerPassword">Required for a new account; for an existing one a non-empty value sets a new password.</param>
@@ -175,7 +207,8 @@ public sealed record CompanyEdit(
     IReadOnlyList<string> RemovedFeatures,
     string? Notes,
     CompanyCatalogue? Catalogue = null,
-    int? MaxUsers = null);
+    int? MaxUsers = null,
+    QuotationProfile? Profile = null);
 
 public sealed record SetSuspendedRequest(bool Suspended);
 

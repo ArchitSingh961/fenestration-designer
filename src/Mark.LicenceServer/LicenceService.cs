@@ -184,7 +184,8 @@ public sealed partial class LicenceService
             MaxComputers = company.MaxComputers,
             Products = company.Products.Where(p => !p.Suspended).Select(p => new ProductGrant(p.Product, p.ValidUntilUtc)).ToList(),
             Features = features.OrderBy(f => f.Key, StringComparer.Ordinal).Select(f => new FeatureGrant(f.Key, f.Value)).ToList(),
-            CatalogueHash = CompanyCatalogueJson(connection, company, transaction) is { } catalogue ? Licensing.CatalogueHash.Of(catalogue) : null
+            CatalogueHash = CompanyCatalogueJson(connection, company, transaction) is { } catalogue ? Licensing.CatalogueHash.Of(catalogue) : null,
+            ProfileHash = ProfileJsonOf(connection, company.Id, transaction) is { } profile ? Licensing.CatalogueHash.Of(profile) : null
         };
         return _signer.Sign(licence);
     }
@@ -213,7 +214,10 @@ public sealed partial class LicenceService
         return value;
     }
 
-    private static string? CheckLogo(string? logoBase64)
+    private static string? CheckLogo(string? logoBase64) => CheckImage(logoBase64, "logo", MaxLogoBytes);
+
+    /// <summary>A PNG or JPEG of at most <paramref name="maxBytes"/>, as base64 (null when empty).</summary>
+    private static string? CheckImage(string? logoBase64, string what, int maxBytes)
     {
         if (string.IsNullOrWhiteSpace(logoBase64)) return null;
         byte[] bytes;
@@ -223,13 +227,13 @@ public sealed partial class LicenceService
         }
         catch (FormatException)
         {
-            throw ApiException.Invalid("The logo could not be read.");
+            throw ApiException.Invalid($"The {what} could not be read.");
         }
-        if (bytes.Length > MaxLogoBytes)
-            throw ApiException.Invalid($"The logo is too large ({bytes.Length / 1024} KB); use an image of at most {MaxLogoBytes / 1024} KB.");
+        if (bytes.Length > maxBytes)
+            throw ApiException.Invalid($"The {what} is too large ({bytes.Length / 1024} KB); use an image of at most {maxBytes / 1024} KB.");
         bool png = bytes.Length > 8 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47;
         bool jpeg = bytes.Length > 3 && bytes[0] == 0xFF && bytes[1] == 0xD8;
-        if (!png && !jpeg) throw ApiException.Invalid("The logo must be a PNG or JPEG image.");
+        if (!png && !jpeg) throw ApiException.Invalid($"The {what} must be a PNG or JPEG image.");
         return logoBase64;
     }
 

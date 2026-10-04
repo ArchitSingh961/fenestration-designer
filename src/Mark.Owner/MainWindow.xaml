@@ -495,6 +495,87 @@
                                     </ItemsControl>
                                 </StackPanel>
 
+                                <!-- Quotation details: printed on the company's quotations; only you set them -->
+                                <TextBlock Text="QUOTATION DETAILS (ON THE COMPANY'S QUOTATIONS)" Style="{StaticResource SectionTitle}" Margin="0,18,0,2" />
+                                <TextBlock Text="Printed at the top of every page of the company's quotation PDFs. Only you can set them; the company sees them in MARK and cannot change them."
+                                           TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,4" />
+                                <TextBlock Text="Line above the company name, e.g. Authorised partner" Style="{StaticResource FormLabel}" />
+                                <TextBox Style="{StaticResource FormBox}" Text="{Binding PartnerLabel, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="Address (one or more lines)" Style="{StaticResource FormLabel}" />
+                                <TextBox Style="{StaticResource FormBox}" MinHeight="48" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top"
+                                         Text="{Binding Address, UpdateSourceTrigger=PropertyChanged}" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="Contact no." Style="{StaticResource FormLabel}" />
+                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding Phone, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBlock Text="Website" Style="{StaticResource FormLabel}" />
+                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding Website, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="E-mail" Style="{StaticResource FormLabel}" />
+                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBlock Text="GSTIN" Style="{StaticResource FormLabel}" />
+                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding Gstin, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <TextBlock Text="Brand (top left of every page, e.g. the profile system it sells)" Style="{StaticResource FormLabel}" Margin="0,8,0,3" />
+                                <TextBox Style="{StaticResource FormBox}" Text="{Binding BrandName, UpdateSourceTrigger=PropertyChanged}" />
+                                <DockPanel Margin="0,0,0,6">
+                                    <Border DockPanel.Dock="Left" Width="140" Height="52" BorderBrush="#C9CED6" BorderThickness="1" Margin="0,0,10,0">
+                                        <Image Source="{Binding BrandLogo}" Stretch="Uniform" Margin="3" />
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <Button Style="{StaticResource SmallButton}" Content="Choose brand logo…" HorizontalAlignment="Left" Margin="0,0,0,4"
+                                                Command="{Binding DataContext.ChooseBrandLogoCommand, ElementName=CompaniesPage}" />
+                                        <Button Style="{StaticResource SmallButton}" Content="Remove" HorizontalAlignment="Left"
+                                                Command="{Binding DataContext.RemoveBrandLogoCommand, ElementName=CompaniesPage}"
+                                                Visibility="{Binding HasBrandLogo, Converter={StaticResource BoolToVisibility}}" />
+                                    </StackPanel>
+                                </DockPanel>
+
+                                <TextBlock Text="Bank details" Style="{StaticResource FormLabel}" Margin="0,8,0,3" FontWeight="SemiBold" />
+                                <TextBlock Text="Account name" Style="{StaticResource FormLabel}" />
+                                <TextBox Style="{StaticResource FormBox}" Text="{Binding BankAccountName, UpdateSourceTrigger=PropertyChanged}" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="Account number" Style="{StaticResource FormLabel}" />
+                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding BankAccountNumber, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBlock Text="IFSC" Style="{StaticResource FormLabel}" />
+                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding BankIfsc, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Bank" Style="{StaticResource FormLabel}" />
+                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding BankName, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBlock Text="Branch" Style="{StaticResource FormLabel}" />
+                                        <TextBox Style="{StaticResource FormBox}" Text="{Binding BankBranch, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <TextBlock Text="Last page picture (optional, e.g. care instructions)" Style="{StaticResource FormLabel}" Margin="0,8,0,3" />
+                                <DockPanel>
+                                    <Border DockPanel.Dock="Left" Width="80" Height="106" BorderBrush="#C9CED6" BorderThickness="1" Margin="0,0,10,0">
+                                        <Image Source="{Binding ExtraPage}" Stretch="Uniform" Margin="3" />
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <Button Style="{StaticResource SmallButton}" Content="Choose picture…" HorizontalAlignment="Left" Margin="0,0,0,4"
+                                                Command="{Binding DataContext.ChooseExtraPageCommand, ElementName=CompaniesPage}" />
+                                        <Button Style="{StaticResource SmallButton}" Content="Remove" HorizontalAlignment="Left"
+                                                Command="{Binding DataContext.RemoveExtraPageCommand, ElementName=CompaniesPage}"
+                                                Visibility="{Binding HasExtraPage, Converter={StaticResource BoolToVisibility}}" />
+                                    </StackPanel>
+                                </DockPanel>
+
                                 <TextBlock Text="NOTES (ONLY YOU SEE THESE)" Style="{StaticResource SectionTitle}" Margin="0,18,0,6" />
                                 <TextBox Style="{StaticResource FormBox}" Height="60" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top"
                                          Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}" />

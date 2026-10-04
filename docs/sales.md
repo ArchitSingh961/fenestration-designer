@@ -46,11 +46,18 @@ On an open, saved quote (header of its pages):
   customer);
 - optionally a last page with one picture (e.g. care instructions).
 
-**Sales › Quotation setup** holds what it prints: company name (only without a MARK account — otherwise the account's
-name and logo are used), partner line, address, contact, e-mail, website, GSTIN; the brand's name and logo; the covering
-letter (one paragraph per line); terms (one per line); bank details; the acceptance sentence; notes under the total;
-square feet or square metres; the money label; the last page's picture. **Use MARK's texts** restores the standard
-letter, terms and acceptance.
+**What it prints comes from two places:**
+
+- **The admin (MARK Owner)**, in each company's account under *Quotation details*: the line above the company name
+  (e.g. "Authorised partner"), address, contact, e-mail, website, GSTIN; the brand's name and logo; the bank details;
+  and an optional last page with one picture. Only the admin can set them. They reach MARK at its next check-in (their
+  fingerprint is in the signed licence, like the catalogue's) and are shown read-only in Quotation setup, marked
+  "Set by your MARK supplier". The company name and logo are the account's, as before.
+- **The company (Sales › Quotation setup)**: the covering letter (one paragraph per line), terms (one per line), the
+  acceptance sentence, notes under the total, square feet or square metres, and the money label. **Use MARK's texts**
+  restores the standard letter, terms and acceptance.
+
+Without a MARK account (no sign-in) the company fills in everything itself.
 
 ## Sales charts
 

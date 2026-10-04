@@ -61,6 +61,45 @@ public sealed class SettingsRepository
     }
 
     private const string QuotationKey = "quotation.settings";
+    private const string ProfileKey = "company.profile";
+    private const string ProfileHashKey = "company.profile.hash";
+
+    /// <summary>The quotation profile the MARK supplier set for the company (JSON), or null.</summary>
+    public string? LoadCompanyProfileJson() => LoadText(ProfileKey);
+
+    /// <summary>The fingerprint of the profile last downloaded, or null.</summary>
+    public string? LoadProfileHash() => LoadText(ProfileHashKey);
+
+    /// <summary>Keeps the downloaded profile with its fingerprint (null: none set).</summary>
+    public void SaveCompanyProfile(string? json, string? hash)
+    {
+        SaveText(ProfileKey, json);
+        SaveText(ProfileHashKey, hash);
+    }
+
+    private string? LoadText(string key)
+        => _database.Guard("read the settings", () =>
+        {
+            using var connection = _database.Connect();
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT value_json FROM app_settings WHERE key = $key";
+            command.Parameters.AddWithValue("$key", key);
+            return command.ExecuteScalar() is string json ? System.Text.Json.JsonSerializer.Deserialize<string?>(json) : null;
+        });
+
+    private void SaveText(string key, string? value)
+        => _database.Guard("save the settings", () =>
+        {
+            using var connection = _database.Connect();
+            using var command = connection.CreateCommand();
+            command.CommandText = """
+                INSERT INTO app_settings (key, value_json) VALUES ($key, $value)
+                ON CONFLICT (key) DO UPDATE SET value_json = excluded.value_json
+                """;
+            command.Parameters.AddWithValue("$key", key);
+            command.Parameters.AddWithValue("$value", System.Text.Json.JsonSerializer.Serialize(value));
+            command.ExecuteNonQuery();
+        });
 
     /// <summary>What the company prints on its quotations (the defaults until it is set up).</summary>
     public Mark.Core.Quotes.QuotationSettings LoadQuotationSettings()

@@ -130,6 +130,9 @@ internal sealed class DirectApi : ILicenceApi
     public Task<CatalogueResponse> CatalogueAsync(CatalogueRequest request, CancellationToken cancel = default)
         => Call(() => _service.ClientCatalogue(request));
 
+    public Task<ProfileResponse> ProfileAsync(CatalogueRequest request, CancellationToken cancel = default)
+        => Call(() => _service.ClientProfile(request));
+
     public Task<StaffList> StaffAsync(StaffRequest request, CancellationToken cancel = default) => Call(() => _service.ClientStaff(request));
 
     public Task<StaffList> SaveStaffAsync(SaveStaffRequest request, CancellationToken cancel = default)

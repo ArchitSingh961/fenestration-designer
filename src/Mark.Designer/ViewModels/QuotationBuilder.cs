@@ -36,6 +36,15 @@ public static class QuotationBuilder
     private const double SquareFeetPerSquareMetre = 10.763910416709722;
     private static readonly CultureInfo Indian = CultureInfo.GetCultureInfo("en-IN");
 
+    /// <summary>The setup with the details, brand, bank and last page the MARK supplier set for the company.</summary>
+    public static QuotationSettings WithProfile(QuotationSettings s, Mark.Licensing.Api.QuotationProfile p) => s with
+    {
+        PartnerLabel = p.PartnerLabel, Address = p.Address, Phone = p.Phone, Email = p.Email, Website = p.Website, Gstin = p.Gstin,
+        BrandName = p.BrandName, BrandLogoBase64 = p.BrandLogoBase64, BankAccountName = p.BankAccountName,
+        BankAccountNumber = p.BankAccountNumber, BankName = p.BankName, BankIfsc = p.BankIfsc, BankBranch = p.BankBranch,
+        ExtraPageBase64 = p.ExtraPageBase64
+    };
+
     public static QuotationDocument Build(QuotationInputs i)
     {
         ArgumentNullException.ThrowIfNull(i);

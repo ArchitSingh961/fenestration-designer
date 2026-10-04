@@ -77,6 +77,10 @@ public sealed class CompaniesViewModel : OwnerPage
         RemoveStaffCommand = new RelayCommand(async p => await RemoveStaffAsync(p as OwnerStaffRow));
         ChooseLogoCommand = new RelayCommand(ChooseLogo, () => Editor is not null);
         RemoveLogoCommand = new RelayCommand(() => Editor!.LogoBase64 = null, () => Editor?.HasLogo ?? false);
+        ChooseBrandLogoCommand = new RelayCommand(() => ChooseImage(extraPage: false), () => Editor is not null);
+        RemoveBrandLogoCommand = new RelayCommand(() => { if (Editor is not null) Editor.BrandLogoBase64 = null; });
+        ChooseExtraPageCommand = new RelayCommand(() => ChooseImage(extraPage: true), () => Editor is not null);
+        RemoveExtraPageCommand = new RelayCommand(() => { if (Editor is not null) Editor.ExtraPageBase64 = null; });
     }
 
     public ObservableCollection<CompanyRow> Companies { get; } = new();
@@ -90,6 +94,10 @@ public sealed class CompaniesViewModel : OwnerPage
     public ICommand FreeComputerCommand { get; }
     public ICommand RemoveStaffCommand { get; }
     public ICommand ChooseLogoCommand { get; }
+    public ICommand ChooseBrandLogoCommand { get; }
+    public ICommand RemoveBrandLogoCommand { get; }
+    public ICommand ChooseExtraPageCommand { get; }
+    public ICommand RemoveExtraPageCommand { get; }
     public ICommand RemoveLogoCommand { get; }
 
     /// <summary>"12 companies · 9 active · 1 suspended · 2 expired".</summary>
@@ -280,6 +288,12 @@ public sealed class CompaniesViewModel : OwnerPage
             Editor = new CompanyEditorViewModel(updated!, _packages(), _types(), catalogue: _catalogue());
             Show(message);
         }
+    }
+
+    private void ChooseImage(bool extraPage)
+    {
+        if (Editor is null || Dialogs.ChooseImageFile() is not { } path) return;
+        Show(Editor.LoadImage(path, extraPage), true);
     }
 
     private void ChooseLogo()

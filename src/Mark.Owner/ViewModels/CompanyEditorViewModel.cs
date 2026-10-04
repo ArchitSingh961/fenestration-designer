@@ -263,6 +263,84 @@ public sealed class CompanyEditorViewModel : ViewModelBase
 
     public bool HasLogo => Logo is not null;
 
+    // ── Quotation details (printed on the company's quotations; only the admin sets them) ──
+
+    private string _partnerLabel = "", _address = "", _phone = "", _email = "", _website = "", _gstin = "", _brandName = "",
+        _bankAccountName = "", _bankAccountNumber = "", _bankName = "", _bankIfsc = "", _bankBranch = "";
+    public string PartnerLabel { get => _partnerLabel; set => SetProperty(ref _partnerLabel, value); }
+    public string Address { get => _address; set => SetProperty(ref _address, value); }
+    public string Phone { get => _phone; set => SetProperty(ref _phone, value); }
+    public string Email { get => _email; set => SetProperty(ref _email, value); }
+    public string Website { get => _website; set => SetProperty(ref _website, value); }
+    public string Gstin { get => _gstin; set => SetProperty(ref _gstin, value); }
+    public string BrandName { get => _brandName; set => SetProperty(ref _brandName, value); }
+    public string BankAccountName { get => _bankAccountName; set => SetProperty(ref _bankAccountName, value); }
+    public string BankAccountNumber { get => _bankAccountNumber; set => SetProperty(ref _bankAccountNumber, value); }
+    public string BankName { get => _bankName; set => SetProperty(ref _bankName, value); }
+    public string BankIfsc { get => _bankIfsc; set => SetProperty(ref _bankIfsc, value); }
+    public string BankBranch { get => _bankBranch; set => SetProperty(ref _bankBranch, value); }
+
+    private string? _brandLogo;
+    public string? BrandLogoBase64
+    {
+        get => _brandLogo;
+        set
+        {
+            if (!SetProperty(ref _brandLogo, value)) return;
+            OnPropertyChanged(nameof(BrandLogo));
+            OnPropertyChanged(nameof(HasBrandLogo));
+        }
+    }
+
+    public ImageSource? BrandLogo => DecodeImage(_brandLogo);
+    public bool HasBrandLogo => _brandLogo is not null;
+
+    private string? _extraPage;
+    /// <summary>An optional last page with one picture, base64.</summary>
+    public string? ExtraPageBase64
+    {
+        get => _extraPage;
+        set
+        {
+            if (!SetProperty(ref _extraPage, value)) return;
+            OnPropertyChanged(nameof(ExtraPage));
+            OnPropertyChanged(nameof(HasExtraPage));
+        }
+    }
+
+    public ImageSource? ExtraPage => DecodeImage(_extraPage);
+    public bool HasExtraPage => _extraPage is not null;
+
+    /// <summary>The quotation details as the server stores them.</summary>
+    public QuotationProfile ToProfile() => new()
+    {
+        PartnerLabel = PartnerLabel.Trim(), Address = Address.Trim(), Phone = Phone.Trim(), Email = Email.Trim(), Website = Website.Trim(),
+        Gstin = Gstin.Trim().ToUpperInvariant(), BrandName = BrandName.Trim(), BrandLogoBase64 = BrandLogoBase64,
+        BankAccountName = BankAccountName.Trim(), BankAccountNumber = BankAccountNumber.Trim(), BankName = BankName.Trim(),
+        BankIfsc = BankIfsc.Trim().ToUpperInvariant(), BankBranch = BankBranch.Trim(), ExtraPageBase64 = ExtraPageBase64
+    };
+
+    /// <summary>Reads a picture for the brand logo (at most 300 KB) or the last page (at most 1.5 MB); returns an error or null.</summary>
+    public string? LoadImage(string path, bool extraPage)
+    {
+        int max = extraPage ? 1536 * 1024 : 300 * 1024;
+        try
+        {
+            var bytes = File.ReadAllBytes(path);
+            if (bytes.Length > max)
+                return $"The picture is too large ({bytes.Length / 1024} KB). Use one of at most {max / 1024} KB.";
+            string base64 = Convert.ToBase64String(bytes);
+            if (DecodeImage(base64) is null) return "The file is not a picture MARK can show. Use a PNG or JPEG file.";
+            if (extraPage) ExtraPageBase64 = base64;
+            else BrandLogoBase64 = base64;
+            return null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return $"The picture could not be read: {ex.Message}";
+        }
+    }
+
     private CompanyTypeInfo? _companyType;
     /// <summary>The kind of company. Choosing one for a new account fills in its products, package and validity.</summary>
     public CompanyTypeInfo? CompanyType
@@ -366,6 +444,13 @@ public sealed class CompanyEditorViewModel : ViewModelBase
     {
         _name = c.Name;
         LogoBase64 = c.LogoBase64;
+        if (c.Profile is { } p)
+        {
+            _partnerLabel = p.PartnerLabel; _address = p.Address; _phone = p.Phone; _email = p.Email; _website = p.Website; _gstin = p.Gstin;
+            _brandName = p.BrandName; _brandLogo = p.BrandLogoBase64; _bankAccountName = p.BankAccountName;
+            _bankAccountNumber = p.BankAccountNumber; _bankName = p.BankName; _bankIfsc = p.BankIfsc; _bankBranch = p.BankBranch;
+            _extraPage = p.ExtraPageBase64;
+        }
         _companyType = CompanyTypes.FirstOrDefault(t => t.Id == c.CompanyTypeId);
         _notes = c.Notes ?? "";
         _ownerName = c.OwnerName;
@@ -449,7 +534,8 @@ public sealed class CompanyEditorViewModel : ViewModelBase
             _features.Where(f => f.IsRemoved && f.CanChange).Select(f => f.Feature.Id).ToList(),
             string.IsNullOrWhiteSpace(Notes) ? null : Notes.Trim(),
             CatalogueChoice?.ToCatalogue() ?? Existing?.Catalogue,
-            int.Parse(MaxUsersText));
+            int.Parse(MaxUsersText),
+            ToProfile());
     }
 
     /// <summary>Reads an image file for the logo; returns an error message, or null.</summary>

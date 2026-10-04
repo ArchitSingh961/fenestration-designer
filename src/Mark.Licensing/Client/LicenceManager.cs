@@ -233,6 +233,35 @@ public sealed class LicenceManager
         }
     }
 
+    /// <summary>The fingerprint of the company's quotation profile in the current licence, or null (none set).</summary>
+    public string? ProfileHash => _licence?.ProfileHash;
+
+    /// <summary>
+    /// Downloads the company's quotation profile (details, brand, bank, last page, set by the admin) and checks it against
+    /// the hash in the signed licence. Returns the JSON, or null with <paramref name="error"/>.
+    /// </summary>
+    public async Task<(string? Json, string? Error)> DownloadProfileAsync(CancellationToken cancel = default)
+    {
+        if (_state.DeviceToken is null || _licence?.ProfileHash is not { } expected)
+            return (null, "There are no quotation details for this account.");
+        try
+        {
+            var response = await _apiFor(_state.ServerUrl).ProfileAsync(new CatalogueRequest(_state.DeviceToken, MachineId), cancel);
+            if (Mark.Licensing.CatalogueHash.Of(response.ProfileJson) != expected)
+                return (null, "The quotation details from the licence server do not match your licence. Choose Check now and try again.");
+            return (response.ProfileJson, null);
+        }
+        catch (LicenceServerException ex) when (ex.Code == ErrorCodes.SignedOut)
+        {
+            SignedOutByServer(ex.Message);
+            return (null, ex.Message);
+        }
+        catch (LicenceServerException ex)
+        {
+            return (null, ex.Message);
+        }
+    }
+
     // ── Staff logins (the account owner only) ──────────────────────
 
     /// <summary>True when the account owner is signed in: only they can add, change or remove staff logins.</summary>

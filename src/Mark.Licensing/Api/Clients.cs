@@ -13,6 +13,9 @@ public interface ILicenceApi
 
     Task<CatalogueResponse> CatalogueAsync(CatalogueRequest request, CancellationToken cancel = default);
 
+    /// <summary>The company's quotation profile (JSON of <see cref="QuotationProfile"/>).</summary>
+    Task<ProfileResponse> ProfileAsync(CatalogueRequest request, CancellationToken cancel = default);
+
     Task<StaffList> StaffAsync(StaffRequest request, CancellationToken cancel = default);
 
     Task<StaffList> SaveStaffAsync(SaveStaffRequest request, CancellationToken cancel = default);
@@ -44,6 +47,9 @@ public sealed class LicenceApiClient : ILicenceApi, IDisposable
 
     public Task<CatalogueResponse> CatalogueAsync(CatalogueRequest request, CancellationToken cancel = default)
         => _api.SendAsync<CatalogueResponse>(HttpMethod.Post, "api/client/catalogue", request, cancel);
+
+    public Task<ProfileResponse> ProfileAsync(CatalogueRequest request, CancellationToken cancel = default)
+        => _api.SendAsync<ProfileResponse>(HttpMethod.Post, "api/client/profile", request, cancel);
 
     public Task<StaffList> StaffAsync(StaffRequest request, CancellationToken cancel = default)
         => _api.SendAsync<StaffList>(HttpMethod.Post, "api/client/staff", request, cancel);

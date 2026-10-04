@@ -81,6 +81,12 @@ public sealed record Licence
     /// it none and the company keeps its own library. MARK downloads the catalogue when this changes and checks it.
     /// </summary>
     public string? CatalogueHash { get; init; }
+
+    /// <summary>
+    /// SHA-256 (hex) of the company's quotation profile (details, brand, bank, last page) that the admin set, or null when
+    /// none is set. MARK downloads it when this changes.
+    /// </summary>
+    public string? ProfileHash { get; init; }
 }
 
 /// <summary>Who signed in: the account owner or a staff login.</summary>

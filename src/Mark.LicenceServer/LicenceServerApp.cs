@@ -118,6 +118,7 @@ public static class LicenceServerApp
         app.MapPost("/api/client/check-in", (CheckInRequest r) => service.CheckIn(r));
         app.MapPost("/api/client/redeem-key", (RedeemKeyRequest r) => service.RedeemKey(r));
         app.MapPost("/api/client/catalogue", (CatalogueRequest r) => service.ClientCatalogue(r));
+        app.MapPost("/api/client/profile", (CatalogueRequest r) => service.ClientProfile(r));
         app.MapPost("/api/client/staff", (StaffRequest r) => service.ClientStaff(r));
         app.MapPost("/api/client/staff/save", (SaveStaffRequest r) => service.ClientSaveStaff(r));
         app.MapPost("/api/client/staff/delete", (DeleteStaffRequest r) => service.ClientDeleteStaff(r));

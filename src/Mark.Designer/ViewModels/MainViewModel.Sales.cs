@@ -7,6 +7,7 @@ using Mark.Core.Models;
 using Mark.Core.Quotes;
 using Mark.Data;
 using Mark.Licensing;
+using Mark.Licensing.Api;
 using Mark.Reports;
 
 namespace Mark.Designer.ViewModels;
@@ -42,11 +43,30 @@ public partial class MainViewModel
         {
             Blocked = () => Access.ReadOnlyMessage
         };
-        QuotationSetup = new QuotationSetupViewModel(() => Store?.Settings, () => Dialogs);
+        QuotationSetup = new QuotationSetupViewModel(() => Store?.Settings, () => Dialogs, CompanyProfile);
         SalesCharts = new SalesChartsViewModel(() => Store?.Projects, () => Store?.Enquiries);
         ExportQuotationCommand = new RelayCommand(() => Report(ExportQuotation()));
         ConvertToOrderCommand = new RelayCommand(() => Report(ConvertToOrder()), () => HasStore && Project.Quote.OrderNumber.Length == 0);
         NewRevisionCommand = new RelayCommand(() => Report(NewRevision()), () => HasStore);
+    }
+
+    /// <summary>
+    /// With a MARK account: the quotation details the MARK supplier set (empty when none yet); without an account: null,
+    /// and the company fills them in itself.
+    /// </summary>
+    public QuotationProfile? CompanyProfile()
+    {
+        if (!Access.IsLicensed) return null;
+        try
+        {
+            return Store?.Settings.LoadCompanyProfileJson() is { Length: > 0 } json
+                ? System.Text.Json.JsonSerializer.Deserialize<QuotationProfile>(json, LicenceJson.Options) ?? QuotationProfile.Empty
+                : QuotationProfile.Empty;
+        }
+        catch (Exception ex) when (ex is DataStoreException or System.Text.Json.JsonException)
+        {
+            return QuotationProfile.Empty;
+        }
     }
 
     /// <summary>"Order OR-00003 · 4 Oct 2026", or "" before the quote became an order.</summary>
@@ -129,6 +149,7 @@ public partial class MainViewModel
         {
             settings = new QuotationSettings();
         }
+        if (CompanyProfile() is { } profile) settings = QuotationBuilder.WithProfile(settings, profile);
         string company = Access.IsLicensed && Access.CompanyName.Length > 0 ? Access.CompanyName
             : settings.CompanyName.Length > 0 ? settings.CompanyName : "Your company";
         byte[]? logo = null;

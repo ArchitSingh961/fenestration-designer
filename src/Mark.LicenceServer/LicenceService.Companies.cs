@@ -75,7 +75,8 @@ public sealed partial class LicenceService
 
         return new CompanyDetail(c.Id, c.Name, c.Logo, c.TypeId, ownerName, ownerUserId, c.Products, c.PackageId, c.ValidUntilUtc,
             c.MaxComputers, c.AddOns, c.RemovedFeatures, c.Suspended, c.Notes, c.CreatedUtc, computers, c.Catalogue, c.MaxUsers,
-            StaffOf(connection, c.Id, transaction), OwnItemsOf(connection, c.Id, transaction).SummaryText);
+            StaffOf(connection, c.Id, transaction), OwnItemsOf(connection, c.Id, transaction).SummaryText,
+            ProfileOf(connection, c.Id, transaction));
     }
 
     /// <summary>A new company account with its owner login (User ID and password set by the admin).</summary>
@@ -98,6 +99,7 @@ public sealed partial class LicenceService
             ("$id", Guid.NewGuid().ToString()), ("$company", company.Id.ToString()), ("$user", userId),
             ("$name", OwnerName(edit, company.Name)), ("$role", OwnerRole), ("$hash", PasswordHasher.Hash(edit.OwnerPassword!)),
             ("$now", Time(Now)));
+        if (edit.Profile is { } profile) SaveProfile(connection, company.Id, profile, transaction);
         var detail = Detail(connection, company, transaction);
         transaction.Commit();
         return detail;
@@ -129,6 +131,7 @@ public sealed partial class LicenceService
                 UPDATE users SET password_hash = $hash, failed_attempts = 0, locked_until_utc = NULL
                 WHERE company_id = $company AND role = '{OwnerRole}'
                 """, transaction, ("$hash", PasswordHasher.Hash(edit.OwnerPassword)), ("$company", id.ToString()));
+        if (edit.Profile is { } profile) SaveProfile(connection, id, profile, transaction);
         var detail = Detail(connection, company, transaction);
         transaction.Commit();
         return detail;
@@ -167,6 +170,62 @@ public sealed partial class LicenceService
             ("$revoked", KeyState.Revoked.ToString()), ("$unused", KeyState.Unused.ToString()), ("$id", id.ToString()));
         Execute(connection, "DELETE FROM companies WHERE id = $id", transaction, ("$id", id.ToString()));
         transaction.Commit();
+    }
+
+    // ── Quotation profile ───────────────────────────────────────────
+
+    /// <summary>The last page's picture may be larger than a logo.</summary>
+    public const int MaxExtraPageBytes = 1536 * 1024;
+
+    private static QuotationProfile ProfileOf(SqliteConnection connection, Guid companyId, SqliteTransaction? transaction)
+        => ProfileJsonOf(connection, companyId, transaction) is { } json
+            ? System.Text.Json.JsonSerializer.Deserialize<QuotationProfile>(json, LicenceJson.Options) ?? QuotationProfile.Empty
+            : QuotationProfile.Empty;
+
+    /// <summary>The stored profile JSON (what MARK downloads and its hash covers), or null when none is set.</summary>
+    private static string? ProfileJsonOf(SqliteConnection connection, Guid companyId, SqliteTransaction? transaction)
+        => Scalar<string?>(connection, "SELECT profile_json FROM company_profiles WHERE company_id = $id", transaction,
+            ("$id", companyId.ToString()));
+
+    /// <summary>Checks and stores (or, when empty, removes) a company's quotation profile.</summary>
+    private void SaveProfile(SqliteConnection connection, Guid companyId, QuotationProfile profile, SqliteTransaction transaction)
+    {
+        static string Text(string? value, string what, int max = 300)
+        {
+            string text = (value ?? "").Trim();
+            if (text.Length > max) throw ApiException.Invalid($"The {what} can have at most {max} characters.");
+            return text;
+        }
+        var clean = new QuotationProfile
+        {
+            PartnerLabel = Text(profile.PartnerLabel, "partner line", 80), Address = Text(profile.Address, "address", 400),
+            Phone = Text(profile.Phone, "contact number", 80), Email = Text(profile.Email, "e-mail", 120),
+            Website = Text(profile.Website, "website", 120), Gstin = Text(profile.Gstin, "GSTIN", 20).ToUpperInvariant(),
+            BrandName = Text(profile.BrandName, "brand name", 80), BrandLogoBase64 = CheckImage(profile.BrandLogoBase64, "brand logo", MaxLogoBytes),
+            BankAccountName = Text(profile.BankAccountName, "account name", 120), BankAccountNumber = Text(profile.BankAccountNumber, "account number", 40),
+            BankName = Text(profile.BankName, "bank name", 120), BankIfsc = Text(profile.BankIfsc, "IFSC", 20).ToUpperInvariant(),
+            BankBranch = Text(profile.BankBranch, "branch", 120),
+            ExtraPageBase64 = CheckImage(profile.ExtraPageBase64, "last page picture", MaxExtraPageBytes)
+        };
+        if (clean.IsEmpty)
+        {
+            Execute(connection, "DELETE FROM company_profiles WHERE company_id = $id", transaction, ("$id", companyId.ToString()));
+            return;
+        }
+        Execute(connection, """
+            INSERT INTO company_profiles (company_id, profile_json, updated_utc) VALUES ($id, $json, $now)
+            ON CONFLICT (company_id) DO UPDATE SET profile_json = excluded.profile_json, updated_utc = excluded.updated_utc
+            """, transaction, ("$id", companyId.ToString()), ("$json", ToJson(clean)), ("$now", Time(Now)));
+    }
+
+    /// <summary>The company's quotation profile for a signed-in computer.</summary>
+    public ProfileResponse ClientProfile(CatalogueRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        using var connection = Connect();
+        var computer = Computer(connection, request.DeviceToken, request.MachineId);
+        return new ProfileResponse(ProfileJsonOf(connection, computer.CompanyId, null)
+                                   ?? throw ApiException.NotFound("Quotation details for your account"));
     }
 
     private static string OwnerName(CompanyEdit edit, string companyName)

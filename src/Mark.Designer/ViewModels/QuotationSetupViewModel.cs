@@ -17,12 +17,17 @@ public sealed class QuotationSetupViewModel : ViewModelBase
     private const int MaxImageBytes = 2 * 1024 * 1024;
     private readonly Func<SettingsRepository?> _settings;
     private readonly Func<IDialogService?> _dialogs;
+    private readonly Func<Mark.Licensing.Api.QuotationProfile?> _profile;
     private QuotationSettings _loaded = new();
 
-    public QuotationSetupViewModel(Func<SettingsRepository?> settings, Func<IDialogService?> dialogs)
+    /// <param name="profile">With a MARK account: the details, brand, bank and last page the MARK supplier set (shown
+    /// read-only); null: no account, the company fills them in itself.</param>
+    public QuotationSetupViewModel(Func<SettingsRepository?> settings, Func<IDialogService?> dialogs,
+        Func<Mark.Licensing.Api.QuotationProfile?>? profile = null)
     {
         _settings = settings;
         _dialogs = dialogs;
+        _profile = profile ?? (() => null);
         SaveCommand = new RelayCommand(Save);
         RevertCommand = new RelayCommand(Load);
         ChooseBrandLogoCommand = new RelayCommand(() => BrandLogo = ChooseImage("Brand logo") ?? BrandLogo);
@@ -130,6 +135,19 @@ public sealed class QuotationSetupViewModel : ViewModelBase
     private bool _messageIsError;
     public bool MessageIsError { get => _messageIsError; private set => SetProperty(ref _messageIsError, value); }
 
+    private bool _isManaged;
+    /// <summary>Details, brand, bank details and last page come from the MARK supplier and cannot be changed here.</summary>
+    public bool IsManaged
+    {
+        get => _isManaged;
+        private set
+        {
+            if (SetProperty(ref _isManaged, value)) OnPropertyChanged(nameof(CanEditDetails));
+        }
+    }
+
+    public bool CanEditDetails => !_isManaged;
+
     /// <summary>Reads the saved setup into the form.</summary>
     public void Load()
     {
@@ -148,10 +166,25 @@ public sealed class QuotationSetupViewModel : ViewModelBase
         BankAccountName = s.BankAccountName; BankAccountNumber = s.BankAccountNumber; BankName = s.BankName; BankIfsc = s.BankIfsc;
         BankBranch = s.BankBranch; Acceptance = s.Acceptance; Notes = s.Notes; AreaUnit = s.AreaUnit; CurrencyLabel = s.CurrencyLabel;
         ExtraPage = s.ExtraPageBase64;
+
+        var managed = _profile();
+        IsManaged = managed is not null;
+        if (managed is { } p)
+        {
+            PartnerLabel = p.PartnerLabel; Address = p.Address; Phone = p.Phone; Email = p.Email; Website = p.Website; Gstin = p.Gstin;
+            BrandName = p.BrandName; BrandLogo = p.BrandLogoBase64; BankAccountName = p.BankAccountName; BankAccountNumber = p.BankAccountNumber;
+            BankName = p.BankName; BankIfsc = p.BankIfsc; BankBranch = p.BankBranch; ExtraPage = p.ExtraPageBase64;
+        }
     }
 
-    /// <summary>The setup as entered.</summary>
-    public QuotationSettings ToSettings() => new()
+    /// <summary>The setup as entered (with an account, the supplier's details stay as they were saved locally).</summary>
+    public QuotationSettings ToSettings() => IsManaged
+        ? _loaded with
+        {
+            CompanyName = CompanyName.Trim(), Letter = Letter.Trim(), Terms = Terms.Trim(), Acceptance = Acceptance.Trim(), Notes = Notes.Trim(),
+            AreaUnit = AreaUnit, CurrencyLabel = string.IsNullOrWhiteSpace(CurrencyLabel) ? "Rs." : CurrencyLabel.Trim()
+        }
+        : new()
     {
         CompanyName = CompanyName.Trim(), PartnerLabel = PartnerLabel.Trim(), Address = Address.Trim(), Phone = Phone.Trim(),
         Email = Email.Trim(), Website = Website.Trim(), Gstin = Gstin.Trim().ToUpperInvariant(), BrandName = BrandName.Trim(),

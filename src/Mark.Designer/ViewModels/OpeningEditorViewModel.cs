@@ -31,12 +31,18 @@ public sealed class OpeningEditorViewModel : ViewModelBase
         _loading = true;
         var types = panels.Select(p => p.Opening).Distinct().ToList();
         SelectedOption = types.Count == 1 ? AllOptions.First(o => o.Type == types[0]) : null;
+        MixedText = types.Count > 1 ? "Mixed: " + string.Join(", ", types.Select(t => t.DisplayName())) : "";
         var meshes = panels.Select(p => p.HasMesh).Distinct().ToList();
         HasMesh = meshes.Count == 1 ? meshes[0] : null;
         _loading = false;
     }
 
     public string Label { get; }
+
+    /// <summary>"Mixed: Sliding left, Sliding right" while the openings differ and none is chosen; "" otherwise.</summary>
+    public string MixedText { get; private set; } = "";
+
+    public bool IsMixed => MixedText.Length > 0 && _selectedOption is null;
 
     public IReadOnlyList<OpeningOption> Options => AllOptions;
 
@@ -47,7 +53,9 @@ public sealed class OpeningEditorViewModel : ViewModelBase
         set
         {
             var previous = _selectedOption;
-            if (!SetProperty(ref _selectedOption, value) || _loading || value is null) return;
+            if (!SetProperty(ref _selectedOption, value)) return;
+            OnPropertyChanged(nameof(IsMixed));
+            if (_loading || value is null) return;
             ErrorMessage = _apply(value.Type, null);
             if (ErrorMessage is not null)
             {

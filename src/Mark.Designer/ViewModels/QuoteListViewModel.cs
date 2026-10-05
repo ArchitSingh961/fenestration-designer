@@ -10,6 +10,8 @@ namespace Mark.Designer.ViewModels;
 public sealed record QuoteRow(Guid Id, string Number, string Name, string Client, QuoteStatus Status, int Designs,
     int Quantity, string Area, string Value, string Modified, bool IsOpen, string ModifiedBy = "", string CreatedBy = "", string Order = "")
 {
+    public override string ToString() => $"{Number} {Name}, {Status}";
+
     /// <summary>"Created by Ravi · last saved by Amit" for the tooltip of the Saved by column.</summary>
     public string AuthorsText => CreatedBy.Length == 0 ? "" : $"Created by {CreatedBy} · last saved by {ModifiedBy}";
 }

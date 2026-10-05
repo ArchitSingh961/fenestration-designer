@@ -53,7 +53,10 @@ public interface ICatalogueEditorHost
 /// part at their next check-in. A new server can start from the sample catalogue or a library file.
 /// </summary>
 /// <summary>A company on the Catalogue page with its own items: "Sozluk" · "1 system · 2 profiles".</summary>
-public sealed record OwnItemsRow(Guid CompanyId, string Name, string Summary);
+public sealed record OwnItemsRow(Guid CompanyId, string Name, string Summary)
+{
+    public override string ToString() => Name;
+}
 
 public sealed class CatalogueViewModel : OwnerPage
 {

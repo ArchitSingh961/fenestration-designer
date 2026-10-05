@@ -9,7 +9,10 @@ using Mark.Data;
 namespace Mark.Designer.ViewModels;
 
 /// <summary>An offcut in stock: "60mm Frame · 1450 mm · from OR-00012 · 5 Oct 2026".</summary>
-public sealed record OffcutRow(long Id, string Profile, string LengthText, string Source, string Added);
+public sealed record OffcutRow(long Id, string Profile, string LengthText, string Source, string Added)
+{
+    public override string ToString() => $"{Profile} {LengthText}";
+}
 
 /// <summary>A profile's offcuts together: "60mm Frame · 4 offcuts · 5.2 m".</summary>
 public sealed record OffcutGroup(string Profile, string Summary, IReadOnlyList<OffcutRow> Offcuts);

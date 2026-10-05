@@ -10,6 +10,8 @@ namespace Mark.Designer.ViewModels;
 /// <summary>An enquiry in the list: "EN-00012 · Mr. Archit Singh · Jaipur · Site visit · Referral · Ravi · 1,20,000".</summary>
 public sealed record EnquiryRow(EnquirySummary Summary, DateTime Today)
 {
+    public override string ToString() => $"{Summary.Number} {Summary.ClientName}";
+
     public Guid Id => Summary.Id;
     public string Number => Summary.Number;
     public string Client => Summary.ClientName;

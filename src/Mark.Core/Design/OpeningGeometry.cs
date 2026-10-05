@@ -100,6 +100,43 @@ public static class OpeningGeometry
     private static bool Overlaps(double a1, double a2, double b1, double b2) => Math.Min(a2, b2) - Math.Max(a1, b1) > Tol;
 
     /// <summary>
+    /// True for a division that only separates sliding panels interlocking across it (a vertical one between panels
+    /// sliding left/right, a horizontal one between panels sliding up/down): the sashes run to its centreline and meet
+    /// there with their interlock, so it is not a member that is cut or priced.
+    /// </summary>
+    public static bool IsMeetingLine(Frame frame, Profile member)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ArgumentNullException.ThrowIfNull(member);
+        if (!Members.IsDivision(member)) return false;
+        bool vertical = Math.Abs(member.StartPoint.X - member.EndPoint.X) < Tol;
+        bool horizontal = Math.Abs(member.StartPoint.Y - member.EndPoint.Y) < Tol;
+        if (vertical == horizontal) return false;
+        double half = member.Thickness / 2;
+        double centre = vertical ? member.StartPoint.X : member.StartPoint.Y;
+        double from = vertical ? Math.Min(member.StartPoint.Y, member.EndPoint.Y) : Math.Min(member.StartPoint.X, member.EndPoint.X);
+        double to = vertical ? Math.Max(member.StartPoint.Y, member.EndPoint.Y) : Math.Max(member.StartPoint.X, member.EndPoint.X);
+        bool before = false, after = false;
+        foreach (var panel in frame.GlassPanels)
+        {
+            var b = panel.Boundary;
+            bool alongside = vertical ? Overlaps(b.Top, b.Bottom, from, to) : Overlaps(b.Left, b.Right, from, to);
+            if (!alongside) continue;
+            double near = vertical ? b.Right : b.Bottom, far = vertical ? b.Left : b.Top;
+            bool isBefore = Math.Abs(near - (centre - half)) <= Tol + 0.5;
+            bool isAfter = Math.Abs(far - (centre + half)) <= Tol + 0.5;
+            if (!isBefore && !isAfter) continue;
+            bool slidesAcross = vertical
+                ? panel.Opening is OpeningType.SlidingLeft or OpeningType.SlidingRight
+                : panel.Opening is OpeningType.SlidingUp or OpeningType.SlidingDown;
+            if (!slidesAcross) return false;                        // a fixed or hinged neighbour: a real mullion
+            before |= isBefore;
+            after |= isAfter;
+        }
+        return before && after;
+    }
+
+    /// <summary>
     /// A copy of <paramref name="frame"/> as seen from the other side of the wall: mirrored left-to-right about its
     /// own centre (it stays in place on the drawing), with hinge sides and sliding directions swapped. Ids are kept,
     /// so selection still highlights the same objects. Used for the Outside view; the model is never changed.

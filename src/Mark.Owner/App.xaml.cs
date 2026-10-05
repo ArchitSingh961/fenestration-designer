@@ -26,6 +26,8 @@ public partial class App : Application
     {
         base.OnStartup(e);
         DispatcherUnhandledException += OnUnhandledException;
+        int log = Array.IndexOf(e.Args, "--binding-log");
+        if (log >= 0 && log + 1 < e.Args.Length) BindingErrorLog.Start(e.Args[log + 1]);     // checks every page for binding errors
         ShowSignIn();
     }
 

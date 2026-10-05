@@ -103,6 +103,7 @@ public sealed class CalculationEngine : ICalculationEngine
 
             foreach (var profile in frame.Profiles)
             {
+                if (OpeningGeometry.IsMeetingLine(frame, profile)) continue;     // sliding sashes interlock there: nothing to cut
                 var line = CalculateProfile(frame, outer, profile, out var definition);
                 definitions[profile.Id] = definition;
                 _profiles.Add(line);

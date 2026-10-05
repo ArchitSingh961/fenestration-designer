@@ -16,21 +16,35 @@ public sealed record OrderRow(Guid Id, string OrderNumber, string Title, string 
     string PaidText, double PaidFraction, bool HasBalance)
 {
     public bool IsOpen => Stage != OrderStage.Closed;
+
+    public override string ToString() => $"{OrderNumber} {Title}, {StageText}";
 }
 
 /// <summary>A stage in the order's stage bar.</summary>
-public sealed record StageStep(OrderStage Stage, string Name, bool IsDone, bool IsCurrent, string DateText);
+public sealed record StageStep(OrderStage Stage, string Name, bool IsDone, bool IsCurrent, string DateText)
+{
+    public override string ToString() => DateText.Length > 0 ? $"{Name}, {DateText}" : Name;
+}
 
 /// <summary>A payment of the open order.</summary>
 public sealed record PaymentRow(Guid Id, string DateText, string KindText, string MethodText, string Reference, string Note, string AmountText,
-    string RecordedBy);
+    string RecordedBy)
+{
+    public override string ToString() => $"{DateText} {KindText} {AmountText}";
+}
 
 /// <summary>A delivery, installation or site visit (of the open order, or of every order on the Schedule tab).</summary>
 public sealed record VisitRow(Guid OrderId, Guid Id, string OrderNumber, string Title, DateTime Date, string DateText, string KindText,
-    string Time, string Team, string Note, bool Done, bool IsLate, string SiteAddress);
+    string Time, string Team, string Note, bool Done, bool IsLate, string SiteAddress)
+{
+    public override string ToString() => $"{DateText} {KindText} {OrderNumber}";
+}
 
 /// <summary>A dispatch note of the open order.</summary>
-public sealed record DispatchRow(Guid Id, string Number, string DateText, string Detail, int WindowCount);
+public sealed record DispatchRow(Guid Id, string Number, string DateText, string Detail, int WindowCount)
+{
+    public override string ToString() => $"{Number} {DateText}";
+}
 
 /// <summary>A design of the open order on the next dispatch note: how many there are, have gone, and go now.</summary>
 public sealed class DispatchLineRow : ViewModelBase
@@ -193,9 +207,11 @@ public sealed class OrdersViewModel : ViewModelBase
 
     public string StageText => _order is null ? "" : CustomerOrder.StageName(_order.Stage);
 
-    public string ValueText => _order?.Value is { } v ? Money(v) : "Not priced";
-    public string PaidText => _order is null ? "" : Money(_order.Paid);
-    public string BalanceText => _order?.Balance is { } b ? Money(b) : "—";
+    public string ValueText => _order?.Value is { } v ? WithCurrency(Money(v)) : "Not priced";
+    public string PaidText => _order is null ? "" : WithCurrency(Money(_order.Paid));
+    public string BalanceText => _order?.Balance is { } b ? WithCurrency(Money(b)) : "—";
+
+    private string WithCurrency(string amount) => _order?.Currency is { Length: > 0 } c ? $"{amount} {c}" : amount;
     public double PaidFraction => _order?.PaidFraction ?? 0;
     public string PaidPercentText => _order?.Value is > 0 ? $"{PaidFraction * 100:0} % received" : "";
 
@@ -336,6 +352,7 @@ public sealed class OrdersViewModel : ViewModelBase
     {
         if (_store() is not { } store) return;
         var keep = select ?? _selected?.Id;
+        Message = null;                                                   // a message of an earlier visit is not news
         try
         {
             var records = store.Orders.List().ToDictionary(o => o.ProjectId);
@@ -410,6 +427,7 @@ public sealed class OrdersViewModel : ViewModelBase
         {
         }
         if (order.Stage >= target) return false;
+        if (order.Stage < OrderStage.InProduction) order.SetStage(OrderStage.InProduction, DateTime.UtcNow, "");   // its day is shown too
         order.SetStage(target, DateTime.UtcNow, "");
         return true;
     }

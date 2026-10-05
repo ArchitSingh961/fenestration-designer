@@ -6,7 +6,10 @@ using Mark.Data;
 namespace Mark.Designer.ViewModels;
 
 /// <summary>A saved project as listed in the Open dialog.</summary>
-public sealed record ProjectRow(Guid Id, string Name, string Modified);
+public sealed record ProjectRow(Guid Id, string Name, string Modified)
+{
+    public override string ToString() => Name;
+}
 
 /// <summary>
 /// The Open dialog: lists the saved projects (from <see cref="IProjectRepository.List"/>, most recently modified first),

@@ -104,6 +104,8 @@ public sealed class AreaTab : ViewModelBase
 
     public string Title => Info.Title;
 
+    public override string ToString() => Title;
+
     public AccessState State { get; }
 
     public bool IsLocked => State == AccessState.Locked;
@@ -134,6 +136,8 @@ public sealed class AreaItem : ViewModelBase
     public string Name => Info.Name;
 
     public string Glyph => Info.Glyph;
+
+    public override string ToString() => Name;
 
     public ICommand ShowCommand { get; }
 

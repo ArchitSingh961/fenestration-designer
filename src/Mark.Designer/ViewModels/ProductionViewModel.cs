@@ -16,6 +16,8 @@ namespace Mark.Designer.ViewModels;
 public sealed record ProductionRow(Guid Id, string OrderNumber, string Title, string Detail, string StageText, double Fraction)
 {
     public string PercentText => $"{Fraction * 100:0} %";
+
+    public override string ToString() => $"{OrderNumber} {Title}, {StageText}";
 }
 
 /// <summary>A confirmed order that has no production order yet.</summary>
@@ -71,7 +73,10 @@ public sealed class StepCell : ViewModelBase
 }
 
 /// <summary>A design of the open production order with its progress per step.</summary>
-public sealed record WindowRow(Guid FrameId, string Reference, string Name, string SizeText, int Quantity, IReadOnlyList<StepCell> Steps);
+public sealed record WindowRow(Guid FrameId, string Reference, string Name, string SizeText, int Quantity, IReadOnlyList<StepCell> Steps)
+{
+    public override string ToString() => $"{Reference} {SizeText}";
+}
 
 /// <summary>
 /// Production › Production orders (Milestone 16): every production order with its stage and progress; a new one from a

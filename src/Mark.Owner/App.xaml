@@ -54,13 +54,6 @@
                 </Setter>
             </Style>
 
-            <Style x:Key="SectionTitle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="11" />
-                <Setter Property="FontWeight" Value="SemiBold" />
-                <Setter Property="Foreground" Value="{StaticResource HeaderTextBrush}" />
-                <Setter Property="Margin" Value="0,14,0,6" />
-            </Style>
-
             <Style x:Key="SmallButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
                 <Setter Property="Padding" Value="7,2" />
                 <Setter Property="FontSize" Value="11" />

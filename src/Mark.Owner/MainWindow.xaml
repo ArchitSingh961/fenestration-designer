@@ -38,7 +38,7 @@
                 <TextBlock Text="{Binding SummaryText}" FontWeight="SemiBold" Foreground="#1F2A37" Margin="0,0,0,6" TextWrapping="Wrap" />
                 <TextBlock Text="Systems (with their profiles, glass, hardware and bundles). Only systems of the company's licensed products are sent."
                            FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,0,0,4" />
-                <ItemsControl ItemsSource="{Binding Systems}">
+                <views:ItemsList ItemsSource="{Binding Systems}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <CheckBox IsChecked="{Binding IsChecked}" Margin="0,3">
@@ -50,12 +50,12 @@
                             </CheckBox>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                </views:ItemsList>
                 <StackPanel Margin="0,12,0,0" Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibility}}">
                     <TextBlock Text="Universal items" FontWeight="SemiBold" Foreground="#1F2A37" />
                     <TextBlock Text="Single items of the universal catalogue, by series. Items that come with a ticked system are ticked already; tick a group to give all of it."
                                FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,0,0,4" />
-                    <ItemsControl ItemsSource="{Binding ItemGroups}">
+                    <views:ItemsList ItemsSource="{Binding ItemGroups}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Border BorderBrush="#E3E6EA" BorderThickness="0,0,0,1" Padding="0,3">
@@ -70,7 +70,7 @@
                                                            VerticalAlignment="Center" />
                                             </StackPanel>
                                         </Expander.Header>
-                                        <ItemsControl ItemsSource="{Binding Rows}" Margin="24,2,0,4">
+                                        <views:ItemsList ItemsSource="{Binding Rows}" Margin="24,2,0,4">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
                                                     <DockPanel Margin="0,1">
@@ -84,12 +84,12 @@
                                                     </DockPanel>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
+                                        </views:ItemsList>
                                     </Expander>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    </views:ItemsList>
                 </StackPanel>
             </StackPanel>
         </DataTemplate>
@@ -98,7 +98,7 @@
         <DataTemplate x:Key="FeatureChoiceGroupTemplate">
             <StackPanel Margin="0,0,18,10">
                 <TextBlock Text="{Binding Area}" Style="{StaticResource SectionTitle}" Margin="0,4,0,4" />
-                <ItemsControl ItemsSource="{Binding Features}">
+                <views:ItemsList ItemsSource="{Binding Features}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <CheckBox IsChecked="{Binding IsChecked}" IsEnabled="{Binding CanChange}" Margin="0,3" ToolTip="{Binding Description}">
@@ -110,7 +110,7 @@
                             </CheckBox>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                </views:ItemsList>
             </StackPanel>
         </DataTemplate>
     </Window.Resources>
@@ -431,7 +431,7 @@
                                 <!-- Products -->
                                 <HeaderedContentControl x:Name="SecProducts" Style="{StaticResource FormSection}" Tag="&#xE7B8;" Header="Products"
                                                         AutomationProperties.HelpText="Each product is sold separately, with its own end date. Tick the ones the company buys.">
-                                    <ItemsControl ItemsSource="{Binding Products}" Focusable="False">
+                                    <views:ItemsList ItemsSource="{Binding Products}" Focusable="False">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <UniformGrid Columns="2" />
@@ -466,7 +466,7 @@
                                                             </StackPanel>
                                                             <DockPanel Margin="0,8,0,0">
                                                                 <TextBlock Text="Extend" Style="{StaticResource FieldLabel}" Width="66" VerticalAlignment="Center" />
-                                                                <ItemsControl ItemsSource="{Binding DataContext.ValidityChoices, ElementName=AccountPage}" Focusable="False">
+                                                                <views:ItemsList ItemsSource="{Binding DataContext.ValidityChoices, ElementName=AccountPage}" Focusable="False">
                                                                     <ItemsControl.ItemsPanel>
                                                                         <ItemsPanelTemplate>
                                                                             <WrapPanel />
@@ -480,14 +480,14 @@
                                                                                     Command="{Binding DataContext.ExtendCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
                                                                         </DataTemplate>
                                                                     </ItemsControl.ItemTemplate>
-                                                                </ItemsControl>
+                                                                </views:ItemsList>
                                                             </DockPanel>
                                                         </StackPanel>
                                                     </StackPanel>
                                                 </Border>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    </views:ItemsList>
                                 </HeaderedContentControl>
 
                                 <!-- Package and validity -->
@@ -523,7 +523,7 @@
                                         </Grid>
                                         <DockPanel Margin="0,14,0,0">
                                             <TextBlock Text="Extend the account" Style="{StaticResource FieldLabel}" Margin="0,0,12,0" VerticalAlignment="Center" />
-                                            <ItemsControl ItemsSource="{Binding ValidityChoices}" Focusable="False">
+                                            <views:ItemsList ItemsSource="{Binding ValidityChoices}" Focusable="False">
                                                 <ItemsControl.ItemsPanel>
                                                     <ItemsPanelTemplate>
                                                         <WrapPanel />
@@ -537,7 +537,7 @@
                                                                 Command="{Binding DataContext.ExtendCommand, ElementName=AccountPage}" />
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
+                                            </views:ItemsList>
                                         </DockPanel>
                                     </StackPanel>
                                 </HeaderedContentControl>
@@ -545,7 +545,7 @@
                                 <!-- Features -->
                                 <HeaderedContentControl x:Name="SecFeatures" Style="{StaticResource FormSection}" Tag="&#xE71D;" Header="Features"
                                                         AutomationProperties.HelpText="The package's features are ticked: untick one to leave it out for this company. Tick another feature to add it on, with its own end date.">
-                                    <ItemsControl ItemsSource="{Binding FeatureGroups}" Focusable="False">
+                                    <views:ItemsList ItemsSource="{Binding FeatureGroups}" Focusable="False">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <UniformGrid Columns="2" />
@@ -556,7 +556,7 @@
                                                 <Border Background="#FAFBFC" BorderBrush="#EEF0F3" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,12,12">
                                                     <StackPanel>
                                                         <TextBlock Text="{Binding Area}" Style="{StaticResource SubHeading}" />
-                                                        <ItemsControl ItemsSource="{Binding Features}" Focusable="False">
+                                                        <views:ItemsList ItemsSource="{Binding Features}" Focusable="False">
                                                             <ItemsControl.ItemTemplate>
                                                                 <DataTemplate>
                                                                     <DockPanel Margin="0,3">
@@ -572,12 +572,12 @@
                                                                     </DockPanel>
                                                                 </DataTemplate>
                                                             </ItemsControl.ItemTemplate>
-                                                        </ItemsControl>
+                                                        </views:ItemsList>
                                                     </StackPanel>
                                                 </Border>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    </views:ItemsList>
                                 </HeaderedContentControl>
 
                                 <!-- Catalogue -->
@@ -740,7 +740,7 @@
                                             <TextBlock Text="Computers signed in" Style="{StaticResource SubHeading}" />
                                             <TextBlock Text="None yet." Foreground="{StaticResource SubtleTextBrush}"
                                                        Visibility="{Binding HasComputers, Converter={StaticResource InverseBoolToVisibility}}" />
-                                            <ItemsControl ItemsSource="{Binding Computers}" Focusable="False">
+                                            <views:ItemsList ItemsSource="{Binding Computers}" Focusable="False">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
                                                         <Border BorderBrush="#EEF0F3" BorderThickness="0,0,0,1" Padding="0,8">
@@ -760,7 +760,7 @@
                                                         </Border>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
+                                            </views:ItemsList>
                                         </StackPanel>
                                         <StackPanel Grid.Column="2">
                                             <TextBlock Text="Staff logins" Style="{StaticResource SubHeading}" Margin="0,0,0,2" />
@@ -768,7 +768,7 @@
                                             <TextBlock Text="None. The account owner adds staff in MARK (Account › Staff logins)." TextWrapping="Wrap"
                                                        Foreground="{StaticResource SubtleTextBrush}"
                                                        Visibility="{Binding HasStaff, Converter={StaticResource InverseBoolToVisibility}}" />
-                                            <ItemsControl ItemsSource="{Binding Staff}" Focusable="False">
+                                            <views:ItemsList ItemsSource="{Binding Staff}" Focusable="False">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
                                                         <Border BorderBrush="#EEF0F3" BorderThickness="0,0,0,1" Padding="0,8">
@@ -786,7 +786,7 @@
                                                         </Border>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
+                                            </views:ItemsList>
                                         </StackPanel>
                                     </Grid>
                                 </HeaderedContentControl>
@@ -820,12 +820,12 @@
                                        Text="A company enters a key on MARK's Account page. It renews the account, a product or a feature until the key's date (counted from today)." />
 
                             <TextBlock Text="For" Style="{StaticResource FormLabel}" />
-                            <ComboBox ItemsSource="{Binding CompanyChoices}" SelectedItem="{Binding Company}" Padding="8,6" Margin="0,0,0,10" />
+                            <ComboBox ItemsSource="{Binding CompanyChoices}" SelectedItem="{Binding Company}" Padding="8,6" Margin="0,0,0,10" AutomationProperties.Name="Key for" />
                             <TextBlock Text="Gives" Style="{StaticResource FormLabel}" />
-                            <ComboBox ItemsSource="{Binding Gifts}" SelectedItem="{Binding Gift}" Padding="8,6" Margin="0,0,0,10" />
+                            <ComboBox ItemsSource="{Binding Gifts}" SelectedItem="{Binding Gift}" Padding="8,6" Margin="0,0,0,10" AutomationProperties.Name="Key gives" />
                             <StackPanel Visibility="{Binding IsFeatureGift, Converter={StaticResource BoolToVisibility}}">
                                 <TextBlock Text="Feature" Style="{StaticResource FormLabel}" />
-                                <ComboBox ItemsSource="{Binding FeatureChoices}" SelectedItem="{Binding Feature}" DisplayMemberPath="Name" Padding="8,6" Margin="0,0,0,10" />
+                                <ComboBox ItemsSource="{Binding FeatureChoices}" SelectedItem="{Binding Feature}" DisplayMemberPath="Name" Padding="8,6" Margin="0,0,0,10" AutomationProperties.Name="Feature" />
                             </StackPanel>
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -835,7 +835,7 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
                                     <TextBlock Text="Valid for" Style="{StaticResource FormLabel}" />
-                                    <ComboBox ItemsSource="{Binding ValidityChoices}" SelectedItem="{Binding Validity}" Padding="8,6" />
+                                    <ComboBox ItemsSource="{Binding ValidityChoices}" SelectedItem="{Binding Validity}" Padding="8,6" AutomationProperties.Name="Valid for" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
                                     <TextBlock Text="How many" Style="{StaticResource FormLabel}" />
@@ -845,7 +845,8 @@
                             <TextBlock Text="{Binding ValidUntilText}" Style="{StaticResource FieldHelp}" Margin="0,6,0,10" />
                             <TextBlock Text="Note (only you see it)" Style="{StaticResource FormLabel}" />
                             <TextBox Style="{StaticResource FormBox}" Padding="8,6" Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}" />
-                            <Button Style="{StaticResource PrimaryButton}" Margin="0,8,0,0" Padding="16,9" HorizontalAlignment="Stretch" Command="{Binding GenerateCommand}">
+                            <Button Style="{StaticResource PrimaryButton}" Margin="0,8,0,0" Padding="16,9" HorizontalAlignment="Stretch" Command="{Binding GenerateCommand}"
+                                    AutomationProperties.Name="Generate keys">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="&#xE8D7;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,1,8,0" />
                                     <TextBlock Text="Generate keys" FontWeight="SemiBold" />
@@ -997,7 +998,7 @@
                             </HeaderedContentControl>
                             <HeaderedContentControl Style="{StaticResource FormSection}" Tag="&#xE71D;" Header="Features in this package"
                                                     AutomationProperties.HelpText="Hover over a feature to see what it does.">
-                                <ItemsControl ItemsSource="{Binding FeatureGroups}" Focusable="False">
+                                <views:ItemsList ItemsSource="{Binding FeatureGroups}" Focusable="False">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <UniformGrid Columns="3" />
@@ -1008,7 +1009,7 @@
                                             <Border Background="#FAFBFC" BorderBrush="#EEF0F3" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,12,12">
                                                 <StackPanel>
                                                     <TextBlock Text="{Binding Area}" Style="{StaticResource SubHeading}" />
-                                                    <ItemsControl ItemsSource="{Binding Features}" Focusable="False">
+                                                    <views:ItemsList ItemsSource="{Binding Features}" Focusable="False">
                                                         <ItemsControl.ItemTemplate>
                                                             <DataTemplate>
                                                                 <CheckBox IsChecked="{Binding IsChecked}" IsEnabled="{Binding CanChange}" Margin="0,3" ToolTip="{Binding Description}">
@@ -1020,12 +1021,12 @@
                                                                 </CheckBox>
                                                             </DataTemplate>
                                                         </ItemsControl.ItemTemplate>
-                                                    </ItemsControl>
+                                                    </views:ItemsList>
                                                 </StackPanel>
                                             </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                </views:ItemsList>
                             </HeaderedContentControl>
                         </StackPanel>
                     </StackPanel>
@@ -1107,7 +1108,7 @@
                                         </StackPanel>
                                     </Grid>
                                     <TextBlock Text="Products" Style="{StaticResource FormLabel}" Margin="0,14,0,6" />
-                                    <ItemsControl ItemsSource="{Binding Products}" Focusable="False">
+                                    <views:ItemsList ItemsSource="{Binding Products}" Focusable="False">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <WrapPanel />
@@ -1120,7 +1121,7 @@
                                                 </Border>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    </views:ItemsList>
                                 </StackPanel>
                             </HeaderedContentControl>
                             <HeaderedContentControl Style="{StaticResource FormSection}" Tag="&#xE8F1;" Header="Catalogue for new accounts of this type"
@@ -1170,7 +1171,7 @@
                         <StackPanel>
                             <TextBlock Text="{Binding CountsText}" FontWeight="SemiBold" Foreground="#1F2A37" />
                             <TextBlock Text="SYSTEMS" Style="{StaticResource SectionTitle}" />
-                            <ItemsControl ItemsSource="{Binding SystemRows}">
+                            <views:ItemsList ItemsSource="{Binding SystemRows}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Border BorderBrush="#E3E6EA" BorderThickness="0,0,0,1" Padding="0,8">
@@ -1183,7 +1184,7 @@
                                                 <StackPanel>
                                                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#1F2A37" />
                                                     <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
-                                                    <ItemsControl ItemsSource="{Binding Bundles}" Margin="0,4,0,0">
+                                                    <views:ItemsList ItemsSource="{Binding Bundles}" Margin="0,4,0,0">
                                                         <ItemsControl.ItemsPanel>
                                                             <ItemsPanelTemplate>
                                                                 <WrapPanel />
@@ -1196,13 +1197,13 @@
                                                                 </Border>
                                                             </DataTemplate>
                                                         </ItemsControl.ItemTemplate>
-                                                    </ItemsControl>
+                                                    </views:ItemsList>
                                                 </StackPanel>
                                             </DockPanel>
                                         </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            </views:ItemsList>
                             <DockPanel Margin="0,16,0,4">
                                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                                     <Button Style="{StaticResource SmallButton}" Content="+ Profile" Margin="0,0,6,0" Command="{Binding AddItemCommand}" CommandParameter="Profile"
@@ -1227,7 +1228,7 @@
                             </Border>
                             <TextBlock Text="Profiles by series, then glass and hardware. Open a group to see its items."
                                        FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,4" />
-                            <ItemsControl ItemsSource="{Binding ItemGroups}">
+                            <views:ItemsList ItemsSource="{Binding ItemGroups}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Border BorderBrush="#E3E6EA" BorderThickness="0,0,0,1" Padding="0,4">
@@ -1238,7 +1239,7 @@
                                                         <Run Text="{Binding CountText, Mode=OneWay}" FontSize="11" Foreground="#8A8A8A" />
                                                     </TextBlock>
                                                 </Expander.Header>
-                                                <ItemsControl ItemsSource="{Binding Rows}" Margin="22,4,0,6">
+                                                <views:ItemsList ItemsSource="{Binding Rows}" Margin="22,4,0,6">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
                                                             <Grid Margin="0,2">
@@ -1254,12 +1255,12 @@
                                                             </Grid>
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
+                                                </views:ItemsList>
                                             </Expander>
                                         </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            </views:ItemsList>
                         </StackPanel>
                     </Border>
 
@@ -1271,7 +1272,7 @@
                                        Text="Profiles, glass, hardware, systems and bundles for one company only. They can use items of the catalogue, come on top of what is ticked in the company's account, and show in its MARK under the company's name. Own systems also appear as ready-made designs in its design library." />
                             <TextBlock Text="No companies yet." Foreground="{StaticResource MutedTextBrush}"
                                        Visibility="{Binding HasCompanies, Converter={StaticResource InverseBoolToVisibility}}" />
-                            <ItemsControl ItemsSource="{Binding OwnItemRows}">
+                            <views:ItemsList ItemsSource="{Binding OwnItemRows}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Border BorderBrush="#E3E6EA" BorderThickness="0,0,0,1" Padding="0,8">
@@ -1288,7 +1289,7 @@
                                         </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            </views:ItemsList>
                         </StackPanel>
                     </Border>
                 </StackPanel>

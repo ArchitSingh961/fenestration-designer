@@ -8,7 +8,10 @@ using Mark.Licensing.Client;
 namespace Mark.Designer.ViewModels;
 
 /// <summary>A staff login in the list: "Amit Kumar (amit) · Production · Active, last signed in 3 Oct 2026".</summary>
-public sealed record StaffRow(StaffInfo Info, string Name, string UserId, string AreasText, string StateText, bool IsDisabled);
+public sealed record StaffRow(StaffInfo Info, string Name, string UserId, string AreasText, string StateText, bool IsDisabled)
+{
+    public override string ToString() => $"{Name} ({UserId})";
+}
 
 /// <summary>A feature the account owner can give a staff login.</summary>
 public sealed class StaffFeatureChoice : ViewModelBase

@@ -41,6 +41,7 @@ public partial class App : Application
         base.OnStartup(e);
         DispatcherUnhandledException += OnUnhandledException;
         _args = e.Args;
+        if (ArgumentAfter(e.Args, "--binding-log") is { } bindingLog) Mark.Designer.Views.BindingErrorLog.Start(bindingLog);
 
         // Nothing opens until the user is signed in: the sign-in page is the only window until then.
         ShutdownMode = ShutdownMode.OnExplicitShutdown;

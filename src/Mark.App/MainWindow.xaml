@@ -82,6 +82,9 @@
                     <TextBlock Text="{Binding Label}" Style="{StaticResource FieldLabel}" />
                     <ComboBox Grid.Column="1" ItemsSource="{Binding Options}" SelectedItem="{Binding SelectedOption}"
                               DisplayMemberPath="Name" ToolTip="How the opening opens, seen from inside" />
+                    <TextBlock Grid.Column="1" Text="{Binding MixedText}" Margin="7,0,24,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                               Foreground="{StaticResource MutedTextBrush}" TextTrimming="CharacterEllipsis"
+                               Visibility="{Binding IsMixed, Converter={StaticResource BoolToVisibility}}" />
                 </Grid>
                 <CheckBox Margin="90,6,0,0" Content="Insect mesh shutter" IsChecked="{Binding HasMesh}" Focusable="False" />
                 <Border Margin="0,6,0,0" Padding="8" Background="{StaticResource ErrorBackgroundBrush}"
@@ -101,7 +104,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="{Binding Name}"
                            Foreground="{StaticResource MutedTextBrush}" />
-                <TextBlock Grid.Column="1" Text="{Binding Value}" TextAlignment="Right"
+                <TextBlock Grid.Column="1" Text="{Binding Value}" TextAlignment="Right" TextWrapping="Wrap"
                            Foreground="{StaticResource TextBrush}" />
                 <TextBlock Grid.Column="2" Text="{Binding Unit}" Margin="4,0,0,0"
                            Foreground="{StaticResource MutedTextBrush}" />
@@ -159,7 +162,7 @@
                                                        Foreground="{StaticResource MutedTextBrush}" />
                                             <!-- Share of each group in the cost -->
                                             <Border x:Name="BomBar" Margin="0,10,0,4" Height="8" CornerRadius="4" Background="#EEF0F3" ClipToBounds="True">
-                                                <ItemsControl ItemsSource="{Binding BomGroups}">
+                                                <views:ItemsList ItemsSource="{Binding BomGroups}">
                                                     <ItemsControl.ItemsPanel>
                                                         <ItemsPanelTemplate>
                                                             <StackPanel Orientation="Horizontal" />
@@ -177,10 +180,10 @@
                                                             </Rectangle>
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
+                                                </views:ItemsList>
                                             </Border>
                                             <!-- Legend -->
-                                            <ItemsControl ItemsSource="{Binding BomGroups}">
+                                            <views:ItemsList ItemsSource="{Binding BomGroups}">
                                                 <ItemsControl.ItemsPanel>
                                                     <ItemsPanelTemplate>
                                                         <WrapPanel />
@@ -196,7 +199,7 @@
                                                         </StackPanel>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
+                                            </views:ItemsList>
                                         </StackPanel>
                                     </Border>
                                     <TextBlock Margin="12,18,12,4" Style="{StaticResource PanelHeader}" Text="BILL OF MATERIALS"
@@ -206,14 +209,14 @@
                                         <TextBlock Text="{Binding CalculationStatus}" TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource ErrorBrush}" />
                                     </Border>
 
-                                    <ItemsControl ItemsSource="{Binding BomGroups}" Margin="10,0,10,10">
+                                    <views:ItemsList ItemsSource="{Binding BomGroups}" Margin="10,0,10,10">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <Border Margin="0,0,0,8" CornerRadius="8" Background="White" BorderBrush="#E3E6EA" BorderThickness="1"
                                                         ClipToBounds="True">
                                                     <StackPanel>
                                                         <ToggleButton IsChecked="{Binding IsExpanded}" Style="{StaticResource BomGroupHeader}" />
-                                                        <ItemsControl ItemsSource="{Binding Items}"
+                                                        <views:ItemsList ItemsSource="{Binding Items}"
                                                                       Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVisibility}}">
                                                             <ItemsControl.ItemTemplate>
                                                                 <DataTemplate>
@@ -227,7 +230,7 @@
                                                                             </DockPanel>
                                                                             <TextBlock Text="{Binding Detail}" FontSize="10" Foreground="{StaticResource MutedTextBrush}"
                                                                                        Margin="0,1,0,0" />
-                                                                            <ItemsControl ItemsSource="{Binding SubLines}" Margin="2,4,0,0"
+                                                                            <views:ItemsList ItemsSource="{Binding SubLines}" Margin="2,4,0,0"
                                                                                           Visibility="{Binding HasSubLines, Converter={StaticResource BoolToVisibility}}">
                                                                                 <ItemsControl.ItemTemplate>
                                                                                     <DataTemplate>
@@ -241,17 +244,17 @@
                                                                                         </Border>
                                                                                     </DataTemplate>
                                                                                 </ItemsControl.ItemTemplate>
-                                                                            </ItemsControl>
+                                                                            </views:ItemsList>
                                                                         </StackPanel>
                                                                     </Border>
                                                                 </DataTemplate>
                                                             </ItemsControl.ItemTemplate>
-                                                        </ItemsControl>
+                                                        </views:ItemsList>
                                                     </StackPanel>
                                                 </Border>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    </views:ItemsList>
 
                                     </StackPanel>
 
@@ -276,14 +279,14 @@
                                                 Visibility="{Binding HasStatus, Converter={StaticResource BoolToVisibility}}">
                                             <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" />
                                         </Border>
-                                        <ItemsControl ItemsSource="{Binding Profiles}" Margin="12,0,12,12">
+                                        <views:ItemsList ItemsSource="{Binding Profiles}" Margin="12,0,12,12">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
                                                     <StackPanel Margin="0,4">
                                                         <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" />
                                                         <TextBlock Text="{Binding Summary}" FontSize="10" TextWrapping="Wrap"
                                                                    Foreground="{StaticResource MutedTextBrush}" />
-                                                        <ItemsControl ItemsSource="{Binding Bars}" Margin="8,2,0,0">
+                                                        <views:ItemsList ItemsSource="{Binding Bars}" Margin="8,2,0,0">
                                                             <ItemsControl.ItemTemplate>
                                                                 <DataTemplate>
                                                                     <StackPanel Margin="0,2">
@@ -293,11 +296,11 @@
                                                                     </StackPanel>
                                                                 </DataTemplate>
                                                             </ItemsControl.ItemTemplate>
-                                                        </ItemsControl>
+                                                        </views:ItemsList>
                                                     </StackPanel>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
+                                        </views:ItemsList>
                                     </StackPanel>
             </StackPanel>
         </DataTemplate>
@@ -497,7 +500,7 @@
                     <TextBlock Text="{Binding HeaderTitle}" FontSize="15" FontWeight="SemiBold" Foreground="#1F2A37"
                                VerticalAlignment="Center" Margin="0,0,10,0" />
                     <!-- The tabs of the current area (only those this login may see; locked: not in the package). -->
-                    <ItemsControl ItemsSource="{Binding Tabs}" VerticalAlignment="Center" Focusable="False"
+                    <views:ItemsList ItemsSource="{Binding Tabs}" VerticalAlignment="Center" Focusable="False"
                                   Visibility="{Binding ShowsTabs, Converter={StaticResource BoolToVisibility}}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -516,7 +519,7 @@
                                 </Button>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    </views:ItemsList>
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -578,7 +581,7 @@
         <!-- ── Area bar: the areas this login may see (lock: not in the package; dim: coming later) ── -->
         <Border DockPanel.Dock="Left" Background="#1F2A37" Width="80">
             <ScrollViewer VerticalScrollBarVisibility="Hidden" Focusable="False">
-                <ItemsControl ItemsSource="{Binding Areas}" Margin="0,8" Focusable="False">
+                <views:ItemsList ItemsSource="{Binding Areas}" Margin="0,8" Focusable="False">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Button Style="{StaticResource AreaRailButton}" Command="{Binding ShowCommand}" CommandParameter="{Binding Area}"
@@ -605,7 +608,7 @@
                             </Button>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                </views:ItemsList>
             </ScrollViewer>
         </Border>
 
@@ -626,7 +629,7 @@
                         <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" />
                     </Border>
 
-                    <ItemsControl ItemsSource="{Binding Tiles}">
+                    <views:ItemsList ItemsSource="{Binding Tiles}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <UniformGrid Columns="4" />
@@ -647,7 +650,7 @@
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    </views:ItemsList>
 
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -657,7 +660,7 @@
                         <Border Style="{StaticResource Card}" Margin="0,0,12,0" Padding="16">
                             <StackPanel>
                                 <TextBlock Text="Quote value by status" Style="{StaticResource CardTitle}" />
-                                <ItemsControl ItemsSource="{Binding ValueByStatus}" Margin="0,8,0,0">
+                                <views:ItemsList ItemsSource="{Binding ValueByStatus}" Margin="0,8,0,0">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <Grid Margin="0,6">
@@ -674,7 +677,7 @@
                                             </Grid>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                </views:ItemsList>
                                 <TextBlock Text="{Binding WinRateText}" Margin="0,12,0,0" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" />
                             </StackPanel>
                         </Border>
@@ -694,7 +697,7 @@
                                         </Style>
                                     </TextBlock.Style>
                                 </TextBlock>
-                                <ItemsControl ItemsSource="{Binding RecentQuotes}" Margin="0,6,0,0">
+                                <views:ItemsList ItemsSource="{Binding RecentQuotes}" Margin="0,6,0,0">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <Button Style="{StaticResource RowButton}" Command="{Binding DataContext.OpenCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
@@ -717,7 +720,7 @@
                                             </Button>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                </views:ItemsList>
                             </StackPanel>
                         </Border>
                     </Grid>
@@ -747,7 +750,7 @@
                                         </StackPanel>
                                     </DockPanel>
                                     <!-- Legend -->
-                                    <ItemsControl ItemsSource="{Binding Legend}" Margin="0,8,0,4">
+                                    <views:ItemsList ItemsSource="{Binding Legend}" Margin="0,8,0,4">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <WrapPanel />
@@ -761,10 +764,10 @@
                                                 </StackPanel>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    </views:ItemsList>
                                     <!-- Grouped bars per period, from a common baseline -->
                                     <Border BorderBrush="#E5E7EB" BorderThickness="0,0,0,1" Margin="0,6,0,0">
-                                        <ItemsControl ItemsSource="{Binding Columns}">
+                                        <views:ItemsList ItemsSource="{Binding Columns}">
                                             <ItemsControl.ItemsPanel>
                                                 <ItemsPanelTemplate>
                                                     <UniformGrid Rows="1" />
@@ -772,7 +775,7 @@
                                             </ItemsControl.ItemsPanel>
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
-                                                    <ItemsControl ItemsSource="{Binding Bars}" Height="124" HorizontalAlignment="Center" Background="Transparent">
+                                                    <views:ItemsList ItemsSource="{Binding Bars}" Height="124" HorizontalAlignment="Center" Background="Transparent">
                                                         <ItemsControl.ItemsPanel>
                                                             <ItemsPanelTemplate>
                                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" />
@@ -784,12 +787,12 @@
                                                                         VerticalAlignment="Bottom" ToolTip="{Binding ToolTip}" />
                                                             </DataTemplate>
                                                         </ItemsControl.ItemTemplate>
-                                                    </ItemsControl>
+                                                    </views:ItemsList>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
+                                        </views:ItemsList>
                                     </Border>
-                                    <ItemsControl ItemsSource="{Binding Columns}" Margin="0,4,0,0">
+                                    <views:ItemsList ItemsSource="{Binding Columns}" Margin="0,4,0,0">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <UniformGrid Rows="1" />
@@ -800,11 +803,11 @@
                                                 <TextBlock Text="{Binding Label}" FontSize="10" Foreground="{StaticResource MutedTextBrush}" HorizontalAlignment="Center" />
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    </views:ItemsList>
 
                                     <TextBlock Text="Value won" FontWeight="SemiBold" Foreground="#1F2A37" Margin="0,16,0,4" />
                                     <Border BorderBrush="#E5E7EB" BorderThickness="0,0,0,1">
-                                        <ItemsControl ItemsSource="{Binding Columns}">
+                                        <views:ItemsList ItemsSource="{Binding Columns}">
                                             <ItemsControl.ItemsPanel>
                                                 <ItemsPanelTemplate>
                                                     <UniformGrid Rows="1" />
@@ -818,9 +821,9 @@
                                                     </Grid>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
+                                        </views:ItemsList>
                                     </Border>
-                                    <ItemsControl ItemsSource="{Binding Columns}" Margin="0,4,0,0">
+                                    <views:ItemsList ItemsSource="{Binding Columns}" Margin="0,4,0,0">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <UniformGrid Rows="1" />
@@ -831,7 +834,7 @@
                                                 <TextBlock Text="{Binding Label}" FontSize="10" Foreground="{StaticResource MutedTextBrush}" HorizontalAlignment="Center" />
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    </views:ItemsList>
 
                                     <!-- The same numbers as a table -->
                                     <Expander Header="Show the numbers" Margin="0,12,0,0" Foreground="#374151">
@@ -895,7 +898,7 @@
                             <TextBlock Text="Recent activity" Style="{StaticResource CardTitle}" />
                             <TextBlock Text="Who created, saved or deleted which quote, and what changed." FontSize="11"
                                        Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,6" />
-                            <ItemsControl ItemsSource="{Binding RecentActivity}" ItemTemplate="{StaticResource HistoryLine}" />
+                            <views:ItemsList ItemsSource="{Binding RecentActivity}" ItemTemplate="{StaticResource HistoryLine}" />
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -911,8 +914,8 @@
                 </DockPanel>
                 <DockPanel DockPanel.Dock="Top" Margin="24,0,24,8">
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                        <TextBox Width="240" Padding="6,4" VerticalContentAlignment="Center" ToolTip="Search by quote number, project or client"
-                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBox Width="240" Style="{StaticResource SearchBox}" Tag="Search quotes…" ToolTip="Search by quote number, project or client"
+                                 AutomationProperties.Name="Search quotes" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
                         <Button Style="{StaticResource SecondaryButton}" Content="Refresh" Command="{Binding RefreshCommand}" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
@@ -953,22 +956,22 @@
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Header="Quote no." Width="100" DisplayMemberBinding="{Binding Number}" />
-                                <GridViewColumn Header="Project" Width="200" DisplayMemberBinding="{Binding Name}" />
-                                <GridViewColumn Header="Client" Width="170" DisplayMemberBinding="{Binding Client}" />
+                                <GridViewColumn Header="Project" Width="170" DisplayMemberBinding="{Binding Name}" />
+                                <GridViewColumn Header="Client" Width="150" DisplayMemberBinding="{Binding Client}" />
                                 <GridViewColumn Header="Status" Width="70" DisplayMemberBinding="{Binding Status}" />
                                 <GridViewColumn Header="Order" Width="85" DisplayMemberBinding="{Binding Order}" />
                                 <GridViewColumn Header="Designs" Width="65" DisplayMemberBinding="{Binding Designs}" />
                                 <GridViewColumn Header="Qty" Width="50" DisplayMemberBinding="{Binding Quantity}" />
                                 <GridViewColumn Header="Area" Width="80" DisplayMemberBinding="{Binding Area}" />
-                                <GridViewColumn Header="Value" Width="140" DisplayMemberBinding="{Binding Value}" />
-                                <GridViewColumn Header="Saved by" Width="120">
+                                <GridViewColumn Header="Value" Width="125" DisplayMemberBinding="{Binding Value}" />
+                                <GridViewColumn Header="Saved by" Width="105">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding ModifiedBy}" ToolTip="{Binding AuthorsText}" TextTrimming="CharacterEllipsis" />
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="Last change" Width="130" DisplayMemberBinding="{Binding Modified}" />
+                                <GridViewColumn Header="Last change" Width="120" DisplayMemberBinding="{Binding Modified}" />
                             </GridView>
                         </ListView.View>
                     </ListView>
@@ -1105,7 +1108,7 @@
                             <Border Style="{StaticResource Card}" Padding="18,14" Margin="0,0,0,12">
                                 <StackPanel>
                                     <TextBlock Text="Products" Style="{StaticResource CardTitle}" Margin="0,0,0,8" />
-                                    <ItemsControl ItemsSource="{Binding Products}">
+                                    <views:ItemsList ItemsSource="{Binding Products}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <DockPanel Margin="0,4">
@@ -1126,7 +1129,7 @@
                                                 </DockPanel>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    </views:ItemsList>
                                 </StackPanel>
                             </Border>
                             <Border Style="{StaticResource Card}" Padding="18,14">
@@ -1152,7 +1155,7 @@
                     <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,16,0,0">
                         <StackPanel>
                             <TextBlock Text="{Binding FeaturesTitle}" Style="{StaticResource CardTitle}" Margin="0,0,0,6" />
-                            <ItemsControl ItemsSource="{Binding FeatureGroups}">
+                            <views:ItemsList ItemsSource="{Binding FeatureGroups}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <UniformGrid Columns="3" />
@@ -1163,7 +1166,7 @@
                                         <StackPanel Margin="0,8,18,4">
                                             <TextBlock Text="{Binding Area}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource HeaderTextBrush}"
                                                        Margin="0,0,0,4" />
-                                            <ItemsControl ItemsSource="{Binding Features}">
+                                            <views:ItemsList ItemsSource="{Binding Features}">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
                                                         <DockPanel Margin="0,3" ToolTip="{Binding Description}">
@@ -1189,11 +1192,11 @@
                                                         </DockPanel>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
+                                            </views:ItemsList>
                                         </StackPanel>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            </views:ItemsList>
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -1222,7 +1225,7 @@
                             <TextBlock Text="Systems" Style="{StaticResource CardTitle}" Margin="0,0,0,6" />
                             <TextBlock Text="A window is made in a system: its profiles, glass, steel and hardware come from it." FontSize="11"
                                        Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,6" />
-                            <ItemsControl ItemsSource="{Binding LibrarySystems}">
+                            <views:ItemsList ItemsSource="{Binding LibrarySystems}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Border BorderBrush="#F0F2F5" BorderThickness="0,1,0,0" Padding="0,7">
@@ -1233,7 +1236,7 @@
                                         </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            </views:ItemsList>
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -1254,7 +1257,7 @@
                             <TextBlock Text="Coming in a later version of MARK" Style="{StaticResource CardTitle}" />
                             <TextBlock Text="This area is being built. When it is released it opens here, for everyone whose package includes it."
                                        TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,8" />
-                            <ItemsControl ItemsSource="{Binding OverviewFeatures}">
+                            <views:ItemsList ItemsSource="{Binding OverviewFeatures}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Border BorderBrush="#F0F2F5" BorderThickness="0,1,0,0" Padding="0,8">
@@ -1266,7 +1269,7 @@
                                         </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            </views:ItemsList>
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -1326,7 +1329,7 @@
                                 <TextBlock Text="No staff logins yet. Add one for each person who works in MARK." TextWrapping="Wrap"
                                            Foreground="{StaticResource MutedTextBrush}" Margin="0,4"
                                            Visibility="{Binding HasStaff, Converter={StaticResource InverseBoolToVisibility}}" />
-                                <ItemsControl ItemsSource="{Binding Staff}">
+                                <views:ItemsList ItemsSource="{Binding Staff}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <Button Style="{StaticResource RowButton}" Command="{Binding DataContext.EditCommand, ElementName=StaffPage}"
@@ -1354,7 +1357,7 @@
                                             </Button>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                </views:ItemsList>
                             </StackPanel>
                         </Border>
 
@@ -1387,7 +1390,7 @@
                                 <TextBlock Text="What this person may use" FontWeight="SemiBold" Foreground="#1F2A37" Margin="0,4,0,2" />
                                 <DockPanel Margin="0,0,0,6">
                                     <TextBlock Text="Quick choice:" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,2,0" />
-                                    <ItemsControl ItemsSource="{Binding DataContext.Presets, ElementName=StaffPage}">
+                                    <views:ItemsList ItemsSource="{Binding DataContext.Presets, ElementName=StaffPage}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <WrapPanel />
@@ -1400,30 +1403,30 @@
                                                         Command="{Binding DataContext.PresetCommand, ElementName=StaffPage}" CommandParameter="{Binding}" />
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    </views:ItemsList>
                                 </DockPanel>
-                                <ItemsControl ItemsSource="{Binding Groups}">
+                                <views:ItemsList ItemsSource="{Binding Groups}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
-                                            <UniformGrid Columns="2" />
+                                            <WrapPanel ItemWidth="275" />
                                         </ItemsPanelTemplate>
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <StackPanel Margin="0,6,12,4">
                                                 <TextBlock Text="{Binding Area}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource HeaderTextBrush}" Margin="0,0,0,2" />
-                                                <ItemsControl ItemsSource="{Binding Features}">
+                                                <views:ItemsList ItemsSource="{Binding Features}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
                                                             <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" ToolTip="{Binding Description}"
                                                                       Margin="0,2" Foreground="#1F2A37" />
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
+                                                </views:ItemsList>
                                             </StackPanel>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                </views:ItemsList>
 
                                 <DockPanel Margin="0,12,0,0">
                                     <Button DockPanel.Dock="Left" Style="{StaticResource SecondaryButton}" Content="Remove login" Margin="0"
@@ -1456,8 +1459,8 @@
                         </StackPanel>
                     </DockPanel>
                     <DockPanel DockPanel.Dock="Top" Margin="24,0,24,8">
-                        <TextBox DockPanel.Dock="Right" Width="240" Padding="6,4" VerticalContentAlignment="Center"
-                                 ToolTip="Search by number, client, city, phone, source, salesperson or quote"
+                        <TextBox DockPanel.Dock="Right" Width="240" Style="{StaticResource SearchBox}" Tag="Search enquiries…"
+                                 ToolTip="Search by number, client, city, phone, source, salesperson or quote" AutomationProperties.Name="Search enquiries"
                                  Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" />
                         <StackPanel Orientation="Horizontal">
                             <RadioButton Style="{StaticResource FilterTab}" Content="{Binding OpenHeader}"
@@ -1486,12 +1489,12 @@
                             <ListView.View>
                                 <GridView>
                                     <GridViewColumn Header="Enquiry" Width="90" DisplayMemberBinding="{Binding Number}" />
-                                    <GridViewColumn Header="Client" Width="180" DisplayMemberBinding="{Binding Client}" />
-                                    <GridViewColumn Header="City" Width="100" DisplayMemberBinding="{Binding City}" />
-                                    <GridViewColumn Header="Phone" Width="110" DisplayMemberBinding="{Binding Phone}" />
+                                    <GridViewColumn Header="Client" Width="160" DisplayMemberBinding="{Binding Client}" />
+                                    <GridViewColumn Header="City" Width="90" DisplayMemberBinding="{Binding City}" />
+                                    <GridViewColumn Header="Phone" Width="105" DisplayMemberBinding="{Binding Phone}" />
                                     <GridViewColumn Header="Stage" Width="80" DisplayMemberBinding="{Binding Stage}" />
-                                    <GridViewColumn Header="Source" Width="95" DisplayMemberBinding="{Binding Source}" />
-                                    <GridViewColumn Header="Salesperson" Width="110" DisplayMemberBinding="{Binding Owner}" />
+                                    <GridViewColumn Header="Source" Width="85" DisplayMemberBinding="{Binding Source}" />
+                                    <GridViewColumn Header="Salesperson" Width="100" DisplayMemberBinding="{Binding Owner}" />
                                     <GridViewColumn Header="Expected value" Width="105">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
@@ -1517,7 +1520,7 @@
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn Header="Quote" Width="100" DisplayMemberBinding="{Binding Quote}" />
+                                    <GridViewColumn Header="Quote" Width="90" DisplayMemberBinding="{Binding Quote}" />
                                     <GridViewColumn Header="" Width="70">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
@@ -1908,7 +1911,7 @@
                                             <Button Grid.Column="5" Style="{StaticResource SecondaryButton}" Margin="3,0" Padding="4,3" Content="All dispatched" FontSize="11"
                                                     Command="{Binding MarkAllCommand}" CommandParameter="Dispatched" />
                                         </Grid>
-                                        <ItemsControl ItemsSource="{Binding Windows}" Focusable="False">
+                                        <views:ItemsList ItemsSource="{Binding Windows}" Focusable="False">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
                                                     <Border BorderBrush="#EEF0F3" BorderThickness="0,1,0,0" Padding="0,8">
@@ -1925,7 +1928,7 @@
                                                                     <Run Text="{Binding SizeText, Mode=OneWay}" /><Run Text=" mm  ·  " /><Run Text="{Binding Quantity, Mode=OneWay}" /><Run Text=" pcs" />
                                                                 </TextBlock>
                                                             </StackPanel>
-                                                            <ItemsControl Grid.Column="1" ItemsSource="{Binding Steps}" Focusable="False">
+                                                            <views:ItemsList Grid.Column="1" ItemsSource="{Binding Steps}" Focusable="False">
                                                                 <ItemsControl.ItemsPanel>
                                                                     <ItemsPanelTemplate>
                                                                         <UniformGrid Rows="1" />
@@ -1969,12 +1972,12 @@
                                                                         </DockPanel>
                                                                     </DataTemplate>
                                                                 </ItemsControl.ItemTemplate>
-                                                            </ItemsControl>
+                                                            </views:ItemsList>
                                                         </Grid>
                                                     </Border>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
+                                        </views:ItemsList>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -2150,7 +2153,7 @@
                                 <Border Style="{StaticResource Card}" Padding="20,14" Margin="0,0,0,12">
                                     <StackPanel>
                                         <TextBlock Text="STAGE" Style="{StaticResource SectionTitle}" Margin="0,0,0,8" />
-                                        <ItemsControl ItemsSource="{Binding StageSteps}">
+                                        <views:ItemsList ItemsSource="{Binding StageSteps}">
                                             <ItemsControl.ItemsPanel>
                                                 <ItemsPanelTemplate>
                                                     <UniformGrid Rows="1" />
@@ -2197,7 +2200,7 @@
                                                     </Button>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
+                                        </views:ItemsList>
                                         <TextBlock Text="Production, a dispatch note for the last windows and the sign-off move the stage on by themselves; click a stage to set it by hand."
                                                    FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,8,0,0" />
                                     </StackPanel>
@@ -2216,7 +2219,7 @@
                                             <TextBlock Text="PAYMENTS" Style="{StaticResource SectionTitle}" Margin="0,0,0,6" />
                                             <TextBlock Text="No payments recorded yet." Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,6"
                                                        Visibility="{Binding Payments.Count, Converter={StaticResource CountToCollapsed}}" />
-                                            <ItemsControl ItemsSource="{Binding Payments}">
+                                            <views:ItemsList ItemsSource="{Binding Payments}">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
                                                         <Border BorderBrush="#EEF0F3" BorderThickness="0,0,0,1" Padding="0,5">
@@ -2238,7 +2241,7 @@
                                                         </Border>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
+                                            </views:ItemsList>
                                             <TextBlock Text="RECORD A PAYMENT" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource HeaderTextBrush}" Margin="0,12,0,4" />
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
@@ -2278,7 +2281,7 @@
                                             <TextBlock Text="DELIVERY AND INSTALLATION" Style="{StaticResource SectionTitle}" Margin="0,0,0,6" />
                                             <TextBlock Text="Nothing planned yet." Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,6"
                                                        Visibility="{Binding Visits.Count, Converter={StaticResource CountToCollapsed}}" />
-                                            <ItemsControl ItemsSource="{Binding Visits}">
+                                            <views:ItemsList ItemsSource="{Binding Visits}">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
                                                         <Border BorderBrush="#EEF0F3" BorderThickness="0,0,0,1" Padding="0,5">
@@ -2304,7 +2307,7 @@
                                                         </Border>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
+                                            </views:ItemsList>
                                             <TextBlock Text="PLAN A VISIT" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource HeaderTextBrush}" Margin="0,12,0,4" />
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
@@ -2342,7 +2345,7 @@
                                 <Border Style="{StaticResource Card}" Padding="18,14" Margin="0,0,0,12">
                                     <StackPanel>
                                         <TextBlock Text="DISPATCH" Style="{StaticResource SectionTitle}" Margin="0,0,0,6" />
-                                        <ItemsControl ItemsSource="{Binding Dispatches}" Margin="0,0,0,6">
+                                        <views:ItemsList ItemsSource="{Binding Dispatches}" Margin="0,0,0,6">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
                                                     <Border BorderBrush="#EEF0F3" BorderThickness="0,0,0,1" Padding="0,5">
@@ -2361,7 +2364,7 @@
                                                     </Border>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
+                                        </views:ItemsList>
                                         <TextBlock Text="NEW DISPATCH NOTE" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource HeaderTextBrush}" Margin="0,8,0,4" />
                                         <TextBlock Text="Every window of this order has been dispatched." Foreground="#1D6B3A" Margin="0,0,0,6"
                                                    Visibility="{Binding HasDispatchLeft, Converter={StaticResource InverseBoolToVisibility}}" />
@@ -2379,7 +2382,7 @@
                                             <TextBlock Grid.Column="3" Text="So far" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
                                             <TextBlock Grid.Column="4" Text="Goes now" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
                                         </Grid>
-                                        <ItemsControl ItemsSource="{Binding DispatchLines}">
+                                        <views:ItemsList ItemsSource="{Binding DispatchLines}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
                                                     <Grid Margin="0,2">
@@ -2399,7 +2402,7 @@
                                                     </Grid>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
+                                        </views:ItemsList>
                                         <Grid Margin="0,8,0,0">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="150" />
@@ -2513,7 +2516,7 @@
                             <StackPanel>
                                 <TextBlock Text="Nothing here." Foreground="{StaticResource MutedTextBrush}" Margin="0,6"
                                            Visibility="{Binding HasSchedule, Converter={StaticResource InverseBoolToVisibility}}" />
-                                <ItemsControl ItemsSource="{Binding Schedule}">
+                                <views:ItemsList ItemsSource="{Binding Schedule}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <Border BorderBrush="#EEF0F3" BorderThickness="0,0,0,1" Padding="0,9">
@@ -2552,7 +2555,7 @@
                                             </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                </views:ItemsList>
                             </StackPanel>
                         </Border>
                     </StackPanel>
@@ -2611,7 +2614,7 @@
                     <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Focusable="False">
                         <StackPanel Margin="26,18,26,26" MaxWidth="900" HorizontalAlignment="Left" MinWidth="560">
                             <TextBlock Text="{Binding SummaryText}" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextBrush}" Margin="0,0,0,12" />
-                            <ItemsControl ItemsSource="{Binding Groups}" Focusable="False">
+                            <views:ItemsList ItemsSource="{Binding Groups}" Focusable="False">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Border Style="{StaticResource Card}" Padding="16,12" Margin="0,0,0,12">
@@ -2620,7 +2623,7 @@
                                                     <TextBlock DockPanel.Dock="Right" Text="{Binding Summary}" Foreground="{StaticResource MutedTextBrush}" />
                                                     <TextBlock Text="{Binding Profile}" Style="{StaticResource CardTitle}" />
                                                 </DockPanel>
-                                                <ItemsControl ItemsSource="{Binding Offcuts}" Focusable="False">
+                                                <views:ItemsList ItemsSource="{Binding Offcuts}" Focusable="False">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
                                                             <Border BorderBrush="#EEF0F3" BorderThickness="0,1,0,0" Padding="0,6">
@@ -2636,12 +2639,12 @@
                                                             </Border>
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
+                                                </views:ItemsList>
                                             </StackPanel>
                                         </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            </views:ItemsList>
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>
@@ -3074,7 +3077,7 @@
                                 <StackPanel>
                                     <TextBlock Text="History" Style="{StaticResource CardTitle}" />
                                     <TextBlock Text="{Binding QuoteAuthorsText}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,6" />
-                                    <ItemsControl ItemsSource="{Binding QuoteHistory}" ItemTemplate="{StaticResource HistoryLine}" />
+                                    <views:ItemsList ItemsSource="{Binding QuoteHistory}" ItemTemplate="{StaticResource HistoryLine}" />
                                 </StackPanel>
                             </Border>
 
@@ -3086,7 +3089,7 @@
                                     <TextBlock Text="Earlier revisions" Style="{StaticResource CardTitle}" />
                                     <TextBlock Text="Kept as they were when the next revision was started. Open one as a copy to look at it or start again from it."
                                                FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,6" TextWrapping="Wrap" />
-                                    <ItemsControl ItemsSource="{Binding QuoteRevisions}">
+                                    <views:ItemsList ItemsSource="{Binding QuoteRevisions}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <Border BorderBrush="#F0F2F5" BorderThickness="0,1,0,0" Padding="0,6">
@@ -3098,7 +3101,7 @@
                                                 </Border>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    </views:ItemsList>
                                 </StackPanel>
                             </Border>
                         </StackPanel>
@@ -3121,7 +3124,7 @@
                                    Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}"
                                    Text="No designs yet. Click New design, or pick a design from the library in the Drawing tab." />
                         <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
-                            <ItemsControl ItemsSource="{Binding Cards}" Margin="18,0,18,18">
+                            <views:ItemsList ItemsSource="{Binding Cards}" Margin="18,0,18,18">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <WrapPanel />
@@ -3157,7 +3160,7 @@
                                         </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            </views:ItemsList>
                         </ScrollViewer>
                     </DockPanel>
 
@@ -3214,7 +3217,7 @@
                                             <TextBlock Grid.Column="2" Text="Rate" Foreground="{StaticResource MutedTextBrush}" Margin="6,0,0,0" />
                                             <TextBlock Grid.Column="4" Text="On quote" Foreground="{StaticResource MutedTextBrush}" />
                                         </Grid>
-                                        <ItemsControl ItemsSource="{Binding Heads}">
+                                        <views:ItemsList ItemsSource="{Binding Heads}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
                                                     <Grid Margin="0,2">
@@ -3246,7 +3249,7 @@
                                                     </Grid>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
+                                        </views:ItemsList>
                                         <Button Style="{StaticResource SecondaryButton}" Margin="0,8,0,0" HorizontalAlignment="Left"
                                                 Content="Add cost line" Command="{Binding AddHeadCommand}" />
                                     </StackPanel>
@@ -3255,7 +3258,7 @@
                                 <Border Style="{StaticResource Card}" Padding="18,14" Margin="0,0,0,12">
                                     <StackPanel>
                                         <TextBlock Text="Rates" Style="{StaticResource CardTitle}" />
-                                        <TextBlock Text="Hardware per sash, by opening type; insect mesh per m²; steel reinforcement per metre of profile (uPVC)."
+                                        <TextBlock Text="Hardware per sash, by opening type (only where the library has no hardware set for that opening: a set is priced with the materials instead); insect mesh per m²; steel reinforcement per metre of profile (uPVC)."
                                                    FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,8" TextWrapping="Wrap" />
                                         <Grid>
                                             <Grid.ColumnDefinitions>
@@ -3346,7 +3349,7 @@
                                             <TextBlock Grid.Column="2" Text="Rate" Foreground="{StaticResource MutedTextBrush}" Margin="6,0,0,0" />
                                             <TextBlock Grid.Column="4" Text="On quote" Foreground="{StaticResource MutedTextBrush}" />
                                         </Grid>
-                                        <ItemsControl ItemsSource="{Binding Charges}">
+                                        <views:ItemsList ItemsSource="{Binding Charges}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
                                                     <Grid Margin="0,2">
@@ -3378,7 +3381,7 @@
                                                     </Grid>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
+                                        </views:ItemsList>
                                         <Button Style="{StaticResource SecondaryButton}" Margin="0,8,0,0" HorizontalAlignment="Left"
                                                 Content="Add charge" Command="{Binding AddChargeCommand}" />
                                     </StackPanel>
@@ -3414,7 +3417,7 @@
                                     <StackPanel>
                                         <TextBlock Text="Price summary" Style="{StaticResource CardTitle}" />
                                         <TextBlock Text="{Binding PreviewNote}" FontSize="11" Foreground="#9A5B00" TextWrapping="Wrap" Margin="0,4,0,0" />
-                                        <ItemsControl ItemsSource="{Binding Summary}" Margin="0,10,0,0">
+                                        <views:ItemsList ItemsSource="{Binding Summary}" Margin="0,10,0,0">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
                                                     <DockPanel Margin="0,4">
@@ -3443,7 +3446,7 @@
                                                     </DockPanel>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
+                                        </views:ItemsList>
                                     </StackPanel>
                                 </Border>
 
@@ -3470,7 +3473,7 @@
                                             <TextBlock Grid.Column="5" Text="Price each" FontSize="11" TextAlignment="Right" Foreground="{StaticResource MutedTextBrush}" />
                                             <TextBlock Grid.Column="6" Text="Total" FontSize="11" TextAlignment="Right" Foreground="{StaticResource MutedTextBrush}" />
                                         </Grid>
-                                        <ItemsControl ItemsSource="{Binding DesignPrices}">
+                                        <views:ItemsList ItemsSource="{Binding DesignPrices}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
                                                     <Grid Margin="0,3">
@@ -3493,7 +3496,7 @@
                                                     </Grid>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
+                                        </views:ItemsList>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -3671,14 +3674,14 @@
                                                             Content="{Binding Access.DesignLibraryLock}"
                                                             Visibility="{Binding Access.CanUseDesignLibrary, Converter={StaticResource InverseBoolToVisibility}}" />
                                             <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False" IsEnabled="{Binding Access.CanUseDesignLibrary}">
-                                                <ItemsControl ItemsSource="{Binding DesignLibrary.Sections}" Margin="0,0,0,12">
+                                                <views:ItemsList ItemsSource="{Binding DesignLibrary.Sections}" Margin="0,0,0,12">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
                                                             <StackPanel Margin="0,4,0,4">
                                                                 <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Margin="12,6,12,4"
                                                                            Foreground="{StaticResource TextBrush}" />
                                                                 <Rectangle Height="1" Fill="{StaticResource BorderBrush}" Margin="12,0,12,4" />
-                                                                <ItemsControl ItemsSource="{Binding Items}" Margin="8,0">
+                                                                <views:ItemsList ItemsSource="{Binding Items}" Margin="8,0">
                                                                     <ItemsControl.ItemsPanel>
                                                                         <ItemsPanelTemplate>
                                                                             <WrapPanel />
@@ -3693,11 +3696,11 @@
                                                                             </Button>
                                                                         </DataTemplate>
                                                                     </ItemsControl.ItemTemplate>
-                                                                </ItemsControl>
+                                                                </views:ItemsList>
                                                             </StackPanel>
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
+                                                </views:ItemsList>
                                             </ScrollViewer>
                                         </DockPanel>
                                     </DockPanel>
@@ -3720,9 +3723,18 @@
                                 </Border>
                             </Grid>
 
-                            <!-- Properties -->
+                            <!-- Properties (hidden while the New design panel covers them, so Tab does not reach them) -->
                             <Border Grid.Column="2" Background="{StaticResource PanelBackgroundBrush}"
                                     BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,0,0,0">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding NewDesignPanel.IsOpen}" Value="True">
+                                                <Setter Property="Visibility" Value="Hidden" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
                                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
                                 <StackPanel>
                                 <StackPanel DataContext="{Binding Properties}">
@@ -3791,7 +3803,7 @@
                                         <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" />
                                     </Border>
 
-                                    <ItemsControl ItemsSource="{Binding Items}" Margin="12,8,12,0" ItemTemplate="{StaticResource PropertyRow}" />
+                                    <views:ItemsList ItemsSource="{Binding Items}" Margin="12,8,12,0" ItemTemplate="{StaticResource PropertyRow}" />
 
                                     <!-- Library assignments: the frame's system, then glass / profile after design -->
                                     <ContentControl Content="{Binding SystemPicker}" Focusable="False" />
@@ -3801,7 +3813,7 @@
                                     <!-- Calculated values for the selection -->
                                     <StackPanel Visibility="{Binding HasCalculation, Converter={StaticResource BoolToVisibility}}">
                                         <TextBlock Style="{StaticResource PanelHeader}" Text="CALCULATION" Margin="12,16,12,4" />
-                                        <ItemsControl ItemsSource="{Binding CalculationItems}" Margin="12,0,12,0" ItemTemplate="{StaticResource PropertyRow}" />
+                                        <views:ItemsList ItemsSource="{Binding CalculationItems}" Margin="12,0,12,0" ItemTemplate="{StaticResource PropertyRow}" />
                                     </StackPanel>
                                     <Border Margin="12,8,12,4" Padding="8" Background="{StaticResource ErrorBackgroundBrush}"
                                             Visibility="{Binding HasCalculationMessage, Converter={StaticResource BoolToVisibility}}">

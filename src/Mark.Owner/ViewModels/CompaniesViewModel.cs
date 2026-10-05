@@ -23,6 +23,8 @@ public sealed class CompanyRow
 
     public string Name => Summary.Name;
 
+    public override string ToString() => Name;
+
     public string Initials => string.Concat(Summary.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(w => char.ToUpperInvariant(w[0])));
 
     public string TypeText => Summary.CompanyType ?? "";

@@ -19,21 +19,21 @@
 
                 <TextBlock Text="Where does it go?" FontWeight="SemiBold" Foreground="#374151" Margin="0,0,0,6" />
 
-                <RadioButton x:Name="AddOption" GroupName="Destination" Margin="0,4" Checked="Destination_Changed">
+                <RadioButton x:Name="AddOption" GroupName="Destination" Margin="0,4" Checked="Destination_Changed" AutomationProperties.Name="Universal catalogue: add these items">
                     <StackPanel>
                         <TextBlock Text="Universal catalogue: add these items" FontWeight="SemiBold" />
                         <TextBlock Text="Everything in the catalogue stays; items whose id is already used are kept as they are."
                                    FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" />
                     </StackPanel>
                 </RadioButton>
-                <RadioButton x:Name="ReplaceOption" GroupName="Destination" Margin="0,4" Checked="Destination_Changed">
+                <RadioButton x:Name="ReplaceOption" GroupName="Destination" Margin="0,4" Checked="Destination_Changed" AutomationProperties.Name="Universal catalogue: replace it with this file">
                     <StackPanel>
                         <TextBlock Text="Universal catalogue: replace it with this file" FontWeight="SemiBold" />
                         <TextBlock Text="The whole catalogue becomes this file. Companies lose catalogue items that are not in it (their saved quotes keep their copy)."
                                    FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" />
                     </StackPanel>
                 </RadioButton>
-                <RadioButton x:Name="CompanyOption" GroupName="Destination" Margin="0,4" Checked="Destination_Changed">
+                <RadioButton x:Name="CompanyOption" GroupName="Destination" Margin="0,4" Checked="Destination_Changed" AutomationProperties.Name="One company's own items">
                     <StackPanel>
                         <TextBlock Text="One company's own items" FontWeight="SemiBold" />
                         <TextBlock Text="Only this company gets them, under its name in its MARK; profiles go in a tab per series."

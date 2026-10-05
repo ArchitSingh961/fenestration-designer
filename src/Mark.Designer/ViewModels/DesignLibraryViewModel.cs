@@ -28,6 +28,8 @@ public sealed class DesignLibraryItem
 
     public string Name => System is null ? Template.Name : $"{Template.Name} · {System.Name}";
 
+    public override string ToString() => Name;
+
     public ImageSource? Thumbnail { get; }
 
     /// <summary>Applies the design to the selected opening or frame (click). Dragging onto an opening also works.</summary>
@@ -39,7 +41,10 @@ public sealed record DesignLibrarySection(string Title, IReadOnlyList<DesignLibr
 
 /// <summary>A button of the library rail.</summary>
 /// <param name="Glyph">A Segoe MDL2 Assets / Fluent icon character.</param>
-public sealed record DesignLibraryCategory(string Name, string Glyph, string ToolTip);
+public sealed record DesignLibraryCategory(string Name, string Glyph, string ToolTip)
+{
+    public override string ToString() => Name;
+}
 
 /// <summary>A company's own system and the ready-made designs offered in it.</summary>
 public sealed record SystemDesigns(ProductSystem System, IReadOnlyList<DesignTemplate> Templates);

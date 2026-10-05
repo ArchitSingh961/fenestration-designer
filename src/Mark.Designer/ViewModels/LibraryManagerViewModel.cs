@@ -13,6 +13,8 @@ public sealed record LibraryItemRow(LibraryItemKind Kind, string Id, string Name
 {
     public string Status => IsActive ? "" : "retired";
 
+    public override string ToString() => Name;
+
     /// <summary>"Catalogue" or "Sozluk — own items" when the list is in sections, otherwise null.</summary>
     public string? Section { get; init; }
 }

@@ -415,6 +415,8 @@ public partial class MainViewModel : ViewModelBase, IDesignService
         if (!ConfirmDiscardChanges())
             return;
         ShowProject(new Project { Name = "New quote", Pricing = DefaultPricing() });
+        Hint = "New quote: add the client and the designs, then save.";              // not the last quote's message
+        HintIsError = false;
     }
 
     /// <summary>

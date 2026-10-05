@@ -23,6 +23,18 @@ public sealed class DesignInfo
 
     public string Note { get; set; } = "";
 
+    /// <summary>Colour of the profiles, e.g. "White" or "Golden Oak" (shown on the quotation).</summary>
+    public string ProfileColour { get; set; } = "";
+
+    /// <summary>Colour of the handles, e.g. "White" or "Black".</summary>
+    public string HandleColour { get; set; } = "";
+
+    /// <summary>The insect mesh, e.g. "SS flymesh" (shown with the panes that have mesh).</summary>
+    public string MeshType { get; set; } = "";
+
+    /// <summary>An extra cost per window for this design only (in the library currency), for the "Extra cost" line of the cost sheet.</summary>
+    public decimal ExtraCost { get; set; }
+
     /// <summary>
     /// Height of the bottom of the frame above the finished floor (sill height), in mm. Null = not specified,
     /// and no floor line is drawn.

@@ -13,6 +13,7 @@ public static class PricingEditor
     public const int MaxNameLength = 60;
     public const decimal MaxPercent = 1000m;
     public const decimal MaxAmount = 100_000_000m;
+    public const int MaxFormulaLength = 300;
 
     public static void SetPricing(Project project, PriceStructure pricing) => TrySetPricing(project, pricing).ThrowIfFailed();
 
@@ -36,17 +37,36 @@ public static class PricingEditor
         if (pricing.Heads.Count + pricing.Charges.Count > MaxHeads)
             return $"A price structure can have at most {MaxHeads} lines.";
 
+        // Formulas use the material lines and the cost lines above them, by name.
+        var above = CostFormula.MaterialLines.Select(m => m.Name).ToList();
         foreach (var head in pricing.Heads)
         {
             if (CheckHead(head) is { } error) return error;
-            if (head.Basis == CostBasis.FixedPerQuote)
-                return $"'{head.Name.Trim()}' is a fixed amount per quote: put it under charges (after the discount).";
+            string name = head.Name.Trim();
+            if (head.Basis is CostBasis.FixedPerQuote)
+                return $"'{name}' is a fixed amount per quote: put it under charges (after the discount).";
+            if (above.Contains(name, StringComparer.OrdinalIgnoreCase))
+                return CostFormula.MaterialLines.Any(m => m.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                    ? $"'{name}' is already on the cost sheet (the material costs come first by themselves): give this line another name."
+                    : $"There are two cost lines called '{name}': give each its own name, so formulas know which one they use.";
+            if (CostHead.UsesFormula(head.Basis))
+            {
+                if (string.IsNullOrWhiteSpace(head.Formula))
+                    return head.Basis == CostBasis.PercentOf
+                        ? $"Say what '{name}' is a percentage of, e.g. @Profile Cost or #GLASSCOST."
+                        : $"Give '{name}' a formula, e.g. #PROFILECOST or @Profile Cost + @Glass Cost.";
+                if ((head.Formula ?? "").Length > MaxFormulaLength)
+                    return $"The formula of '{name}' can be at most {MaxFormulaLength} characters.";
+                if (CostFormula.Check(head.Formula, above) is { } problem)
+                    return $"The formula of '{name}' {problem}.";
+            }
+            above.Add(name);
         }
         foreach (var charge in pricing.Charges)
         {
             if (CheckHead(charge) is { } error) return error;
-            if (charge.Basis is not (CostBasis.FixedPerQuote or CostBasis.PerWindow or CostBasis.PerSquareMetreOfWindow))
-                return $"The charge '{charge.Name.Trim()}' must be a fixed amount per quote, per window or per m² of window.";
+            if (charge.Basis is not (CostBasis.FixedPerQuote or CostBasis.PerWindow or CostBasis.PerSquareMetreOfWindow or CostBasis.PerSquareFootOfWindow))
+                return $"The charge '{charge.Name.Trim()}' must be a fixed amount per quote, per window or per m² / sq. ft. of window.";
         }
 
         if (pricing.DiscountPercent is < 0 or > 100)
@@ -96,7 +116,10 @@ public static class PricingEditor
         copy.Name = copy.Name.Trim();
         copy.TaxName = (copy.TaxName ?? "").Trim();
         foreach (var head in copy.Heads.Concat(copy.Charges))
+        {
             head.Name = head.Name.Trim();
+            head.Formula = CostHead.UsesFormula(head.Basis) ? (head.Formula ?? "").Trim() : "";
+        }
         return copy;
     }
 }

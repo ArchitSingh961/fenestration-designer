@@ -25,6 +25,7 @@ public sealed class CostHeadRow : ViewModelBase
         _basis = head.Basis;
         _rateText = PricingViewModel.FormatNumber(head.Rate);
         _showOnQuote = head.ShowOnQuote;
+        _formula = head.Formula ?? "";
         Currency = currency;
         _changed = changed;
         RemoveCommand = new RelayCommand(() => remove(this));
@@ -45,6 +46,9 @@ public sealed class CostHeadRow : ViewModelBase
         {
             if (!SetProperty(ref _basis, value)) return;
             OnPropertyChanged(nameof(UnitText));
+            OnPropertyChanged(nameof(UsesFormula));
+            OnPropertyChanged(nameof(UsesRate));
+            OnPropertyChanged(nameof(FormulaHint));
             _changed();
         }
     }
@@ -54,6 +58,19 @@ public sealed class CostHeadRow : ViewModelBase
 
     private bool _showOnQuote;
     public bool ShowOnQuote { get => _showOnQuote; set { if (SetProperty(ref _showOnQuote, value)) _changed(); } }
+
+    private string _formula;
+    /// <summary>The formula (custom formula) or what the percentage is of (percentage of ...).</summary>
+    public string Formula { get => _formula; set { if (SetProperty(ref _formula, value)) _changed(); } }
+
+    public bool UsesFormula => CostHead.UsesFormula(Basis);
+
+    public bool UsesRate => CostHead.UsesRate(Basis);
+
+    /// <summary>What to type in the formula box.</summary>
+    public string FormulaHint => Basis == CostBasis.PercentOf ? "of, e.g. @Profile Cost" : "e.g. #PROFILECOST";
+
+    public override string ToString() => Name;
 
     /// <summary>"%" or "INR / m²" etc., shown after the rate.</summary>
     public string UnitText => PricingViewModel.UnitOf(Basis, Currency);
@@ -65,14 +82,28 @@ public sealed class CostHeadRow : ViewModelBase
     /// <summary>The row as a cost head, or an error message.</summary>
     public (CostHead? Head, string? Error) ToHead()
     {
-        if (!PricingViewModel.TryParseDecimal(RateText, out decimal rate))
+        decimal rate = 0;
+        if (UsesRate && !PricingViewModel.TryParseDecimal(RateText, out rate))
             return (null, $"Enter the rate of '{Name}' as a number.");
-        return (new CostHead { Name = Name ?? "", Basis = Basis, Rate = rate, ShowOnQuote = ShowOnQuote }, null);
+        return (new CostHead { Name = Name ?? "", Basis = Basis, Rate = UsesRate ? rate : 0, ShowOnQuote = ShowOnQuote,
+            Formula = UsesFormula ? Formula ?? "" : "" }, null);
     }
 }
 
 /// <summary>A line of the price summary or the per-design table, formatted.</summary>
 public sealed record PriceRow(string Name, string Amount, bool IsTotal);
+
+/// <summary>A line of a design's cost sheet, formatted: name, calculation type, formula and amount per window.</summary>
+public sealed record CostSheetRow(string Name, string Type, string Formula, string Amount, bool IsTotal, bool IsMaterial)
+{
+    public override string ToString() => $"{Name} {Amount}";
+}
+
+/// <summary>A design to show the cost sheet of.</summary>
+public sealed record SheetDesign(Guid FrameId, string Name)
+{
+    public override string ToString() => Name;
+}
 
 /// <summary>A design's price as a row of the Pricing tab.</summary>
 public sealed record DesignPriceRow(string Reference, int Quantity, string Material, string Rated, string Heads,
@@ -105,7 +136,7 @@ public sealed class PricingViewModel : ViewModelBase
         _apply = apply;
         _loadDefault = loadDefault;
         _saveDefault = saveDefault;
-        AddHeadCommand = new RelayCommand(() => AddRow(Heads, new CostHead { Name = "New cost", Basis = CostBasis.PercentOfMaterials }));
+        AddHeadCommand = new RelayCommand(() => AddRow(Heads, new CostHead { Name = NewName("New cost"), Basis = CostBasis.PerSquareFootOfWindow }));
         AddChargeCommand = new RelayCommand(() => AddRow(Charges, new CostHead { Name = "New charge", Basis = CostBasis.FixedPerQuote, ShowOnQuote = true }));
         ApplyCommand = new RelayCommand(Apply);
         RevertCommand = new RelayCommand(() => Load(_project().Pricing));
@@ -116,6 +147,13 @@ public sealed class PricingViewModel : ViewModelBase
 
     public static IReadOnlyList<BasisOption> HeadBases { get; } = new[]
     {
+        new BasisOption(CostBasis.Formula, "Custom formula"),
+        new BasisOption(CostBasis.PercentOf, "Percentage of …"),
+        new BasisOption(CostBasis.Subtotal, "Subtotal"),
+        new BasisOption(CostBasis.PerSquareFootOfWindow, "per sq. ft. of window"),
+        new BasisOption(CostBasis.PerSquareFootOfGlass, "per sq. ft. of glass"),
+        new BasisOption(CostBasis.PerFootOfProfile, "per running ft of profile"),
+        new BasisOption(CostBasis.DesignExtraCost, "Extra cost (per design)"),
         new BasisOption(CostBasis.PercentOfProfiles, "% of profiles"),
         new BasisOption(CostBasis.PercentOfGlass, "% of glass"),
         new BasisOption(CostBasis.PercentOfAccessories, "% of accessories"),
@@ -132,8 +170,18 @@ public sealed class PricingViewModel : ViewModelBase
     {
         new BasisOption(CostBasis.FixedPerQuote, "fixed per quote"),
         new BasisOption(CostBasis.PerWindow, "per window"),
-        new BasisOption(CostBasis.PerSquareMetreOfWindow, "per m² of window")
+        new BasisOption(CostBasis.PerSquareMetreOfWindow, "per m² of window"),
+        new BasisOption(CostBasis.PerSquareFootOfWindow, "per sq. ft. of window")
     };
+
+    /// <summary>The name of a calculation type, as in the drop-downs.</summary>
+    public static string TypeName(CostBasis basis)
+        => HeadBases.Concat(ChargeBases).FirstOrDefault(b => b.Basis == basis)?.Name ?? basis.ToString();
+
+    /// <summary>The values a formula can use (#...) and the material lines (@...), for the help under the cost lines.</summary>
+    public static string FormulaHelp { get; } =
+        "Formulas use + − * / and brackets, the lines above (@Profile Cost, @RI Cost, @Hardware Cost, @Glass Cost, @Sub Total Including Labour …) and a window's values: "
+        + string.Join(", ", Core.Quotes.CostFormula.Variables.Select(v => $"#{v.Name} ({v.Meaning})")) + ".";
 
     // ── Form ────────────────────────────────────────────────────────
 
@@ -207,6 +255,29 @@ public sealed class PricingViewModel : ViewModelBase
 
     public ObservableCollection<PriceRow> Summary { get; } = new();
     public ObservableCollection<DesignPriceRow> DesignPrices { get; } = new();
+
+    /// <summary>The designs whose cost sheet can be shown.</summary>
+    public ObservableCollection<SheetDesign> SheetDesigns { get; } = new();
+
+    /// <summary>The cost sheet of <see cref="SelectedSheetDesign"/>, one window, from profile cost to unit price.</summary>
+    public ObservableCollection<CostSheetRow> Sheet { get; } = new();
+
+    private SheetDesign? _selectedSheetDesign;
+    public SheetDesign? SelectedSheetDesign
+    {
+        get => _selectedSheetDesign;
+        set
+        {
+            if (SetProperty(ref _selectedSheetDesign, value))
+                ShowSheet();
+        }
+    }
+
+    private bool _showTypes = true;
+    /// <summary>Shows the calculation type column of the cost sheet.</summary>
+    public bool ShowTypes { get => _showTypes; set => SetProperty(ref _showTypes, value); }
+
+    private QuotePrice _previewPrice = QuotePrice.Empty;
 
     private string _previewNote = "";
     /// <summary>Says whether the preview shows the quote as it is, or the form's unsaved changes (or why it can't).</summary>
@@ -312,6 +383,20 @@ public sealed class PricingViewModel : ViewModelBase
             Summary.Add(new PriceRow(line.Name, Money(line.Amount, currency),
                 line.Kind is PriceSummaryKind.SubTotal or PriceSummaryKind.Total or PriceSummaryKind.GrandTotal));
 
+        _previewPrice = price;
+        var selected = SelectedSheetDesign?.FrameId;
+        SheetDesigns.Clear();
+        foreach (var design in price.Designs)
+        {
+            var f = project.Frames.First(x => x.Id == design.FrameId);
+            string reference = string.IsNullOrWhiteSpace(f.Design.Reference) ? "—" : f.Design.Reference;
+            SheetDesigns.Add(new SheetDesign(design.FrameId, string.IsNullOrWhiteSpace(f.Design.Name) || f.Design.Name == reference
+                ? reference : $"{reference} · {f.Design.Name}"));
+        }
+        _selectedSheetDesign = SheetDesigns.FirstOrDefault(d => d.FrameId == selected) ?? SheetDesigns.FirstOrDefault();
+        OnPropertyChanged(nameof(SelectedSheetDesign));
+        ShowSheet();
+
         DesignPrices.Clear();
         foreach (var design in price.Designs)
         {
@@ -324,6 +409,25 @@ public sealed class PricingViewModel : ViewModelBase
                 Money(design.Heads.Sum(h => h.Amount), ""),
                 Money(design.UnitPrice, ""),
                 Money(design.Total, "")));
+        }
+    }
+
+    private void ShowSheet()
+    {
+        Sheet.Clear();
+        if (SelectedSheetDesign is null || _previewPrice.FindDesign(SelectedSheetDesign.FrameId) is not { } design) return;
+        foreach (var line in design.Sheet)
+        {
+            string type = line.Kind switch
+            {
+                CostSheetLineKind.Material => "Material",
+                CostSheetLineKind.Price => "",
+                _ when line.Basis is { } basis => TypeName(basis),
+                _ when line.Name == "Discount" => TypeName(CostBasis.PercentOf),
+                _ => TypeName(CostBasis.Subtotal)
+            };
+            Sheet.Add(new CostSheetRow(line.Name, type, line.Formula, Money(line.Amount, ""),
+                line.Kind is CostSheetLineKind.Subtotal or CostSheetLineKind.Price, line.Kind == CostSheetLineKind.Material));
         }
     }
 
@@ -384,6 +488,15 @@ public sealed class PricingViewModel : ViewModelBase
             Changed();
         });
 
+    /// <summary>"New cost", or "New cost 2" ... when that name is taken (formulas need names to be unique).</summary>
+    private string NewName(string name)
+    {
+        string candidate = name;
+        for (int n = 2; Heads.Any(h => string.Equals(h.Name?.Trim(), candidate, StringComparison.OrdinalIgnoreCase)); n++)
+            candidate = $"{name} {n}";
+        return candidate;
+    }
+
     private void AddRow(ObservableCollection<CostHeadRow> owner, CostHead head)
     {
         owner.Add(Row(head, owner));
@@ -410,6 +523,9 @@ public sealed class PricingViewModel : ViewModelBase
         _ when CostHead.IsPercent(basis) => "%",
         CostBasis.PerMetreOfProfile => $"{currency} / m",
         CostBasis.PerSquareMetreOfWindow or CostBasis.PerSquareMetreOfGlass => $"{currency} / m²",
+        CostBasis.PerSquareFootOfWindow or CostBasis.PerSquareFootOfGlass => $"{currency} / sq. ft.",
+        CostBasis.PerFootOfProfile => $"{currency} / ft",
+        CostBasis.Formula or CostBasis.Subtotal or CostBasis.DesignExtraCost => "",
         CostBasis.PerWindow => $"{currency} / window",
         CostBasis.PerSash => $"{currency} / sash",
         _ => currency

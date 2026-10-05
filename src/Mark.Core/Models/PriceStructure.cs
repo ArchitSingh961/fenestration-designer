@@ -34,7 +34,31 @@ public enum CostBasis
     PerSash,
 
     /// <summary>A fixed amount for the whole quote (charges only, e.g. transport).</summary>
-    FixedPerQuote
+    FixedPerQuote,
+
+    /// <summary>The amount its <see cref="CostHead.Formula"/> works out to, e.g. <c>#PROFILECOST</c> or <c>@A + @B</c>.</summary>
+    Formula,
+
+    /// <summary>Rate % of what its <see cref="CostHead.Formula"/> works out to, e.g. 18 % of <c>@Sub Total Including Labour</c>.</summary>
+    PercentOf,
+
+    /// <summary>
+    /// A total of everything above it ("Total raw material cost", "Sub total including labour"): shown on the sheet and
+    /// usable in formulas below, but not added again.
+    /// </summary>
+    Subtotal,
+
+    /// <summary>Rate per sq. ft. of window (outer width × height).</summary>
+    PerSquareFootOfWindow,
+
+    /// <summary>Rate per sq. ft. of glass.</summary>
+    PerSquareFootOfGlass,
+
+    /// <summary>Rate per running foot of profile.</summary>
+    PerFootOfProfile,
+
+    /// <summary>The design's own extra cost per window (set on the design; the rate is not used).</summary>
+    DesignExtraCost
 }
 
 /// <summary>One line of the price structure, e.g. "Profile wastage — 10 % of profiles".</summary>
@@ -49,10 +73,19 @@ public sealed class CostHead
     /// <summary>Shown as its own line on the quote (otherwise folded into the price).</summary>
     public bool ShowOnQuote { get; set; }
 
+    /// <summary>For <see cref="CostBasis.Formula"/> the amount, for <see cref="CostBasis.PercentOf"/> what the rate is a percentage of.</summary>
+    public string Formula { get; set; } = "";
+
     public CostHead Copy() => (CostHead)MemberwiseClone();
 
     public static bool IsPercent(CostBasis basis) => basis is CostBasis.PercentOfProfiles or CostBasis.PercentOfGlass
-        or CostBasis.PercentOfAccessories or CostBasis.PercentOfMaterials or CostBasis.PercentOfRunningTotal;
+        or CostBasis.PercentOfAccessories or CostBasis.PercentOfMaterials or CostBasis.PercentOfRunningTotal or CostBasis.PercentOf;
+
+    /// <summary>The basis works the amount out from <see cref="Formula"/>.</summary>
+    public static bool UsesFormula(CostBasis basis) => basis is CostBasis.Formula or CostBasis.PercentOf;
+
+    /// <summary>The basis has a rate to enter.</summary>
+    public static bool UsesRate(CostBasis basis) => basis is not (CostBasis.Formula or CostBasis.Subtotal or CostBasis.DesignExtraCost);
 }
 
 /// <summary>Rates for things the product library does not price: hardware per sash, mesh, reinforcement.</summary>
@@ -146,18 +179,22 @@ public sealed class PriceStructure
         Name = "Retail",
         Heads =
         {
-            new CostHead { Name = "Profile wastage", Basis = CostBasis.PercentOfProfiles, Rate = 10 },
-            new CostHead { Name = "Glass wastage", Basis = CostBasis.PercentOfGlass, Rate = 5 },
-            new CostHead { Name = "Powder coating", Basis = CostBasis.PerMetreOfProfile, Rate = 60 },
-            new CostHead { Name = "Fabrication labour", Basis = CostBasis.PerSquareMetreOfWindow, Rate = 750 },
-            new CostHead { Name = "Installation labour", Basis = CostBasis.PerSquareMetreOfWindow, Rate = 500 },
-            new CostHead { Name = "Overheads and margin", Basis = CostBasis.PercentOfRunningTotal, Rate = 20 }
+            new CostHead { Name = "Profile Wastage", Basis = CostBasis.PercentOf, Rate = 10, Formula = "#PROFILECOST" },
+            new CostHead { Name = "RI Wastage", Basis = CostBasis.PercentOf, Rate = 10, Formula = "#RICOST" },
+            new CostHead { Name = "Glass Wastage", Basis = CostBasis.PercentOf, Rate = 5, Formula = "#GLASSCOST" },
+            new CostHead { Name = "Powder Coating", Basis = CostBasis.PerMetreOfProfile, Rate = 60 },
+            new CostHead { Name = "Total Raw Material Cost", Basis = CostBasis.Subtotal },
+            new CostHead { Name = "Fabrication Labour", Basis = CostBasis.PerSquareMetreOfWindow, Rate = 750 },
+            new CostHead { Name = "Installation Labour", Basis = CostBasis.PerSquareMetreOfWindow, Rate = 500 },
+            new CostHead { Name = "Extra Cost", Basis = CostBasis.DesignExtraCost },
+            new CostHead { Name = "Sub Total Including Labour", Basis = CostBasis.Subtotal },
+            new CostHead { Name = "Profit", Basis = CostBasis.PercentOf, Rate = 20, Formula = "@Sub Total Including Labour" }
         },
         DiscountPercent = 0,
         Charges =
         {
-            new CostHead { Name = "Transportation", Basis = CostBasis.FixedPerQuote, Rate = 1000, ShowOnQuote = true },
-            new CostHead { Name = "Loading and unloading", Basis = CostBasis.FixedPerQuote, Rate = 1000, ShowOnQuote = true }
+            new CostHead { Name = "Transportation Cost", Basis = CostBasis.FixedPerQuote, Rate = 1000, ShowOnQuote = true },
+            new CostHead { Name = "Loading And Unloading", Basis = CostBasis.FixedPerQuote, Rate = 1000, ShowOnQuote = true }
         },
         TaxName = "GST",
         TaxPercent = 18,

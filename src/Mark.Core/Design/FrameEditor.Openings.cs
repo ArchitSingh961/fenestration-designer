@@ -15,6 +15,8 @@ public static partial class FrameEditor
 
     /// <summary>Highest sill height accepted for the floor line, in mm.</summary>
     public const double MaxFloorDistanceMm = 20_000;
+    public const decimal MaxExtraCost = 10_000_000m;
+    public const int MaxColourLength = 60;
 
     // ── Openings ────────────────────────────────────────────────────
 
@@ -260,7 +262,11 @@ public static partial class FrameEditor
             Location = (info.Location ?? "").Trim(),
             Floor = (info.Floor ?? "").Trim(),
             Note = (info.Note ?? "").Trim(),
-            FloorDistanceMm = info.FloorDistanceMm
+            FloorDistanceMm = info.FloorDistanceMm,
+            ProfileColour = (info.ProfileColour ?? "").Trim(),
+            HandleColour = (info.HandleColour ?? "").Trim(),
+            MeshType = (info.MeshType ?? "").Trim(),
+            ExtraCost = info.ExtraCost
         };
 
         if (clean.Reference.Length > MaxReferenceLength)
@@ -269,6 +275,10 @@ public static partial class FrameEditor
             return EditResult.Fail($"The quantity must be a whole number from 1 to {MaxQuantity:N0}.");
         if (clean.FloorDistanceMm is { } floor && (!double.IsFinite(floor) || floor < 0 || floor > MaxFloorDistanceMm))
             return EditResult.Fail($"The floor distance must be between 0 and {Members.Format(MaxFloorDistanceMm)} mm.");
+        if (clean.ExtraCost is < 0 or > MaxExtraCost)
+            return EditResult.Fail($"The extra cost must be between 0 and {MaxExtraCost:N0}.");
+        if (new[] { clean.ProfileColour, clean.HandleColour, clean.MeshType }.Any(t => t.Length > MaxColourLength))
+            return EditResult.Fail($"Colours and the mesh type can be at most {MaxColourLength} characters.");
 
         frame.Design = clean;
         return EditResult.Ok;

@@ -1718,7 +1718,11 @@
                             <Button Style="{StaticResource SecondaryButton}" Content="Discard changes" Command="{Binding RevertCommand}" />
                             <Button Style="{StaticResource PrimaryButton}" Content="Save setup" Command="{Binding SaveCommand}" />
                         </StackPanel>
-                        <TextBlock Text="Quotation setup" Style="{StaticResource PageTitle}" />
+                        <StackPanel>
+                            <TextBlock Text="Quotation setup" Style="{StaticResource PageTitle}" HorizontalAlignment="Left" />
+                            <TextBlock Text="Changes are also saved when you leave this page or make a quotation." FontSize="11"
+                                       Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" />
+                        </StackPanel>
                     </DockPanel>
                     <TextBlock TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,12"
                                Visibility="{Binding IsManaged, Converter={StaticResource BoolToVisibility}}"

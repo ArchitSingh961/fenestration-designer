@@ -29,7 +29,9 @@ public partial class MainWindow : Window
     /// <summary>Ask before closing over unsaved changes (the decision is the view model's).</summary>
     private void Window_Closing(object? sender, CancelEventArgs e)
     {
-        if (DataContext is MainViewModel vm && !vm.ConfirmDiscardChanges())
+        if (DataContext is not MainViewModel vm) return;
+        vm.QuotationSetup.SaveIfChanged();
+        if (!vm.ConfirmDiscardChanges())
             e.Cancel = true;
     }
 }

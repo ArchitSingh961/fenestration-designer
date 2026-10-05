@@ -184,6 +184,7 @@ public partial class App : Application
                                          "You will need your User ID and password to sign in again.",
                 "Sign out", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
             return;
+        mainViewModel.QuotationSetup.SaveIfChanged();
         if (!mainViewModel.ConfirmDiscardChanges())
             return;
         await licence.SignOutAsync();

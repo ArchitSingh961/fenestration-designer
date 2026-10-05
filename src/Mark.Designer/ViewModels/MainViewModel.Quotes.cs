@@ -61,6 +61,7 @@ public partial class MainViewModel
             {
                 ActiveTool.Cancel();
                 Interaction.Clear();
+                if (_page == AppPage.QuotationSetup) QuotationSetup.SaveIfChanged();     // what was typed there is kept
             }
             _page = value;
             OnPropertyChanged();

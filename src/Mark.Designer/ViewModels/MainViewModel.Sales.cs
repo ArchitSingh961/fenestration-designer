@@ -140,6 +140,7 @@ public partial class MainViewModel
     /// <summary>The quotation of the open quote, with the company's setup.</summary>
     public QuotationDocument BuildQuotation()
     {
+        QuotationSetup.SaveIfChanged();                                  // the setup as typed, even without Save setup
         QuotationSettings settings;
         try
         {

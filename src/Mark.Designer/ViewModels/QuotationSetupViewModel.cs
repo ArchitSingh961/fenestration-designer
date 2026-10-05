@@ -19,6 +19,7 @@ public sealed class QuotationSetupViewModel : ViewModelBase
     private readonly Func<IDialogService?> _dialogs;
     private readonly Func<Mark.Licensing.Api.QuotationProfile?> _profile;
     private QuotationSettings _loaded = new();
+    private bool _isLoaded;
 
     /// <param name="profile">With a MARK account: the details, brand, bank and last page the MARK supplier set (not shown
     /// on the page, but printed); null: no account, the company fills them in itself.</param>
@@ -160,6 +161,7 @@ public sealed class QuotationSetupViewModel : ViewModelBase
             Show(ex.Message, true);
             _loaded = new QuotationSettings();
         }
+        _isLoaded = true;
         var s = _loaded;
         CompanyName = s.CompanyName; PartnerLabel = s.PartnerLabel; Address = s.Address; Phone = s.Phone; Email = s.Email; Website = s.Website;
         Gstin = s.Gstin; BrandName = s.BrandName; BrandLogo = s.BrandLogoBase64; Letter = s.Letter; Terms = s.Terms;
@@ -193,6 +195,18 @@ public sealed class QuotationSetupViewModel : ViewModelBase
         BankBranch = BankBranch.Trim(), Acceptance = Acceptance.Trim(), Notes = Notes.Trim(), AreaUnit = AreaUnit,
         CurrencyLabel = string.IsNullOrWhiteSpace(CurrencyLabel) ? "Rs." : CurrencyLabel.Trim(), ExtraPageBase64 = ExtraPage
     };
+
+    /// <summary>The form differs from what is saved (only once it was loaded).</summary>
+    public bool HasChanges => _isLoaded && ToSettings() != _loaded;
+
+    /// <summary>
+    /// Saves the form when it was changed: when leaving the page, before a quotation is made and when MARK closes, so
+    /// what was typed is never lost for want of Save setup.
+    /// </summary>
+    public void SaveIfChanged()
+    {
+        if (HasChanges) Save();
+    }
 
     public void Save()
     {

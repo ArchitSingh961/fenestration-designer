@@ -56,7 +56,8 @@ public static class FeatureCatalog
         new Feature(Features.CuttingPlans, "Production", "Cutting plans", "Stock bars, cut lengths, offcuts and waste."),
         new Feature(Features.ProductionOrders, "Production", "Production orders",
             "Production orders from confirmed orders: cutting lists with offcuts, glass orders, hardware pick lists, shop drawings, labels and progress."),
-        new Feature(Features.OrderManagement, "Orders", "Order management", "Order status, payments, delivery and installation.", IsBuilt: false),
+        new Feature(Features.OrderManagement, "Orders", "Order management",
+            "Orders from confirmation to installation: stage, advance and stage payments, delivery and installation schedule, dispatch notes and installation sign-off."),
         new Feature(Features.Purchasing, "Purchasing", "Purchasing", "Suppliers, purchase orders and goods received.", IsBuilt: false),
         new Feature(Features.Inventory, "Inventory", "Inventory", "Stock of bars, glass and hardware, offcut reuse.", IsBuilt: false),
         new Feature(Features.Invoices, "Accounts", "Invoices and payments", "GST invoices, receipts and Tally export.", IsBuilt: false)

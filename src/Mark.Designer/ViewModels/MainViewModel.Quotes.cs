@@ -8,7 +8,7 @@ using Mark.Data;
 namespace Mark.Designer.ViewModels;
 
 /// <summary>The application's main pages (Milestone 14: grouped into areas, see <see cref="AppArea"/>).</summary>
-public enum AppPage { Dashboard, Quotes, Quote, Account, Library, Overview, Staff, Enquiries, QuotationSetup, ProductionOrders, Offcuts }
+public enum AppPage { Dashboard, Quotes, Quote, Account, Library, Overview, Staff, Enquiries, QuotationSetup, ProductionOrders, Offcuts, Orders, Schedule }
 
 /// <summary>The parts of the open quote: Client, Designs (Sales); Drawing (Design); Pricing, Materials (Pricing); Cutting (Production).</summary>
 public enum QuoteSection { Client, Designs, Drawing, Pricing, Materials, Cutting }
@@ -78,6 +78,11 @@ public partial class MainViewModel
                 Production.Reload();
             }
             if (value == AppPage.Offcuts) Offcuts.Reload();
+            if (value is AppPage.Orders or AppPage.Schedule)
+            {
+                OrderBook.OpenDocument = OpenDocument;
+                OrderBook.Reload();
+            }
             if (value == AppPage.Quotes) Quotes.Reload();
             if (value == AppPage.Account) Account?.Refresh();
             if (value == AppPage.Staff) Staff?.Reload();

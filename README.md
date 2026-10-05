@@ -65,6 +65,7 @@ docs/
 ├── areas.md                    areas and tabs, staff logins and permissions, who did what
 ├── sales.md                    enquiries, orders and revisions, the quotation PDF, sales charts
 ├── production.md               production orders, progress, cutting list, glass order, labels, offcuts
+├── orders.md                   orders: stage, payments, schedule, dispatch notes, installation sign-off
 ├── roadmap.md                  the milestone plan
 └── geometry.md                 coordinate system, tolerance, primitives, viewport math, grid
 ```
@@ -94,9 +95,16 @@ list** for profiles and steel (from offcuts in stock first), a **glass order**, 
 drawings** and **piece labels**. **Production › Offcuts** keeps the reusable leftovers. See
 [docs/production.md](docs/production.md).
 
+## Orders
+
+**Orders › Orders** follows every order from confirmation to installation: its stage (moving on with production,
+dispatch and sign-off), advance and stage **payments** with the balance, the **delivery and installation** schedule,
+**dispatch notes** (PDF, DN-00001…) and the client's **installation sign-off** with a certificate (PDF).
+**Orders › Schedule** lists every order's deliveries, installations and site visits. See [docs/orders.md](docs/orders.md).
+
 ## Areas, staff and who did what
 
-MARK is organised into areas (Sales, Design, Pricing, Library, Production, and Orders, Purchasing, Inventory and
+MARK is organised into areas (Sales, Design, Pricing, Library, Production, Orders, and Purchasing, Inventory and
 Accounts to come) in a bar on the left, each with its tabs in the header. The account owner gives staff their own
 logins in **Account → Staff logins**, each with only the parts of MARK they need (a cutter sees only Production), up to
 the users the MARK supplier allows. Every quote records who created and saved it, with a history of what changed. See

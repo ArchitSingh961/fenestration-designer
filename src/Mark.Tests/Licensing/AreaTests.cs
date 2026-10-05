@@ -71,8 +71,11 @@ public class AreaTests
         vm.ShowArea(AppArea.Production);
         Assert.Equal((AppPage.Quote, QuoteSection.Cutting), (vm.Page, vm.Section));
         vm.ShowArea(AppArea.Orders);
+        Assert.Equal(AppPage.Orders, vm.Page);                                     // built (Milestone 17); locked in this package
+        Assert.False(vm.Access.CanManageOrders);
+        vm.ShowArea(AppArea.Purchasing);
         Assert.Equal(AppPage.Overview, vm.Page);
-        Assert.Contains(vm.OverviewFeatures, f => f.Name == "Order management" && f.State.Contains("Coming in a later version"));
+        Assert.Contains(vm.OverviewFeatures, f => f.Name == "Purchasing" && f.State.Contains("Coming in a later version"));
     }
 
     [Fact]

@@ -13,7 +13,7 @@ internal static class DatabaseSchema
     public const int ApplicationId = 0x46454E31;
 
     /// <summary>The schema version written by this build.</summary>
-    public const int CurrentVersion = 8;
+    public const int CurrentVersion = 9;
 
     /// <summary>Upgrade scripts keyed by the version they upgrade FROM.</summary>
     public static readonly IReadOnlyDictionary<int, string> Upgrades = new Dictionary<int, string>
@@ -24,8 +24,23 @@ internal static class DatabaseSchema
         [4] = Version5,
         [5] = Version6,
         [6] = Version7,
-        [7] = Version8
+        [7] = Version8,
+        [8] = Version9
     };
+
+    /// <summary>
+    /// Version 9 (Milestone 17, orders): each customer order followed from confirmation to installation — stage,
+    /// payments, schedule, dispatch notes and sign-off — as JSON, one per quote.
+    /// </summary>
+    public const string Version9 = """
+        CREATE TABLE customer_orders (
+            id             TEXT PRIMARY KEY NOT NULL,
+            project_id     TEXT NOT NULL UNIQUE,
+            order_number   TEXT NOT NULL,
+            created_utc    TEXT NOT NULL,
+            order_json     TEXT NOT NULL
+        );
+        """;
 
     /// <summary>
     /// Version 8 (Milestone 16, production): production orders (the order as JSON with progress, and the designs as they

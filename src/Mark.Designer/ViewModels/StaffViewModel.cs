@@ -172,6 +172,8 @@ public sealed class StaffViewModel : ViewModelBase
             new[] { Features.Costing, Features.PriceStructure, Features.LibraryManager }),
         new StaffPreset("Production", "Cutting plans and production",
             new[] { Features.CuttingPlans, Features.ProductionOrders }),
+        new StaffPreset("Orders", "Payments, dispatch, installation and sign-off",
+            new[] { Features.Quotes, Features.OrderManagement }),
         new StaffPreset("Everything", "Everything in the account",
             FeatureCatalog.All.Select(f => f.Id).ToList())
     };

@@ -33,6 +33,7 @@ used unless changed before that milestone starts.
 | 13+ | A company's own items | Products the owner makes for one company only (profiles, glass, hardware, systems, bundles), using catalogue items, delivered with its catalogue (see catalogue.md) |
 | 15 | Sales | Enquiries (two-step form, stages, sources, follow-ups) → quote → order; quote revisions; quotation PDF in the usual layout with the company's setup; sales charts by week/month, person and city (see sales.md) |
 | 16 | Production | Production orders from confirmed orders (designs kept as they were); progress per window (cut, assembled, glazed, ready, dispatched); cutting list with steel and offcuts in stock used first; glass order; hardware pick list; shop drawings; piece labels; offcuts in stock (see production.md) |
+| 17 | Orders | Order book from confirmation to installation: stages that follow production, dispatch and sign-off; advance, stage and final payments with balance; delivery and installation schedule; dispatch notes (PDF, DN-00001…); installation sign-off with certificate (PDF) (see orders.md) |
 | — | Along the way | Product renamed to MARK; colour-coded bill of materials; rail and drop-down fixes |
 
 ---
@@ -168,7 +169,13 @@ package (others: as an add-on).
 
 ---
 
-## 17 — Orders
+## 17 — Orders — done
+
+Built as planned; see [orders.md](orders.md). Decisions taken: one order record per quote converted to an order (the
+designs and the price stay with the quote; the value is the quote's total); six stages (Confirmed, In production, Ready,
+Dispatched, Installed, Closed) that move forward on their own with production, dispatch and sign-off and can be set by
+hand; dispatch notes numbered DN-00001… across all orders; dispatch note and installation certificate as PDFs; a
+Schedule tab for every order's deliveries, installations and site visits.
 
 - Order status from confirmation to installation; advance and stage payments recorded.
 - Delivery and installation schedule; dispatch notes; installation sign-off.

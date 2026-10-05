@@ -81,6 +81,9 @@ public sealed class NewDesignViewModel : ViewModelBase
     /// <summary>True when the design has glass to choose.</summary>
     public bool AsksGlass => _openings.Count > 0;
 
+    /// <summary>The design has panes but no glass of the library fits its system.</summary>
+    public bool HasNoGlass => AsksGlass && GlassOptions.Count == 0;
+
     /// <summary>The brand chosen last (offered first next time).</summary>
     public string? LastBrand { get; private set; }
 
@@ -154,6 +157,7 @@ public sealed class NewDesignViewModel : ViewModelBase
                         ?? GlassOptions.FirstOrDefault(o => o.Id == LastGlassId)
                         ?? GlassOptions.FirstOrDefault(o => o.Id == fallback)
                         ?? GlassOptions.FirstOrDefault();
+        OnPropertyChanged(nameof(HasNoGlass));
     }
 
     private void Confirm()

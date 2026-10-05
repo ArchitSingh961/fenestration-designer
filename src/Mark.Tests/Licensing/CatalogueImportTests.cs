@@ -154,7 +154,44 @@ public class CatalogueImportTests : IAsyncLifetime
     private sealed class Host : ICatalogueEditorHost
     {
         public IDialogService Dialogs => new FakeDialogs();
-        public void ShowLibraryManager(LibraryManagerViewModel manager) { }
+        public Action<LibraryManagerViewModel> Script { get; set; } = _ => { };
+        public void ShowLibraryManager(LibraryManagerViewModel manager) => Script(manager);
+    }
+
+    [Fact]
+    public async Task AddGlass_OpensANewGlass_AndPublishesIt()
+    {
+        var (owner, page, _, _) = await SetUpAsync();
+        await page.ImportAsync(MakersFile(), "sozluk.json", new ImportChoice(ImportDestination.ReplaceCatalogue));
+        Assert.True(page.HasNoGlass);                                                         // the page says so
+        var host = new Host();
+        var withHost = new CatalogueViewModel(owner, new NoDialogs(), () => { }, host, Path.Combine(_folder, "work2"), null);
+        await withHost.LoadAsync();
+        host.Script = manager =>
+        {
+            Assert.Equal(Mark.Data.LibraryItemKind.Glass, manager.Kind);
+            var glass = Assert.IsType<LibraryItemEditorViewModel>(manager.Editor);
+            Assert.True(glass.IsNew);
+            glass.Id = "SZ-GLS-5";
+            glass.Name = "5mm Clear";
+            glass.Thickness = "5";
+            glass.CostPerSquareMetre = "650";
+            glass.ForCasement = glass.ForSliding = true;
+            manager.SaveCommand.Execute(null);
+        };
+
+        withHost.AddItemCommand.Execute("Glass");
+        await WaitAsync(() => withHost.Library?.Glass.Count == 1);
+
+        Assert.False(withHost.HasNoGlass);
+        Assert.Equal("5mm Clear", LibrarySerializer.Deserialize((await owner.CatalogueAsync()).LibraryJson!).Glass.Single().Name);
+    }
+
+    private static async Task WaitAsync(Func<bool> condition)
+    {
+        for (int i = 0; i < 100 && !condition(); i++)
+            await Task.Delay(50);
+        Assert.True(condition());
     }
 
     private sealed class NoDialogs : IOwnerDialogs

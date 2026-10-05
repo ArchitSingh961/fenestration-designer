@@ -1203,7 +1203,28 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
-                            <TextBlock Text="ITEMS" Style="{StaticResource SectionTitle}" Margin="0,16,0,4" />
+                            <DockPanel Margin="0,16,0,4">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <Button Style="{StaticResource SmallButton}" Content="+ Profile" Margin="0,0,6,0" Command="{Binding AddItemCommand}" CommandParameter="Profile"
+                                            ToolTip="Add a profile to the catalogue" />
+                                    <Button Style="{StaticResource SmallButton}" Content="+ Glass" Margin="0,0,6,0" Command="{Binding AddItemCommand}" CommandParameter="Glass"
+                                            ToolTip="Add a glass type to the catalogue (thickness, price per m², look)" />
+                                    <Button Style="{StaticResource SmallButton}" Content="+ Hardware" Margin="0,0,6,0" Command="{Binding AddItemCommand}" CommandParameter="Material"
+                                            ToolTip="Add hardware or an accessory to the catalogue" />
+                                    <Button Style="{StaticResource SmallButton}" Content="+ System" Command="{Binding AddItemCommand}" CommandParameter="System"
+                                            ToolTip="Add a system: its profiles, glass and glass range" />
+                                </StackPanel>
+                                <TextBlock Text="ITEMS" Style="{StaticResource SectionTitle}" Margin="0" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <Border Background="#FFF7E6" BorderBrush="#F3D9A4" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,8"
+                                    Visibility="{Binding HasNoGlass, Converter={StaticResource BoolToVisibility}}">
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource SmallButton}" Content="Add glass…" Command="{Binding AddItemCommand}"
+                                            CommandParameter="Glass" VerticalAlignment="Center" />
+                                    <TextBlock TextWrapping="Wrap" Foreground="#7A4E00" VerticalAlignment="Center"
+                                               Text="The catalogue has no glass yet, so windows made with it cannot be glazed or priced for glass. Add the glass types you sell (thickness, price per m², look)." />
+                                </DockPanel>
+                            </Border>
                             <TextBlock Text="Profiles by series, then glass and hardware. Open a group to see its items."
                                        FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,4" />
                             <ItemsControl ItemsSource="{Binding ItemGroups}">

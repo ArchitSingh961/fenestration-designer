@@ -68,7 +68,11 @@ public sealed class CatalogueViewModel : OwnerPage
         _host = host ?? throw new ArgumentNullException(nameof(host));
         _workFolder = workFolder;
         _samplePath = samplePath;
-        EditCommand = new AsyncCommand(EditAsync);
+        EditCommand = new AsyncCommand(() => EditAsync());
+        AddItemCommand = new RelayCommand(async p =>
+        {
+            if (p is string kind && Enum.TryParse(kind, out LibraryItemKind parsed)) await EditAsync(parsed);
+        });
         ImportCommand = new AsyncCommand(ImportAsync);
         ExportCommand = new RelayCommand(Export, () => Library is not null);
         UseSampleCommand = new AsyncCommand(UseSampleAsync, () => _samplePath is not null && File.Exists(_samplePath));
@@ -84,6 +88,12 @@ public sealed class CatalogueViewModel : OwnerPage
     public bool HasCompanies => OwnItemRows.Count > 0;
 
     public ICommand EditCommand { get; }
+
+    /// <summary>Opens the Library Manager on a new item of a kind ("Glass", "Profile", "Material", "System").</summary>
+    public ICommand AddItemCommand { get; }
+
+    /// <summary>The catalogue has no glass: windows cannot be glazed from it.</summary>
+    public bool HasNoGlass => Library is { Glass.Count: 0 };
     public ICommand ImportCommand { get; }
     public ICommand ExportCommand { get; }
     public ICommand UseSampleCommand { get; }
@@ -221,10 +231,10 @@ public sealed class CatalogueViewModel : OwnerPage
     }
 
     /// <summary>
-    /// Opens the Library Manager on a working copy of the catalogue. When it is closed with changes, they are published
-    /// (after asking).
+    /// Opens the Library Manager on a working copy of the catalogue (on a new item of <paramref name="newItem"/>, when
+    /// given). When it is closed with changes, they are published (after asking).
     /// </summary>
-    public async Task EditAsync()
+    public async Task EditAsync(LibraryItemKind? newItem = null)
     {
         Directory.CreateDirectory(_workFolder);
         string path = Path.Combine(_workFolder, $"catalogue-{Guid.NewGuid():N}.db");
@@ -233,7 +243,13 @@ public sealed class CatalogueViewModel : OwnerPage
             var store = LocalStore.Open(path);
             if (Library is not null) store.Library.Import(Library);
             string before = LibrarySerializer.Serialize(store.Library.Current);
-            _host.ShowLibraryManager(new LibraryManagerViewModel(store.Library, dialogs: _host.Dialogs));
+            var manager = new LibraryManagerViewModel(store.Library, dialogs: _host.Dialogs);
+            if (newItem is { } kind)
+            {
+                manager.Kind = kind;
+                manager.NewCommand.Execute(null);
+            }
+            _host.ShowLibraryManager(manager);
             string after = LibrarySerializer.Serialize(store.Library.Current);
             if (after == before)
             {

@@ -3311,6 +3311,9 @@
                                                 </ComboBox>
                                                 <TextBlock Text="Used for every pane of the design. Single panes can be changed later in the properties."
                                                            TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,6,0,0" />
+                                                <TextBlock Text="No glass fits this system yet. Glass types are added in Library (or by your MARK supplier, when your catalogue comes from them)."
+                                                           TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource ErrorBrush}" Margin="0,6,0,0"
+                                                           Visibility="{Binding HasNoGlass, Converter={StaticResource BoolToVisibility}}" />
                                             </StackPanel>
                                         </StackPanel>
                                     </ScrollViewer>

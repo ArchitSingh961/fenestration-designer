@@ -11,7 +11,7 @@ namespace Mark.Designer.ViewModels;
 public enum AppPage { Dashboard, Quotes, Quote, Account, Library, Overview, Staff, Enquiries, QuotationSetup, ProductionOrders, Offcuts, Orders, Schedule }
 
 /// <summary>The parts of the open quote: Client, Designs (Sales); Drawing (Design); Pricing, Materials (Pricing); Cutting (Production).</summary>
-public enum QuoteSection { Client, Designs, Drawing, Pricing, Materials, Cutting }
+public enum QuoteSection { Client, Designs, Drawing, Pricing, Materials, Cutting, Documents }
 
 /// <summary>
 /// Milestone 10: the open project is a quote. Navigation (Dashboard, Quotes, the open quote with its Client, Designs
@@ -87,6 +87,7 @@ public partial class MainViewModel
             if (value == AppPage.Account) Account?.Refresh();
             if (value == AppPage.Staff) Staff?.Reload();
             Designs.IsVisible = value == AppPage.Quote && _section == QuoteSection.Designs;
+            RefreshDocumentsIfShown();
             OnViewChanged();
         }
     }
@@ -107,6 +108,7 @@ public partial class MainViewModel
             Designs.IsVisible = _page == AppPage.Quote && value == QuoteSection.Designs;
             if (value == QuoteSection.Client) Details.SyncFromModel();
             if (value == QuoteSection.Pricing) Pricing.SyncFromModel();
+            RefreshDocumentsIfShown();
             OnViewChanged();
         }
     }
@@ -144,6 +146,7 @@ public partial class MainViewModel
         Designs.Invalidate();
         if (_section == QuoteSection.Pricing) Pricing.SyncFromModel();
         Details.SyncFromModel();
+        RefreshDocumentsIfShown();
         OnPropertyChanged(nameof(QuoteHeader));
         OnPropertyChanged(nameof(Title));
         OnPropertyChanged(nameof(QuoteSubHeader));

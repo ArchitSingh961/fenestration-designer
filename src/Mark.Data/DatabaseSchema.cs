@@ -13,7 +13,7 @@ internal static class DatabaseSchema
     public const int ApplicationId = 0x46454E31;
 
     /// <summary>The schema version written by this build.</summary>
-    public const int CurrentVersion = 9;
+    public const int CurrentVersion = 10;
 
     /// <summary>Upgrade scripts keyed by the version they upgrade FROM.</summary>
     public static readonly IReadOnlyDictionary<int, string> Upgrades = new Dictionary<int, string>
@@ -25,8 +25,29 @@ internal static class DatabaseSchema
         [5] = Version6,
         [6] = Version7,
         [7] = Version8,
-        [8] = Version9
+        [8] = Version9,
+        [9] = Version10
     };
+
+    /// <summary>
+    /// Version 10 (the quote's Documents tab): files kept with each quote — uploads (site survey, credit approval, signed
+    /// contract …) and the quotation and margin PDFs MARK writes — with the file itself in the row.
+    /// </summary>
+    public const string Version10 = """
+        CREATE TABLE project_documents (
+            id             TEXT PRIMARY KEY NOT NULL,
+            project_id     TEXT NOT NULL,
+            category       TEXT NOT NULL,
+            name           TEXT NOT NULL,
+            file_name      TEXT NOT NULL,
+            added_utc      TEXT NOT NULL,
+            added_by       TEXT NOT NULL,
+            size           INTEGER NOT NULL,
+            note           TEXT NOT NULL,
+            content        BLOB NOT NULL
+        );
+        CREATE INDEX ix_project_documents_project ON project_documents (project_id);
+        """;
 
     /// <summary>
     /// Version 9 (Milestone 17, orders): each customer order followed from confirmation to installation — stage,

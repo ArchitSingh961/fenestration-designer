@@ -27,7 +27,7 @@ public class DatabaseTests
         Assert.Equal(new[]
         {
             "app_settings", "bundles", "customer_orders", "enquiries", "glass", "glass_material_usages", "library_settings", "materials", "offcuts",
-            "production_orders", "profile_material_usages", "profile_roles", "profile_stock_lengths", "profiles", "project_history",
+            "production_orders", "profile_material_usages", "profile_roles", "profile_stock_lengths", "profiles", "project_documents", "project_history",
             "project_references", "project_revisions", "projects", "systems"
         }, tables);
     }

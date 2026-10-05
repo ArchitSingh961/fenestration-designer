@@ -7,7 +7,7 @@ namespace Mark.Designer.ViewModels;
 public enum AppArea { Sales, Design, Pricing, Library, Production, Orders, Purchasing, Inventory, Accounts }
 
 /// <summary>Everything MARK can show, as the tabs of the areas (one view can be a tab of more than one area).</summary>
-public enum AppView { Dashboard, Quotes, Client, Designs, Drawing, Pricing, Materials, Cutting, Library, Overview, Account, Staff, Enquiries, QuotationSetup, ProductionOrders, Offcuts, Orders, Schedule }
+public enum AppView { Dashboard, Quotes, Client, Designs, Drawing, Pricing, Materials, Cutting, Library, Overview, Account, Staff, Enquiries, QuotationSetup, ProductionOrders, Offcuts, Orders, Schedule, Documents }
 
 /// <summary>How a tab or area looks to the signed-in login.</summary>
 public enum AccessState
@@ -47,6 +47,7 @@ public static class AreaCatalog
             new AreaTabInfo(AppView.Quotes, "Quotes", Licensing.Features.Quotes),
             new AreaTabInfo(AppView.Client, "Client", Licensing.Features.Quotes),
             new AreaTabInfo(AppView.Designs, "Designs", Licensing.Features.Quotes),
+            new AreaTabInfo(AppView.Documents, "Documents", Licensing.Features.Quotes),
             new AreaTabInfo(AppView.QuotationSetup, "Quotation setup", Licensing.Features.QuotationPdf)
         }),
         new AreaInfo(AppArea.Design, "Design", "", "Windows and doors drawn to size, with openings and ready-made designs.", new[]

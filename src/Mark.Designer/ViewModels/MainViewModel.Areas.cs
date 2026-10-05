@@ -76,6 +76,7 @@ public partial class MainViewModel
             QuoteSection.Pricing => AppView.Pricing,
             QuoteSection.Materials => AppView.Materials,
             QuoteSection.Cutting => AppView.Cutting,
+            QuoteSection.Documents => AppView.Documents,
             _ => AppView.Drawing
         }
     };
@@ -195,6 +196,7 @@ public partial class MainViewModel
                         AppView.Pricing => QuoteSection.Pricing,
                         AppView.Materials => QuoteSection.Materials,
                         AppView.Cutting => QuoteSection.Cutting,
+                        AppView.Documents => QuoteSection.Documents,
                         _ => QuoteSection.Drawing
                     };
                     Page = AppPage.Quote;

@@ -10,7 +10,7 @@ last used there.
 
 | Area | Tabs | Needs |
 |---|---|---|
-| **Sales** | Dashboard · Quotes · Client · Designs | Quotes and clients |
+| **Sales** | Dashboard · Enquiries · Quotes · Client · Designs · Documents · Quotation setup | Quotes and clients |
 | **Design** | Designs · Drawing | Frame designer |
 | **Pricing** | Price · Bill of materials | Price structure · Bill of materials and cost |
 | **Library** | Library (systems, counts, **Open Library Manager**) | Library Manager (or a catalogue: own prices) |
@@ -18,7 +18,7 @@ last used there.
 | **Orders** | Orders · Schedule | Order management (see [orders.md](orders.md)) |
 | **Purchasing · Inventory · Accounts** | Overview of what is coming | (later milestones) |
 
-- The open quote is shown above the quote tabs (Client, Designs, Drawing, Price, Bill of materials, Cutting plan) with
+- The open quote is shown above the quote tabs (Client, Designs, Documents, Drawing, Price, Bill of materials, Cutting plan) with
   who created and last saved it, and **Open quote…**, so someone who works only in Design, Pricing or Production can
   pick a quote without the Sales area.
 - **Designs** is in Sales and in Design; it stays in the area it was opened from.

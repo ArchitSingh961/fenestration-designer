@@ -184,7 +184,8 @@ public partial class MainViewModel
             var document = BuildQuotation();
             using (var stream = File.Create(path))
                 QuotationPdf.Write(document, stream);
-            Hint = $"Saved the quotation {Path.GetFileName(path)}.";
+            KeepQuotation(path);
+            Hint = $"Saved the quotation {Path.GetFileName(path)} (a copy is in the quote's Documents › Quotations).";
             HintIsError = false;
             OpenDocument?.Invoke(path);
             return null;

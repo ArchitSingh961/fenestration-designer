@@ -51,32 +51,46 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <Expander Header="More single items (profiles, glass, hardware)" Margin="0,8,0,0">
-                    <ItemsControl ItemsSource="{Binding ItemGroups}" Margin="0,4,0,0">
+                <StackPanel Margin="0,12,0,0" Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="Universal items" FontWeight="SemiBold" Foreground="#1F2A37" />
+                    <TextBlock Text="Single items of the universal catalogue, by series. Items that come with a ticked system are ticked already; tick a group to give all of it."
+                               FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,0,0,4" />
+                    <ItemsControl ItemsSource="{Binding ItemGroups}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <StackPanel Margin="0,4,0,4">
-                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Foreground="#4B5563" FontSize="11" Margin="0,0,0,2" />
-                                    <ItemsControl ItemsSource="{Binding Rows}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <DockPanel Margin="0,1">
-                                                    <TextBlock DockPanel.Dock="Right" Text="{Binding Note}" FontSize="10" Margin="8,0,0,0"
-                                                               Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" />
-                                                    <CheckBox IsChecked="{Binding IsChecked}" IsEnabled="{Binding CanChange}">
-                                                        <TextBlock>
-                                                            <Run Text="{Binding Name, Mode=OneWay}" /><Run Text="  " /><Run Text="{Binding Detail, Mode=OneWay}" FontSize="10" Foreground="#8A8A8A" />
-                                                        </TextBlock>
-                                                    </CheckBox>
-                                                </DockPanel>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </StackPanel>
+                                <Border BorderBrush="#E3E6EA" BorderThickness="0,0,0,1" Padding="0,3">
+                                    <Expander>
+                                        <Expander.Header>
+                                            <StackPanel Orientation="Horizontal">
+                                                <CheckBox IsChecked="{Binding AllChecked}" IsThreeState="False" VerticalAlignment="Center"
+                                                          AutomationProperties.Name="{Binding Title, StringFormat=Tick all of {0}}"
+                                                          ToolTip="Tick or untick every item of this group" />
+                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Foreground="#374151" Margin="6,0,0,0" VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding CountText}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="8,0,0,0"
+                                                           VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Expander.Header>
+                                        <ItemsControl ItemsSource="{Binding Rows}" Margin="24,2,0,4">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <DockPanel Margin="0,1">
+                                                        <TextBlock DockPanel.Dock="Right" Text="{Binding Note}" FontSize="10" Margin="8,0,0,0"
+                                                                   Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" />
+                                                        <CheckBox IsChecked="{Binding IsChecked}" IsEnabled="{Binding CanChange}">
+                                                            <TextBlock>
+                                                                <Run Text="{Binding Name, Mode=OneWay}" /><Run Text="  " /><Run Text="{Binding Detail, Mode=OneWay}" FontSize="10" Foreground="#8A8A8A" />
+                                                            </TextBlock>
+                                                        </CheckBox>
+                                                    </DockPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Expander>
+                                </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                </Expander>
+                </StackPanel>
             </StackPanel>
         </DataTemplate>
 

@@ -55,7 +55,67 @@ public sealed class CatalogueChoiceRow : ViewModelBase
     public bool IsChosen => _isChecked;
 }
 
-public sealed record CatalogueChoiceGroup(string Title, IReadOnlyList<CatalogueChoiceRow> Rows);
+/// <summary>
+/// Items of the universal catalogue shown together in the "what this company gets" list: the profiles of one series, the
+/// glass, the hardware. The group's tick box ticks or unticks all its items (those with a ticked system stay ticked).
+/// </summary>
+public sealed class CatalogueChoiceGroup : ViewModelBase
+{
+    private bool _setting;
+
+    public CatalogueChoiceGroup(string title, IReadOnlyList<CatalogueChoiceRow> rows)
+    {
+        Title = title;
+        Rows = rows;
+    }
+
+    public string Title { get; }
+
+    public IReadOnlyList<CatalogueChoiceRow> Rows { get; }
+
+    /// <summary>"12 of 30 ticked" or "30 profiles".</summary>
+    public string CountText
+    {
+        get
+        {
+            int ticked = Rows.Count(r => r.IsChecked);
+            return ticked == 0 ? $"{Rows.Count} item{(Rows.Count == 1 ? "" : "s")}" : $"{ticked} of {Rows.Count} ticked";
+        }
+    }
+
+    /// <summary>True when every item is ticked, false when none is, null in between. Setting it ticks or unticks them all.</summary>
+    public bool? AllChecked
+    {
+        get
+        {
+            int ticked = Rows.Count(r => r.IsChecked);
+            return ticked == 0 ? false : ticked == Rows.Count ? true : null;
+        }
+        set
+        {
+            bool tick = value ?? false;                       // a click on a part-ticked box unticks all, as Windows does
+            _setting = true;
+            try
+            {
+                foreach (var row in Rows.Where(r => r.CanChange))
+                    row.IsChecked = tick;
+            }
+            finally
+            {
+                _setting = false;
+            }
+            Refresh();
+        }
+    }
+
+    /// <summary>Called after any tick changed.</summary>
+    public void Refresh()
+    {
+        if (_setting) return;
+        OnPropertyChanged(nameof(AllChecked));
+        OnPropertyChanged(nameof(CountText));
+    }
+}
 
 /// <summary>
 /// What a company (or a new account of a company type) gets from the master catalogue: tick whole systems (with
@@ -74,16 +134,23 @@ public sealed class CatalogueChoiceViewModel : ViewModelBase
 
         Systems = master.Systems.Select(x => new CatalogueChoiceRow(x.Id, x.Name,
             $"{EditorText.MaterialName(x.Material)} · {master.Bundles.Count(b => b.SystemId == x.Id)} bundles", systems.Contains(x.Id), Recount)).ToList();
-        var profiles = master.Profiles.Select(p => new CatalogueChoiceRow(p.Id, p.Name, p.Series ?? "", items.Contains(p.Id), Recount)).ToList();
-        var glass = master.Glass.Select(g => new CatalogueChoiceRow(g.Id, g.Name, g.Category ?? "", items.Contains(g.Id), Recount)).ToList();
-        var materials = master.Materials.Select(m => new CatalogueChoiceRow(m.Id, m.Name, m.Category.ToString(), items.Contains(m.Id), Recount)).ToList();
-        _items = profiles.Concat(glass).Concat(materials).ToList();
-        ItemGroups = new[]
-        {
-            new CatalogueChoiceGroup("Profiles", profiles),
-            new CatalogueChoiceGroup("Glass", glass),
-            new CatalogueChoiceGroup("Hardware and accessories", materials)
-        };
+        static string Roles(ProfileDefinition p)
+            => string.Join(", ", p.Roles.Select(r => System.Text.RegularExpressions.Regex.Replace(r.ToString(), "(?<!^)([A-Z])", " $1").ToLowerInvariant()));
+        var groups = master.Profiles
+            .GroupBy(p => string.IsNullOrWhiteSpace(p.Series) ? "Other profiles" : p.Series!.Trim())
+            .OrderBy(g => g.Key == "Other profiles").ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new CatalogueChoiceGroup(g.Key, g.Select(p => new CatalogueChoiceRow(p.Id, p.Name,
+                string.Join(" · ", new[] { p.Code, Roles(p), p.Manufacturer }.Where(t => !string.IsNullOrWhiteSpace(t))),
+                items.Contains(p.Id), Recount)).ToList()))
+            .ToList();
+        if (master.Glass.Count > 0)
+            groups.Add(new CatalogueChoiceGroup("Glass", master.Glass
+                .Select(g => new CatalogueChoiceRow(g.Id, g.Name, g.Category ?? "", items.Contains(g.Id), Recount)).ToList()));
+        if (master.Materials.Count > 0)
+            groups.Add(new CatalogueChoiceGroup("Hardware and accessories", master.Materials
+                .Select(m => new CatalogueChoiceRow(m.Id, m.Name, m.Category.ToString(), items.Contains(m.Id), Recount)).ToList()));
+        ItemGroups = groups;
+        _items = groups.SelectMany(g => g.Rows).ToList();
         Recount();
     }
 
@@ -92,6 +159,8 @@ public sealed class CatalogueChoiceViewModel : ViewModelBase
     public IReadOnlyList<CatalogueChoiceGroup> ItemGroups { get; }
 
     public bool HasSystems => Systems.Count > 0;
+
+    public bool HasItems => _items.Count > 0;
 
     /// <summary>"2 systems · 34 items".</summary>
     public string SummaryText { get; private set; } = "";
@@ -110,6 +179,8 @@ public sealed class CatalogueChoiceViewModel : ViewModelBase
             .ToHashSet(StringComparer.Ordinal);
         foreach (var item in _items)
             item.IsCovered = coveredIds.Contains(item.Id);
+        foreach (var group in ItemGroups)
+            group.Refresh();
 
         var all = CatalogueSelector.Select(_master, new CatalogueSelection { SystemIds = chosen.SystemIds, ItemIds = chosen.ItemIds });
         int itemCount = all.Profiles.Count + all.Glass.Count + all.Materials.Count;

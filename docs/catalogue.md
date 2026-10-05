@@ -81,8 +81,9 @@ frosted and bronze glass bronze. The look comes with the catalogue like everythi
    company gets a system only with a licence for its material; the message says when one is missing).
    The page lists the catalogue's **systems** and its **items**: profiles by series, then glass and hardware.
 2. In each company's account (and in each company type, for new accounts) tick, under **Catalogue**, the **systems** it
-   gets — they bring everything they use — and any further single items. Items that come with a ticked system show as
-   "with its system".
+   gets — they bring everything they use — and any further single items under **Universal items**, grouped like the
+   Catalogue page (profiles by series, then glass and hardware; a group's tick box ticks all of it). Items that come
+   with a ticked system show as "with its system".
 3. The server cuts each company's catalogue from the master (only systems of products it is licensed for), and its
    fingerprint goes into the company's signed licence.
 4. At its next check-in MARK downloads the catalogue, checks it against the licence, and applies it: new items are added,

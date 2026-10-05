@@ -201,6 +201,30 @@ public class CatalogueTests : IDisposable
     }
 
     [Fact]
+    public void OwnerChoice_ShowsTheUniversalItemsBySeries_AndAGroupTicksAllOfIt()
+    {
+        var master = LibrarySerializer.Deserialize(SampleJson);
+        var choice = new CatalogueChoiceViewModel(master, null);
+
+        var titles = choice.ItemGroups.Select(g => g.Title).ToList();
+        Assert.Contains("Series 60", titles);                                                 // profiles by series
+        Assert.Equal(new[] { "Glass", "Hardware and accessories" }, titles.TakeLast(2));
+        Assert.Equal(master.Profiles.Count + master.Glass.Count + master.Materials.Count, choice.ItemGroups.Sum(g => g.Rows.Count));
+
+        var series = choice.ItemGroups.Single(g => g.Title == "Sliding 60");
+        Assert.False(series.AllChecked);
+        series.AllChecked = true;
+        Assert.True(series.AllChecked);
+        Assert.Equal($"{series.Rows.Count} of {series.Rows.Count} ticked", series.CountText);
+        Assert.Equal(series.Rows.Select(r => r.Id).OrderBy(i => i), choice.ToCatalogue().ItemIds.OrderBy(i => i));
+
+        series.Rows[0].IsChecked = false;
+        Assert.Null(series.AllChecked);                                                       // part ticked
+        series.AllChecked = false;
+        Assert.Empty(choice.ToCatalogue().ItemIds);
+    }
+
+    [Fact]
     public void NewAccount_StartsWithItsTypesCatalogue()
     {
         var master = LibrarySerializer.Deserialize(SampleJson);

@@ -50,6 +50,8 @@ public class QuotationPdfTests
         vm.Project.Frames[0].Design.Reference = "W1";
         vm.Project.Frames[0].Design.Location = "Bedroom";
         vm.Project.Frames[0].Design.Quantity = 3;
+        vm.Project.Frames[0].Design.ProfileColour = "White";
+        vm.Project.Frames[0].Design.HandleColour = "White";
         slidingFrame.Design.Reference = "W2";
         slidingFrame.Design.Location = "Living room";
         vm.ClearSelection();
@@ -83,9 +85,18 @@ public class QuotationPdfTests
         Assert.NotNull(w1.Drawing);
         Assert.Equal(new[] { "Sq.Ft. per window", "Value per Sq.Ft.", "Unit Price", "Quantity", "Value" }, w1.Values.Select(v => v.Label));
         Assert.Equal("3", w1.Values[3].Value);
-        Assert.Contains(w1.Profiles, p => p.StartsWith("Outer : "));
-        Assert.Contains(w1.Profiles, p => p.StartsWith("Reinforcement : "));
-        Assert.NotEmpty(w1.Accessories);
+        // As on the usual quotation: colour, mesh, each profile by what it is with its reinforcement right after it.
+        Assert.Equal("Profile Color : White", w1.Profiles[0]);
+        Assert.Equal("MeshType : No", w1.Profiles[1]);
+        int outer = w1.Profiles.ToList().FindIndex(p => p.StartsWith("OUTER : "));
+        Assert.True(outer > 1);
+        Assert.StartsWith("OUTER RI : ", w1.Profiles[outer + 1]);
+        Assert.Contains(w1.Profiles, p => p.StartsWith("CASEMENT SASH : "));
+        Assert.StartsWith("Locking : Multi-point", w1.Accessories[0]);
+        Assert.Equal("Handle color : White", w1.Accessories[1]);
+        Assert.Contains(doc.Designs[1].Profiles, p => p.StartsWith("SLIDING SASH : "));
+        Assert.StartsWith("Locking : Single-point", doc.Designs[1].Accessories[0]);
+        Assert.Contains(doc.Totals, t => t.Label == "GST @18%");
         Assert.Contains("5mm Frosted Toughened", doc.Designs[1].Glass);
         Assert.Contains(doc.Totals, t => t.Label == "No. of Components" && t.Value == "5");
         Assert.Contains(doc.Totals, t => t.Label == "Grand Total");

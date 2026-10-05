@@ -81,8 +81,8 @@ public static class QuotationBuilder
                     new QuotationRow("Quantity", quantity.ToString(CultureInfo.InvariantCulture), "Pcs"),
                     new QuotationRow("Value", price is null ? "—" : Money(price.Total), money, Bold: true)
                 },
-                Profiles = Profiles(frame, i.Calculation),
-                Accessories = Accessories(frame, i.Calculation),
+                Profiles = Profiles(frame, i.Calculation, i.Library),
+                Accessories = Accessories(frame, i.Calculation, i.Library),
                 Remarks = frame.Design.Note
             });
         }
@@ -99,8 +99,13 @@ public static class QuotationBuilder
             {
                 case PriceSummaryKind.Discount when line.Amount != 0:
                 case PriceSummaryKind.Charge:
-                case PriceSummaryKind.Tax:
                     totals.Add(new QuotationRow(line.Name, Money(line.Amount), money));
+                    break;
+                case PriceSummaryKind.Tax:
+                    // "Gst @18%", as on the usual quotation.
+                    string taxName = string.IsNullOrWhiteSpace(i.Project.Pricing.TaxName) ? "Tax" : i.Project.Pricing.TaxName.Trim();
+                    totals.Add(new QuotationRow($"{taxName} @{i.Project.Pricing.TaxPercent.ToString("0.##", CultureInfo.InvariantCulture)}%",
+                        Money(line.Amount), money));
                     break;
                 case PriceSummaryKind.SubTotal:
                     totals.Add(new QuotationRow("Sub Total", Money(line.Amount), money, Bold: true));
@@ -178,28 +183,113 @@ public static class QuotationBuilder
             .GroupBy(g => g.Name)
             .Select(g => $"({string.Join(",", g.Select(x => x.Number))}) {g.Key}"));
 
-    /// <summary>"Outer : 62mm uPVC Casement Frame", "Reinforcement : …", "Mesh : Yes" for one design.</summary>
-    private static IReadOnlyList<string> Profiles(Frame frame, CalculationResult calculation)
+    /// <summary>
+    /// The profile list of one design, as on the usual quotation: "Profile Color : White", "MeshType : (3,4) SS Flymesh",
+    /// then each profile by what it is ("OUTER : 62mm Casement Frame", "SLIDING SASH : …", "INTERLOCK : …"), each followed
+    /// by its reinforcement ("OUTER RI : …").
+    /// </summary>
+    public static IReadOnlyList<string> Profiles(Frame frame, CalculationResult calculation, IProductLibrary library)
     {
-        var lines = new List<string> { $"Mesh : {(frame.GlassPanels.Any(g => g.HasMesh) ? "Yes" : "No")}" };
-        lines.AddRange(calculation.Profiles.Where(p => p.FrameId == frame.Id && p.IsResolved)
-            .Select(p => $"{RoleName(p.Role)} : {p.Name}").Distinct());
+        var lines = new List<string>();
+        if (!string.IsNullOrWhiteSpace(frame.Design.ProfileColour))
+            lines.Add($"Profile Color : {frame.Design.ProfileColour}");
+        var mesh = frame.GlassPanels.Select((g, index) => (g, Number: index + 1)).Where(x => x.g.HasMesh).Select(x => x.Number).ToList();
+        lines.Add(mesh.Count == 0 ? "MeshType : No"
+            : $"MeshType : ({string.Join(",", mesh)}) {(string.IsNullOrWhiteSpace(frame.Design.MeshType) ? "Mesh" : frame.Design.MeshType)}");
+
+        var openings = frame.GlassPanels.ToDictionary(g => g.Id, g => g.Opening);
+        var mine = calculation.Profiles.Where(p => p.FrameId == frame.Id && p.IsResolved).ToList();
+        bool IsReinforcement(ProfileLine p) => p.Role == ProfileType.Reinforcement || p.PartOf == "Reinforcement";
+
+        // (what it is, for ordering) → lines; reinforcement goes right after what it reinforces.
+        var entries = new List<(string Group, bool Ri, string Text)>();
+        foreach (var line in mine.Where(p => !IsReinforcement(p)))
+        {
+            string label = RoleLabel(line, openings);
+            entries.Add((label, false, $"{label} : {line.Name}"));
+        }
+        foreach (var steel in mine.Where(IsReinforcement))
+        {
+            var host = mine.FirstOrDefault(p => !IsReinforcement(p) && p.ProfileId == steel.ProfileId && p.OpeningId == steel.OpeningId
+                                                && library.FindProfile(p.DefinitionId)?.Reinforcement?.ProfileId == steel.DefinitionId);
+            string label = host is null ? "PROFILE" : RoleLabel(host, openings);
+            entries.Add((label, true, $"{label} RI : {steel.Name}"));
+        }
+        var order = entries.Select(e => e.Group).Distinct().ToList();
+        lines.AddRange(entries.OrderBy(e => order.IndexOf(e.Group)).ThenBy(e => e.Ri).Select(e => e.Text).Distinct());
         return lines;
     }
 
-    private static IReadOnlyList<string> Accessories(Frame frame, CalculationResult calculation)
-        => calculation.Materials.Where(m => m.FrameId == frame.Id && m.Category == MaterialCategory.Hardware)
-            .GroupBy(m => m.Name)
-            .Select(g => $"{g.Key} × {Number(g.Sum(m => m.Quantity), "0.##")}")
-            .ToList();
-
-    private static string RoleName(ProfileType role) => role switch
+    /// <summary>What a profile is, in capitals as on the quotation: OUTER, TRACK, MULLION, SLIDING SASH, FLYMESH SASH …</summary>
+    private static string RoleLabel(ProfileLine line, IReadOnlyDictionary<Guid, OpeningType> openings)
     {
-        ProfileType.Frame => "Outer",
-        ProfileType.MeshSash => "Mesh sash",
-        ProfileType.GlazingBead => "Glazing bead",
-        _ => role.ToString()
+        bool sliding = line.OpeningId is { } id && openings.TryGetValue(id, out var opening) && opening.IsSliding();
+        return line.Role switch
+        {
+            ProfileType.Frame => "OUTER",
+            ProfileType.Track => "TRACK",
+            ProfileType.Mullion => "MULLION",
+            ProfileType.Transom => "TRANSOM",
+            ProfileType.Sash => sliding ? "SLIDING SASH" : "CASEMENT SASH",
+            ProfileType.MeshSash => "FLYMESH SASH",
+            ProfileType.Interlock => "INTERLOCK",
+            ProfileType.Coupler => "COUPLER",
+            ProfileType.GlazingBead => "GLAZING BEAD",
+            _ when !string.IsNullOrWhiteSpace(line.PartOf) => line.PartOf!.ToUpperInvariant(),
+            _ => "PROFILE"
+        };
+    }
+
+    /// <summary>
+    /// The hardware of one design, as on the usual quotation: "Locking : Multi-point", "Handle color : White", then each
+    /// item by kind with the sashes it is on ("Hinge : S1-3D Hinges", "Handle Type : S1,S2-Espag Handle").
+    /// </summary>
+    public static IReadOnlyList<string> Accessories(Frame frame, CalculationResult calculation, IProductLibrary library)
+    {
+        var lines = new List<string>();
+        // Sashes are numbered S1, S2 … in pane order, as on the drawing.
+        var sashes = calculation.Openings.Where(o => o.FrameId == frame.Id && o.HasSash).Select(o => o.GlassPanelId).ToList();
+        var openingOf = calculation.Openings.Where(o => o.FrameId == frame.Id).ToDictionary(o => o.GlassPanelId, o => o.Opening);
+        if (sashes.Count > 0)
+            lines.Add("Locking : " + string.Join(", ", sashes.Select(id => Locking(openingOf[id]))));
+        if (!string.IsNullOrWhiteSpace(frame.Design.HandleColour))
+            lines.Add($"Handle color : {frame.Design.HandleColour}");
+
+        var hardware = calculation.Materials.Where(m => m.FrameId == frame.Id && m.Category == MaterialCategory.Hardware).ToList();
+        foreach (var item in hardware.GroupBy(m => m.MaterialId))
+        {
+            var first = item.First();
+            var on = item.Select(m => sashes.IndexOf(m.SourceId)).Where(n => n >= 0).Distinct().OrderBy(n => n).Select(n => $"S{n + 1}").ToList();
+            string kind = HardwareKind(library.FindMaterial(first.MaterialId), first.Name);
+            lines.Add(on.Count == 0 ? $"{kind} : {first.Name}" : $"{kind} : {string.Join(",", on)}-{first.Name}");
+        }
+        return lines;
+    }
+
+    /// <summary>Sliding, hung and pivot sashes usually lock at one point; side-hung and tilt &amp; turn at several.</summary>
+    private static string Locking(OpeningType opening) => opening switch
+    {
+        OpeningType.SideHungLeft or OpeningType.SideHungRight or OpeningType.TiltTurnLeft or OpeningType.TiltTurnRight => "Multi-point",
+        _ => "Single-point"
     };
+
+    /// <summary>The kind of a hardware item: its "Type" property, or what its name says (handle, hinge, roller …).</summary>
+    public static string HardwareKind(MaterialDefinition? item, string name)
+    {
+        if (item?.Properties.TryGetValue("Type", out string? type) == true && !string.IsNullOrWhiteSpace(type)) return type.Trim();
+        string n = name.ToLowerInvariant();
+        return n switch
+        {
+            _ when n.Contains("espag") => "Lockable Espag",
+            _ when n.Contains("handle") => "Handle Type",
+            _ when n.Contains("hinge") => "Hinge",
+            _ when n.Contains("friction") || n.Contains("stay") => "Friction",
+            _ when n.Contains("roller") || n.Contains("wheel") => "Roller",
+            _ when n.Contains("cylinder") => "Cylinder",
+            _ when n.Contains("lock") || n.Contains("latch") => "Lock",
+            _ => "Hardware"
+        };
+    }
 
     private static byte[]? Drawing(Frame frame, DesignRules rules, IProductLibrary library) => RenderDrawing(frame, rules, library);
 

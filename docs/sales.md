@@ -39,9 +39,14 @@ On an open, saved quote (header of its pages):
 - a covering letter to the client (name and address), with the enclosures and "Authorized Signatory";
 - each design: code, size (W × H), name, profile system, location, glass by pane ("(1,2) 5mm Frosted Toughened"); its
   drawing with dimensions, "View From Inside"; computed values (area per window, value per area, unit price, quantity,
-  value); profiles (outer, sash, mullion, reinforcement…, mesh) and accessories (hardware); remarks — about two per page;
-- the quote total: components, total area, basic value, discount, sub-total, charges, total project cost, tax (e.g.
-  GST 18 %), grand total, average price per area without and with tax; notes;
+  value); **Profile**: "Profile Color : White", "MeshType : (3,4) SS Flymesh" (the panes with mesh) or "No", then each
+  profile by what it is — OUTER, TRACK, MULLION, CASEMENT / SLIDING SASH, FLYMESH SASH, INTERLOCK, COUPLER… — each
+  followed by its reinforcement ("OUTER RI : …"); **Accessories**: "Locking : Multi-point, Multi-point" (one per sash:
+  side-hung and tilt & turn multi-point, others single-point), "Handle color : White", then each hardware item by kind
+  with the sashes it is on ("Hinge : S1-3D Hinges", "Roller : S1,S2-…"; the kind is the item's *Type* property, else
+  read from its name); remarks — about two per page. Colours and the mesh type are set on the design (Design panel);
+- the quote total: components, total area, basic value, discount, sub-total, charges, total project cost, tax ("GST
+  @18%"), grand total, average price per area without and with tax; notes;
 - terms and conditions (numbered), then — when filled in — **Cancellation Policy**, **Warranty** and **Pre-requisites
   for Installation**, each numbered; bank details, the acceptance sentence and both signatures (authorized signatory,
   customer). Lines the company numbered or lettered itself ("1. Payment terms:", "a. 100% advance …") are printed as

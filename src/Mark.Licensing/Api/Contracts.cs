@@ -34,6 +34,18 @@ public sealed record SignInResponse(SignedLicence Licence, string DeviceToken);
 
 public sealed record CheckInRequest(string DeviceToken, string MachineId);
 
+/// <summary>The latest MARK the owner released (empty <see cref="Version"/>: none published).</summary>
+public sealed record UpdateInfo(string Version, string DownloadUrl, string Notes, DateTime PublishedUtc)
+{
+    public static UpdateInfo None { get; } = new("", "", "", default);
+
+    /// <summary>True when this release is newer than <paramref name="installed"/> (e.g. "1.0.0.0").</summary>
+    public bool IsNewerThan(string? installed)
+        => System.Version.TryParse(Version, out var latest) && (!System.Version.TryParse(installed, out var current) || Normal(latest) > Normal(current));
+
+    private static System.Version Normal(System.Version v) => new(v.Major, v.Minor, Math.Max(0, v.Build), Math.Max(0, v.Revision));
+}
+
 public sealed record LicenceResponse(SignedLicence Licence);
 
 public sealed record RedeemKeyRequest(string DeviceToken, string MachineId, string Key);

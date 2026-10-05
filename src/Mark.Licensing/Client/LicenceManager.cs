@@ -146,6 +146,20 @@ public sealed class LicenceManager
     }
 
     /// <summary>Asks the server for the current licence (daily, and on "Check now").</summary>
+    /// <summary>The latest MARK release on the licence server, or null when it cannot be asked (offline, not signed in).</summary>
+    public async Task<UpdateInfo?> LatestAsync(CancellationToken cancel = default)
+    {
+        if (string.IsNullOrWhiteSpace(_state.ServerUrl)) return null;
+        try
+        {
+            return await _apiFor(_state.ServerUrl).LatestAsync(cancel);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or LicenceServerException or System.Text.Json.JsonException)
+        {
+            return null;
+        }
+    }
+
     public async Task<CheckInResult> CheckInAsync(CancellationToken cancel = default)
     {
         if (_state.DeviceToken is null || _licence is null)

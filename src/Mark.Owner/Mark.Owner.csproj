@@ -10,7 +10,12 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>Mark.Owner</RootNamespace>
     <AssemblyName>MARK.Owner</AssemblyName>
+      <ApplicationIcon>..\Mark.App\Resources\mark.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="..\Mark.App\Resources\mark.ico" Link="Resources\mark.ico" />
+  </ItemGroup>
 
   <!-- The sample catalogue a new licence server can start from (the library MARK ships with). -->
   <ItemGroup>

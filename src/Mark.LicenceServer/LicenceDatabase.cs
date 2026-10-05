@@ -12,7 +12,7 @@ namespace Mark.LicenceServer;
 /// </summary>
 public sealed class LicenceDatabase
 {
-    public const int SchemaVersion = 5;
+    public const int SchemaVersion = 6;
 
     private readonly string _connectionString;
 
@@ -62,6 +62,20 @@ public sealed class LicenceDatabase
         if (version < 3) UpgradeToVersion3(connection);
         if (version < 4) UpgradeToVersion4(connection);
         if (version < 5) UpgradeToVersion5(connection);
+        if (version < 6) UpgradeToVersion6(connection);
+    }
+
+    /// <summary>Version 6: settings of the server, e.g. the latest MARK release (Milestone 20).</summary>
+    private static void UpgradeToVersion6(SqliteConnection connection)
+    {
+        using var transaction = connection.BeginTransaction();
+        Execute(connection, """
+            CREATE TABLE server_settings (
+                key TEXT PRIMARY KEY NOT NULL,
+                value TEXT NOT NULL);
+            """, transaction);
+        Execute(connection, "PRAGMA user_version = 6", transaction);
+        transaction.Commit();
     }
 
     /// <summary>Version 5: each company's quotation profile (details, brand, bank, last page), set by the admin.</summary>

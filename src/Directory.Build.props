@@ -1,0 +1,10 @@
+<Project>
+  <!-- One version for all of MARK: MARK, MARK Owner, the licence server and MARK Setup are released together.
+       Raise it for each release; MARK offers an update when the version published in MARK Owner is newer. -->
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <Company>MARK</Company>
+    <Product>MARK</Product>
+    <Copyright>MARK</Copyright>
+  </PropertyGroup>
+</Project>

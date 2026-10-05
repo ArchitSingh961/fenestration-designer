@@ -4,7 +4,7 @@
         xmlns:controls="clr-namespace:Mark.Designer.Controls;assembly=Mark.Designer"
         xmlns:views="clr-namespace:Mark.Designer.Views;assembly=Mark.Designer"
         xmlns:vm="clr-namespace:Mark.Designer.ViewModels;assembly=Mark.Designer"
-        Title="{Binding Title}"
+        Icon="pack://application:,,,/Resources/mark.ico" Title="{Binding Title}"
         Loaded="Window_Loaded"
         Closing="Window_Closing"
         Width="1280" Height="800"
@@ -408,6 +408,16 @@
         <KeyBinding Modifiers="Ctrl" Key="S" Command="{Binding SaveProjectCommand}" />
         <KeyBinding Modifiers="Ctrl" Key="Z" Command="{Binding UndoCommand}" />
         <KeyBinding Modifiers="Ctrl" Key="Y" Command="{Binding RedoCommand}" />
+        <KeyBinding Modifiers="Ctrl" Key="D1" Command="{Binding AreaByNumberCommand}" CommandParameter="1" />
+        <KeyBinding Modifiers="Ctrl" Key="D2" Command="{Binding AreaByNumberCommand}" CommandParameter="2" />
+        <KeyBinding Modifiers="Ctrl" Key="D3" Command="{Binding AreaByNumberCommand}" CommandParameter="3" />
+        <KeyBinding Modifiers="Ctrl" Key="D4" Command="{Binding AreaByNumberCommand}" CommandParameter="4" />
+        <KeyBinding Modifiers="Ctrl" Key="D5" Command="{Binding AreaByNumberCommand}" CommandParameter="5" />
+        <KeyBinding Modifiers="Ctrl" Key="D6" Command="{Binding AreaByNumberCommand}" CommandParameter="6" />
+        <KeyBinding Modifiers="Ctrl" Key="D7" Command="{Binding AreaByNumberCommand}" CommandParameter="7" />
+        <KeyBinding Modifiers="Ctrl" Key="D8" Command="{Binding AreaByNumberCommand}" CommandParameter="8" />
+        <KeyBinding Modifiers="Ctrl" Key="D9" Command="{Binding AreaByNumberCommand}" CommandParameter="9" />
+        <KeyBinding Key="F1" Command="{Binding ShortcutsCommand}" />
     </Window.InputBindings>
 
     <DockPanel>
@@ -424,6 +434,10 @@
                 <MenuItem Header="_Export Project File..." Command="{Binding ExportProjectFileCommand}" />
                 <Separator />
                 <MenuItem Header="_Library Manager..." Command="{Binding OpenLibraryManagerCommand}" />
+                <Separator />
+                <MenuItem Header="_Back Up..." Command="{Binding BackupCommand}" ToolTip="Everything in MARK on this computer, in one file" />
+                <MenuItem Header="_Restore from Backup..." Command="{Binding RestoreCommand}" />
+                <MenuItem Header="Open Backups _Folder" Command="{Binding OpenBackupsCommand}" ToolTip="Automatic backups: one a day, the newest 10 kept" />
                 <Separator />
                 <MenuItem Header="_Account" Command="{Binding ShowPageCommand}" CommandParameter="Account"
                           Visibility="{Binding HasAccount, Converter={StaticResource BoolToVisibility}}" />
@@ -479,6 +493,12 @@
                 <MenuItem Header="_Object Snap" IsCheckable="True" IsChecked="{Binding ObjectSnapEnabled}" />
                 <MenuItem Header="Snap to _Grid" IsCheckable="True" IsChecked="{Binding Canvas.SnapToGrid}" />
             </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem Header="_Keyboard Shortcuts" InputGestureText="F1" Command="{Binding ShortcutsCommand}" />
+                <MenuItem Header="Check for _Updates" Command="{Binding CheckUpdatesCommand}" />
+                <Separator />
+                <MenuItem Header="_About MARK" Command="{Binding AboutCommand}" />
+            </MenuItem>
         </Menu>
 
         <!-- ── Header: navigation and the open quote ──────────────── -->
@@ -486,6 +506,14 @@
                 Padding="10,6">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Margin="0,0,14,0" Padding="10,4" Cursor="Hand" Command="{Binding DownloadUpdateCommand}" ToolTip="{Binding UpdateTip}"
+                            Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVisibility}}" AutomationProperties.Name="Download update"
+                            Background="#FFF4E0" BorderBrush="#F0C987" Foreground="#7A4A00" FontWeight="SemiBold">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" Margin="0,0,6,0" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding UpdateText}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
                     <Button Style="{StaticResource RowButton}" Margin="0,0,14,0" Command="{Binding ShowPageCommand}" CommandParameter="Account"
                             ToolTip="Your account: licence, package and licence keys"
                             Visibility="{Binding HasAccount, Converter={StaticResource BoolToVisibility}}">

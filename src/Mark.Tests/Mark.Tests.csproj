@@ -32,4 +32,9 @@
     <ProjectReference Include="..\Mark.Owner\Mark.Owner.csproj" />
   </ItemGroup>
 
+  <!-- MARK Setup is a program of its own; its installer logic is tested here directly. -->
+  <ItemGroup>
+    <Compile Include="..\Mark.Setup\Installer.cs" Link="Setup\Installer.cs" />
+  </ItemGroup>
+
 </Project>

@@ -116,6 +116,7 @@ public static class LicenceServerApp
         // MARK (client companies)
         app.MapPost("/api/client/sign-in", (SignInRequest r) => service.ClientSignIn(r));
         app.MapPost("/api/client/check-in", (CheckInRequest r) => service.CheckIn(r));
+        app.MapGet("/api/client/latest", () => service.Latest());
         app.MapPost("/api/client/redeem-key", (RedeemKeyRequest r) => service.RedeemKey(r));
         app.MapPost("/api/client/catalogue", (CatalogueRequest r) => service.ClientCatalogue(r));
         app.MapPost("/api/client/profile", (CatalogueRequest r) => service.ClientProfile(r));
@@ -184,6 +185,8 @@ public static class LicenceServerApp
             return Results.NoContent();
         });
 
+        admin.MapGet("/latest", () => service.Latest());
+        admin.MapPut("/latest", (UpdateInfo u) => service.SetLatest(u));
         admin.MapGet("/catalogue", () => service.Catalogue());
         admin.MapPut("/catalogue", (PublishCatalogueRequest r) => service.PublishCatalogue(r.LibraryJson));
 

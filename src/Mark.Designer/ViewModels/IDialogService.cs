@@ -21,6 +21,9 @@ public interface IDialogService
     /// <summary>A file to write, or null if cancelled.</summary>
     string? ChooseSaveFile(string title, string filter, string fileName);
 
+    /// <summary>Shows a message with an OK button (e.g. About MARK).</summary>
+    void Inform(string title, string message) { }
+
     /// <summary>Shows the library manager (modal).</summary>
     void ShowLibraryManager(LibraryManagerViewModel manager);
 }

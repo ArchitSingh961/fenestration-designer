@@ -141,6 +141,8 @@ internal sealed class DirectApi : ILicenceApi
     public Task<StaffList> DeleteStaffAsync(DeleteStaffRequest request, CancellationToken cancel = default)
         => Call(() => _service.ClientDeleteStaff(request));
 
+    public Task<UpdateInfo> LatestAsync(CancellationToken cancel = default) => Call(() => _service.Latest());
+
     private Task<T> Call<T>(Func<T> call)
     {
         if (Offline)

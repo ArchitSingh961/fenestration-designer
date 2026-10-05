@@ -14,6 +14,9 @@ public sealed class WpfDialogService : IDialogService
     public bool Confirm(string title, string message)
         => MessageBox.Show(Owner!, message, title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
 
+    public void Inform(string title, string message)
+        => MessageBox.Show(Owner!, message, title, MessageBoxButton.OK, MessageBoxImage.Information);
+
     public string? PromptText(string title, string label, string initialText)
     {
         var window = new TextPromptWindow(title, label, initialText) { Owner = Owner };

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- MARK Setup: installs, updates and removes MARK for a customer. installer\build.ps1 puts the published MARK into
+       payload.zip (embedded) and publishes this as one self-contained file: MARK-Setup-<version>.exe. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Mark.Setup</RootNamespace>
+    <AssemblyName>MARK Setup</AssemblyName>
+    <ApplicationIcon Condition="Exists('..\Mark.App\Resources\mark.ico')">..\Mark.App\Resources\mark.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="..\Mark.App\Resources\mark.ico" Link="Resources\mark.ico" />
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('payload.zip')">
+    <EmbeddedResource Include="payload.zip" LogicalName="payload.zip" />
+  </ItemGroup>
+
+</Project>

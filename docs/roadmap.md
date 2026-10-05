@@ -200,7 +200,9 @@ Schedule tab for every order's deliveries, installations and site visits.
 
 ---
 
-## 20 — Finishing and installer
+## 20 — Finishing and installer — in progress
+
+- Done: backups (File › Back Up / Restore, automatic daily, newest 10 kept); update checks (MARK Owner › Updates, "MARK x available" in MARK); MARK Setup (installer/build.ps1 → artifacts/MARK-Setup-<version>.exe; per-user install, shortcuts, uninstall, data kept); icon; Help menu; Ctrl+1…9, F1. Still to do: build and try the installer end to end.
 
 - Installer for customers, update checks, backup and restore.
 - Final look-and-feel, keyboard and speed pass.

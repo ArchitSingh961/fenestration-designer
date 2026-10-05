@@ -1,7 +1,7 @@
 <Window x:Class="Mark.Owner.SignInWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="MARK Owner" Width="440" SizeToContent="Height" ResizeMode="NoResize"
+        Icon="pack://application:,,,/Resources/mark.ico" Title="MARK Owner" Width="440" SizeToContent="Height" ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen" Background="{StaticResource PageBackgroundBrush}">
     <Window.InputBindings>
         <KeyBinding Key="Enter" Command="{Binding SignInCommand}" />

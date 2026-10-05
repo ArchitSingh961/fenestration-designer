@@ -9,7 +9,12 @@
     <RootNamespace>Mark.App</RootNamespace>
     <!-- The program the user starts: MARK.exe. -->
     <AssemblyName>MARK</AssemblyName>
+    <ApplicationIcon>Resources\mark.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\mark.ico" />
+  </ItemGroup>
 
   <!-- Data shipped next to the executable: the product library and the workshop's calculation rules. -->
   <ItemGroup>

@@ -21,3 +21,7 @@ out/
 # Licence server signing keys: never in the repository
 *.pem
 signing-key*
+
+# Installer builds (installer/build.ps1)
+artifacts/
+src/Mark.Setup/payload.zip

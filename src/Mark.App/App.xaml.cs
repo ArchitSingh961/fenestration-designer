@@ -72,6 +72,18 @@ public partial class App : Application
                 messages.Add(LocalStore.AdoptLegacyDatabase(LocalStore.DefaultPath, LocalStore.LegacyDefaultPath));
             var store = LocalStore.Open(databasePath, LibraryPath);
             messages.AddRange(store.StartupMessages);
+            // Once a day a backup of everything is kept next to the database (the newest 10).
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    DatabaseBackup.AutoBackup(store.Database.FilePath);
+                }
+                catch (DataStoreException)
+                {
+                    // A missed automatic backup is made the next time MARK starts.
+                }
+            });
             // Before, every company signed in here shared one database: bring over this login's own work, once.
             if (databaseArgument is null && signedIn is not null && databasePath != LocalStore.DefaultPath)
                 messages.Add(CompanyDatabases.AdoptSharedWork(store, LocalStore.DefaultPath, signedIn.CompanyId, signedIn.UserId,
@@ -130,11 +142,14 @@ public partial class App : Application
             }
         };
 
+        mainViewModel.FetchLatest = () => licence.LatestAsync();
+        mainViewModel.RestartRequested = () => Restart();
+
         var window = new MainWindow { DataContext = mainViewModel };
         MainWindow = window;
         ShutdownMode = ShutdownMode.OnMainWindowClose;
         window.Show();
-        StartLicenceChecks(licence);
+        StartLicenceChecks(licence, mainViewModel);
     }
 
     /// <summary>Applies a changed catalogue while MARK runs and says what changed.</summary>
@@ -166,11 +181,16 @@ public partial class App : Application
     }
 
     /// <summary>Checks in now and every few hours, and re-evaluates the licence regularly (validity, offline grace).</summary>
-    private void StartLicenceChecks(LicenceManager licence)
+    private void StartLicenceChecks(LicenceManager licence, MainViewModel mainViewModel)
     {
         _ = licence.CheckInAsync();
+        _ = mainViewModel.CheckForUpdateAsync();
         var checkIn = new DispatcherTimer { Interval = CheckInInterval };
-        checkIn.Tick += async (_, _) => await licence.CheckInAsync();
+        checkIn.Tick += async (_, _) =>
+        {
+            await licence.CheckInAsync();
+            await mainViewModel.CheckForUpdateAsync();
+        };
         checkIn.Start();
         var refresh = new DispatcherTimer { Interval = RefreshInterval };
         refresh.Tick += (_, _) => licence.Refresh();
@@ -190,6 +210,12 @@ public partial class App : Application
             return;
         await licence.SignOutAsync();
         mainViewModel.ForgetChanges();
+        Restart();
+    }
+
+    /// <summary>Starts MARK again with the same arguments and closes this one (after signing out, or a restore).</summary>
+    private void Restart()
+    {
         if (Environment.ProcessPath is { } exe)
             Process.Start(new ProcessStartInfo(exe) { Arguments = string.Join(" ", _args.Select(QuoteArgument)), UseShellExecute = false });
         Shutdown();

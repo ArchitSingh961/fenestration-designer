@@ -7,7 +7,7 @@ using Mark.Licensing.Api;
 namespace Mark.Owner.ViewModels;
 
 /// <summary>The pages of MARK Owner.</summary>
-public enum OwnerSection { Companies, Keys, Packages, CompanyTypes, Catalogue }
+public enum OwnerSection { Companies, Keys, Packages, CompanyTypes, Catalogue, Updates }
 
 /// <summary>
 /// MARK Owner after sign-in: the pages (Companies, Licence keys, Packages, Company types), the signed-in admin and
@@ -31,6 +31,7 @@ public sealed class OwnerShellViewModel : ViewModelBase
         Action sessionEnded = () => _signedOut();
         Companies = new CompaniesViewModel(api, dialogs, sessionEnded, () => _packages, () => _types, catalogue: () => _catalogue);
         Keys = new KeysViewModel(api, dialogs, sessionEnded);
+        Updates = new UpdatesViewModel(api, dialogs, sessionEnded);
         Packages = new PackagesViewModel(api, dialogs, sessionEnded, packages => _packages = packages);
         CompanyTypes = new CompanyTypesViewModel(api, dialogs, sessionEnded, () => _packages, types => _types = types, () => _catalogue);
         Catalogue = new CatalogueViewModel(api, dialogs, sessionEnded, catalogueHost ?? new NoCatalogueEditor(),
@@ -46,6 +47,7 @@ public sealed class OwnerShellViewModel : ViewModelBase
 
     public CompaniesViewModel Companies { get; }
     public KeysViewModel Keys { get; }
+    public UpdatesViewModel Updates { get; }
     public PackagesViewModel Packages { get; }
     public CompanyTypesViewModel CompanyTypes { get; }
     public CatalogueViewModel Catalogue { get; }
@@ -100,6 +102,9 @@ public sealed class OwnerShellViewModel : ViewModelBase
                 break;
             case OwnerSection.Packages:
                 await Packages.LoadAsync();
+                break;
+            case OwnerSection.Updates:
+                await Updates.LoadAsync();
                 break;
             case OwnerSection.CompanyTypes:
                 await Catalogue.LoadAsync();

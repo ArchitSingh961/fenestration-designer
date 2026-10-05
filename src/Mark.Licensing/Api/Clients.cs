@@ -21,6 +21,9 @@ public interface ILicenceApi
     Task<StaffList> SaveStaffAsync(SaveStaffRequest request, CancellationToken cancel = default);
 
     Task<StaffList> DeleteStaffAsync(DeleteStaffRequest request, CancellationToken cancel = default);
+
+    /// <summary>The latest MARK the owner released (needs no sign-in).</summary>
+    Task<UpdateInfo> LatestAsync(CancellationToken cancel = default) => Task.FromResult(UpdateInfo.None);
 }
 
 /// <summary>MARK's HTTP client for the licence server.</summary>
@@ -59,6 +62,9 @@ public sealed class LicenceApiClient : ILicenceApi, IDisposable
 
     public Task<StaffList> DeleteStaffAsync(DeleteStaffRequest request, CancellationToken cancel = default)
         => _api.SendAsync<StaffList>(HttpMethod.Post, "api/client/staff/delete", request, cancel);
+
+    public Task<UpdateInfo> LatestAsync(CancellationToken cancel = default)
+        => _api.SendAsync<UpdateInfo>(HttpMethod.Get, "api/client/latest", null, cancel);
 
     public void Dispose() => _api.Dispose();
 }
@@ -107,6 +113,13 @@ public sealed class OwnerApiClient : IDisposable
         _api.BearerToken = session.Token;
         return session;
     }
+
+    // Releases of MARK
+    public Task<UpdateInfo> LatestAsync(CancellationToken cancel = default)
+        => _api.SendAsync<UpdateInfo>(HttpMethod.Get, "api/admin/latest", null, cancel);
+
+    public Task<UpdateInfo> SetLatestAsync(UpdateInfo update, CancellationToken cancel = default)
+        => _api.SendAsync<UpdateInfo>(HttpMethod.Put, "api/admin/latest", update, cancel);
 
     // Companies
     public Task<List<CompanySummary>> CompaniesAsync(CancellationToken cancel = default)

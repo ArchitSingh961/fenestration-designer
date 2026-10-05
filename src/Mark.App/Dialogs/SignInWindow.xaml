@@ -1,7 +1,7 @@
 <Window x:Class="Mark.App.Dialogs.SignInWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Sign in — MARK" Width="440" SizeToContent="Height" ResizeMode="NoResize"
+        Icon="pack://application:,,,/Resources/mark.ico" Title="Sign in — MARK" Width="440" SizeToContent="Height" ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen" Background="{StaticResource PageBackgroundBrush}"
         FocusManager.FocusedElement="{Binding ElementName=UserIdBox}">
     <Window.InputBindings>

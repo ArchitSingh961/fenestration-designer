@@ -15,11 +15,17 @@ A **system** is a product range, e.g. *62mm Casement – uPVC* or *Series 60 Sli
 | Frame / mullion / transom / sash / mesh shutter | The profiles a design in this system uses |
 | Glass, glass thickness | The default glass and the range the system takes (e.g. 20–28 mm) |
 
-A window (frame) is made **in a system**. A new design (**New design**, the Frame tool, or a ready-made design put on an
-empty spot) opens **Select system** over the properties: choose the **brand** (the maker of the system's frame profile;
-"Other" when it names none), then the **system**, and **Confirm** — one undo step; **×** keeps the library's default
-system. The last system chosen is offered first next time; with only one system there is nothing to ask, and a
-company's own ready-made designs come in their own system. Afterwards, in MARK's properties panel,
+A window (frame) is made **in a system**, and **the design decides which**: a sliding design goes in a sliding system, a
+casement design in a casement system, keeping the brand and material the window was in (a system "makes" an opening
+when its opening sets cover it, or, without opening sets, by its frame: a track frame is sliding). Applying a design to
+a window moves it to such a system on its own, in the same undo step.
+
+A new design (**New design**, the Frame tool, or a ready-made design put on an empty spot) opens **New design** over the
+properties: **Design ref.** and **Quantity** (required), **Location**, the **brand** (the maker of the system's frame
+profile, "Other" when it names none; asked only when the catalogue has systems of two or more makers, and not for a
+company's own ready-made designs, which come in their own system) and the **glass** for every pane (what fits the
+system). **Apply** sets them in one undo step; **Cancel** keeps the design as it was made. The last brand and glass are
+offered first next time. Afterwards, in MARK's properties panel,
 **System** changes it: every member takes the system's profile (outer size unchanged, outer members keep their outside
 faces), and glass that does not fit falls back to the system's glass. Profile and glass pickers offer only what fits the
 frame's system; glass outside its range is a warning.

@@ -111,14 +111,8 @@ public static class DesignTemplates
     {
         ArgumentNullException.ThrowIfNull(system);
         ArgumentNullException.ThrowIfNull(library);
-        var covered = library.Bundles.Where(b => b.IsActive && b.IsOpeningSet && (b.SystemId is null || b.SystemId == system.Id))
-            .SelectMany(b => b.OpeningTypes).ToHashSet();
-        bool sliding = covered.Any(o => o.IsSliding())
-                       || (covered.Count == 0 && library.FindProfile(system.FrameProfileId)?.Roles.Contains(ProfileType.Track) == true);
-        bool Allowed(OpeningType? opening) => opening is OpeningType.Fixed
-            || (system.SashProfileId is not null && opening is { } o
-                && (covered.Count > 0 ? covered.Contains(o) : sliding ? o.IsSliding() : o.IsHinged()));
-        return All.Where(t => t.Category != Mesh && !t.KeepsLayout && DesignTemplate.Leaves(t.Root).All(l => Allowed(l.Opening)))
+        return All.Where(t => t.Category != Mesh && !t.KeepsLayout
+                              && DesignTemplate.Leaves(t.Root).All(l => l.Opening is not null && Library.SystemMatch.Takes(system, library, l.Opening)))
             .OrderBy(t => t.IsDividerOnly ? 1 : 0)
             .Take(max)
             .ToList();

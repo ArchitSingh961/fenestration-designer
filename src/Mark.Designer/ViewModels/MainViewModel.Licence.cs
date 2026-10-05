@@ -120,24 +120,27 @@ public partial class MainViewModel
         return RunForMessage(() => CompositeCommand.Combine(commands[0].Description, commands)!);
     }
 
-    /// <summary>The Select system panel shown for a new design.</summary>
-    public SystemPickerViewModel SystemPicker => _systemPicker ??= new SystemPickerViewModel(() => Library, SetSystemOf);
+    /// <summary>The New design panel: reference, quantity, location, brand and glass of a design just made.</summary>
+    public NewDesignViewModel NewDesignPanel => _newDesignPanel ??= new NewDesignViewModel(() => Library, SetUpNewDesign);
 
-    private SystemPickerViewModel? _systemPicker;
+    private NewDesignViewModel? _newDesignPanel;
 
-    /// <summary>Asks which system a new frame is made in (when there is more than one system to choose from).</summary>
-    public void AskSystem(Frame frame)
+    /// <summary>Asks for the details of a new frame (the brand only when <paramref name="askBrand"/>).</summary>
+    public void AskNewDesign(Frame frame, bool askBrand = true)
     {
         if (IsOutsideView || !Access.CanUseDrawing) return;
-        SystemPicker.Open(frame);
+        NewDesignPanel.Open(frame, askBrand);
     }
 
-    /// <summary>Puts one frame in a system (from the Select system panel), one undo step. Returns an error, or null.</summary>
-    public string? SetSystemOf(Guid frameId, string systemId)
+    /// <summary>Sets up one frame from the New design panel, one undo step. Returns an error, or null.</summary>
+    public string? SetUpNewDesign(Guid frameId, NewDesignChoice choice)
     {
         if (Project.Frames.FirstOrDefault(f => f.Id == frameId) is not { } frame) return "The design is no longer there.";
-        if (frame.SystemId == systemId) return null;
-        string? error = RunForMessage(() => new SetFrameSystemCommand(frame, systemId, Library, Rules));
+        var info = frame.Design.Copy();
+        info.Reference = choice.Reference;
+        info.Quantity = choice.Quantity;
+        info.Location = choice.Location;
+        string? error = RunForMessage(() => new SetUpNewDesignCommand(frame, choice.SystemId, choice.GlassId, info, Library, Rules));
         if (error is null) Select(frame.Id);
         return error;
     }

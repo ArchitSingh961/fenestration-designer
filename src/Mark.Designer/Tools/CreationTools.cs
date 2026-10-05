@@ -83,7 +83,7 @@ public sealed class FrameTool : DesignerToolBase
         if (command is CreateFrameCommand create && Host.Execute(create) is null)
         {
             Host.Select(create.Frame.Id);
-            Host.AskSystem(create.Frame);
+            Host.AskNewDesign(create.Frame);
         }
         else if (_dragged && message is not null)
             Host.DesignMessage = message;

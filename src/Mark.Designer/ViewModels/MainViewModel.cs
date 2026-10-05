@@ -531,7 +531,7 @@ public partial class MainViewModel : ViewModelBase, IDesignService
         {
             Select(command.Frame.Id);
             Canvas.FitToContent();
-            AskSystem(command.Frame);
+            AskNewDesign(command.Frame);
         }
     }
 

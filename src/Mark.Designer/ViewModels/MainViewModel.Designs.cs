@@ -2,6 +2,7 @@ using System.Windows.Input;
 using Mark.Core.Commands;
 using Mark.Core.Design;
 using Mark.Core.Geometry;
+using Mark.Core.Library;
 using Mark.Core.Models;
 using Mark.Designer.Interaction;
 
@@ -117,9 +118,33 @@ public partial class MainViewModel : IViewportDropTarget
         if (systemId is not null)
             commands.AddRange(targets.Select(t => t.Frame).Distinct()
                 .Select(f => (IUndoableCommand)new SetFrameSystemCommand(f, systemId, Library, Rules)));
+        else
+            commands.InsertRange(0, SystemsForDesign(template, targets));
         string? error = RunForMessage(() => CompositeCommand.Combine($"Apply design \"{template.Name}\"", commands)!);
         DesignMessage = error;
         return error;
+    }
+
+    /// <summary>
+    /// The design decides the system: a frame that gets openings its system does not make (a sliding design in a casement
+    /// system) moves to a system that does, of the same brand and material when there is one.
+    /// </summary>
+    private List<IUndoableCommand> SystemsForDesign(DesignTemplate template, IReadOnlyList<(Frame Frame, Guid? GlassId)> targets)
+    {
+        var commands = new List<IUndoableCommand>();
+        if (template.KeepsLayout) return commands;
+        foreach (var group in targets.GroupBy(t => t.Frame))
+        {
+            var frame = group.Key;
+            if (frame.SystemId is null) continue;                                    // "No system" stays so
+            var replaced = group.Select(t => t.GlassId).ToHashSet();
+            var openings = replaced.Contains(null)
+                ? template.Openings.ToList()
+                : frame.GlassPanels.Where(g => !replaced.Contains(g.Id)).Select(g => (OpeningType?)g.Opening).Concat(template.Openings).ToList();
+            if (SystemMatch.For(Library, openings, frame.SystemId) is { } id && id != frame.SystemId)
+                commands.Add(new SetFrameSystemCommand(frame, id, Library, Rules));
+        }
+        return commands;
     }
 
     /// <summary>True if the frame has anything a whole-frame design would clear: divisions, sashes or mesh.</summary>
@@ -150,8 +175,10 @@ public partial class MainViewModel : IViewportDropTarget
         }
 
         var steps = new List<IUndoableCommand> { create };
-        if (systemId is not null)
-            steps.Add(new SetFrameSystemCommand(create.Frame, systemId, Library, Rules));
+        string? madeIn = systemId
+                         ?? SystemMatch.For(Library, template.Openings, create.Frame.SystemId ?? Library.Defaults.SystemId);   // the design decides
+        if (madeIn is not null && madeIn != create.Frame.SystemId)
+            steps.Add(new SetFrameSystemCommand(create.Frame, madeIn, Library, Rules));
         if (!template.KeepsLayout)
             steps.Add(new ApplyTemplateCommand(create.Frame, template, null, Rules));
         string? error = RunForMessage(() => CompositeCommand.Combine($"New design \"{template.Name}\"", steps)!);
@@ -160,7 +187,7 @@ public partial class MainViewModel : IViewportDropTarget
         {
             Select(create.Frame.Id);
             if (topLeft is null) Canvas.FitToContent();
-            if (systemId is null) AskSystem(create.Frame);                     // a company's own design comes in its system
+            AskNewDesign(create.Frame, askBrand: systemId is null);            // a company's own design comes in its system
         }
         return error;
     }

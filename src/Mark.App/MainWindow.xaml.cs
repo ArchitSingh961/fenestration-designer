@@ -26,6 +26,19 @@ public partial class MainWindow : Window
     /// <summary>Give the viewport keyboard focus so its shortcuts (F, G, Space-pan) work immediately.</summary>
     private void Window_Loaded(object sender, RoutedEventArgs e) => Viewport.Focus();
 
+    /// <summary>The New design panel starts in the design ref. (selected, to type over); closed, the drawing has the keys again.</summary>
+    private void NewDesignPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.NewValue is true)
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input, () =>
+            {
+                NewDesignReference.Focus();
+                NewDesignReference.SelectAll();
+            });
+        else if (NewDesignReference.IsKeyboardFocusWithin || ((UIElement)sender).IsKeyboardFocusWithin)
+            Viewport.Focus();
+    }
+
     /// <summary>Ask before closing over unsaved changes (the decision is the view model's).</summary>
     private void Window_Closing(object? sender, CancelEventArgs e)
     {

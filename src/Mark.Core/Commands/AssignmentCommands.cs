@@ -82,3 +82,47 @@ public sealed class SetFrameSystemCommand : FrameEditCommand
 
     protected override void Apply(Frame frame) => FrameEditor.SetSystem(frame, SystemId, _library, _rules);
 }
+
+/// <summary>
+/// Sets up a design just made, from the New design panel: its system, the glass of all its panes and its details
+/// (reference, quantity, location), as ONE undo step. If any part is rejected, nothing changes.
+/// </summary>
+public sealed class SetUpNewDesignCommand : FrameEditCommand
+{
+    private readonly IProductLibrary _library;
+    private readonly DesignRules _rules;
+    private readonly string? _systemId;
+    private readonly string? _glassId;
+    private readonly DesignInfo _info;
+
+    /// <param name="systemId">The system to put the frame in, or null to keep its system.</param>
+    /// <param name="glassId">The glass for every pane, or null to keep the glass.</param>
+    public SetUpNewDesignCommand(Frame frame, string? systemId, string? glassId, DesignInfo info, IProductLibrary library, DesignRules rules)
+        : base("Set up the new design", frame)
+    {
+        _library = library ?? throw new ArgumentNullException(nameof(library));
+        _rules = rules;
+        _systemId = systemId;
+        _glassId = glassId;
+        _info = info?.Copy() ?? throw new ArgumentNullException(nameof(info));
+    }
+
+    protected override void Apply(Frame frame)
+    {
+        var before = FrameSnapshot.Capture(frame);
+        try
+        {
+            if (_systemId is not null && _systemId != frame.SystemId)
+                FrameEditor.SetSystem(frame, _systemId, _library, _rules);
+            var panes = frame.GlassPanels.Where(g => g.GlassDefinitionId != _glassId).Select(g => g.Id).ToList();
+            if (_glassId is not null && panes.Count > 0)
+                FrameEditor.AssignGlass(frame, panes, _glassId, _library, _rules);
+            FrameEditor.SetDesignInfo(frame, _info);
+        }
+        catch
+        {
+            before.ApplyTo(frame);
+            throw;
+        }
+    }
+}

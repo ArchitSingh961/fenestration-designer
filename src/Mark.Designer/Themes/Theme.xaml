@@ -17,9 +17,11 @@
     <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     <views:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVisibility" />
 
-    <!-- Every drop-down: the mouse wheel scrolls the page instead of silently changing the choice. -->
+    <!-- Every drop-down: the mouse wheel scrolls the page instead of silently changing the choice, and a long list
+         has a search box at the top of its drop-down. -->
     <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
         <Setter Property="views:ComboBoxWheel.ScrollsPage" Value="True" />
+        <Setter Property="views:SearchCombo.IsSearchable" Value="True" />
     </Style>
 
     <Style x:Key="FieldLabel" TargetType="TextBlock">

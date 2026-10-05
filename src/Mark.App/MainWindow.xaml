@@ -120,17 +120,9 @@
                     <TextBlock Grid.Column="1" Text="{Binding CurrentText}" TextWrapping="Wrap" TextAlignment="Right"
                                FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" />
                 </Grid>
-                <Grid Margin="0,4,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="90" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="Search" Style="{StaticResource FieldLabel}" />
-                    <TextBox Grid.Column="1" Padding="4,2" ToolTip="Filter the library by name, code, type or series"
-                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
-                </Grid>
-                <ComboBox Margin="0,4,0,0" ItemsSource="{Binding Options}" SelectedItem="{Binding SelectedOption}"
-                          ToolTip="Choose a library item to assign it">
+                <ComboBox Margin="0,6,0,0" ItemsSource="{Binding Options}" SelectedItem="{Binding SelectedOption}"
+                          views:SearchCombo.FiltersItems="False" views:SearchCombo.Query="{Binding SearchText}"
+                          ToolTip="Choose a library item to assign it; type in the search box at the top of the list to find it by name, code, type or series">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Margin="0,1">
@@ -3239,40 +3231,89 @@
                                 </ScrollViewer>
                             </Border>
 
-                            <!-- Select system: shown for a new design, over the properties -->
-                            <Border Grid.Column="2" DataContext="{Binding SystemPicker}" Background="White"
+                            <!-- New design: design ref., quantity, location, brand and glass, shown for a design just made, over the properties -->
+                            <Border Grid.Column="2" DataContext="{Binding NewDesignPanel}" Background="White"
                                     BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,0,0,0"
+                                    IsVisibleChanged="NewDesignPanel_IsVisibleChanged"
                                     Visibility="{Binding IsOpen, Converter={StaticResource BoolToVisibility}}">
                                 <DockPanel>
                                     <Border DockPanel.Dock="Top" BorderBrush="#EEF0F3" BorderThickness="0,0,0,1" Padding="18,14,10,12">
                                         <DockPanel>
                                             <Button DockPanel.Dock="Right" Content="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="12" Width="30" Height="30"
                                                     Background="Transparent" BorderThickness="0" Cursor="Hand" Command="{Binding CloseCommand}"
-                                                    ToolTip="Keep the system it was made in" AutomationProperties.Name="Close" />
+                                                    ToolTip="Keep the design as it was made" AutomationProperties.Name="Close" />
                                             <StackPanel>
-                                                <TextBlock Text="Select system" FontSize="15" FontWeight="SemiBold" Foreground="#1F2A37" />
+                                                <TextBlock Text="New design" FontSize="15" FontWeight="SemiBold" Foreground="#1F2A37" />
                                                 <TextBlock Text="{Binding Subtitle}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
                                             </StackPanel>
                                         </DockPanel>
                                     </Border>
-                                    <Border DockPanel.Dock="Bottom" Padding="18,12,18,18">
+                                    <Border DockPanel.Dock="Bottom" Padding="18,10,18,18" BorderBrush="#EEF0F3" BorderThickness="0,1,0,0">
                                         <StackPanel>
                                             <TextBlock Text="{Binding Message}" Foreground="{StaticResource ErrorBrush}" TextWrapping="Wrap" Margin="0,0,0,8" />
-                                            <Button Style="{StaticResource PrimaryButton}" Content="Confirm" Margin="0" Padding="16,9" HorizontalAlignment="Stretch"
-                                                    Command="{Binding ConfirmCommand}" IsDefault="{Binding IsOpen}" />
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="10" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <Button Style="{StaticResource SecondaryButton}" Content="Cancel" Margin="0" Padding="12,9"
+                                                        Command="{Binding CloseCommand}" IsCancel="{Binding IsOpen}"
+                                                        ToolTip="Keep the design as it was made; it can be changed in the properties" />
+                                                <Button Grid.Column="2" Style="{StaticResource PrimaryButton}" Content="Apply" Margin="0" Padding="12,9"
+                                                        Command="{Binding ConfirmCommand}" IsDefault="{Binding IsOpen}" />
+                                            </Grid>
                                         </StackPanel>
                                     </Border>
-                                    <StackPanel Margin="18,16,18,0">
-                                        <TextBlock Text="Brand" Style="{StaticResource FormLabel}" />
-                                        <ComboBox ItemsSource="{Binding Brands}" SelectedItem="{Binding SelectedBrand}" Padding="8,6" Margin="0,0,0,14"
-                                                  AutomationProperties.Name="Brand" />
-                                        <TextBlock Text="System" Style="{StaticResource FormLabel}" />
-                                        <ComboBox ItemsSource="{Binding Systems}" SelectedItem="{Binding SelectedSystem}" DisplayMemberPath="Name" Padding="8,6"
-                                                  AutomationProperties.Name="System" />
-                                        <TextBlock Text="{Binding DetailText}" TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,8,0,0" />
-                                        <TextBlock Text="The design's profiles, glass and hardware follow the system. It can be changed later under System in the properties."
-                                                   TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,14,0,0" />
-                                    </StackPanel>
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                        <StackPanel Margin="18,14,18,12">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="12" />
+                                                    <ColumnDefinition Width="80" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Style="{StaticResource FormLabel}"><Run Text="Design ref." /><Run Text=" *" Foreground="{StaticResource ErrorBrush}" /></TextBlock>
+                                                    <TextBox x:Name="NewDesignReference" Style="{StaticResource FormBox}" Margin="0,0,0,12"
+                                                             Text="{Binding Reference, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Design ref."
+                                                             ToolTip="Shown above the drawing and in quotes, e.g. W1" />
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2">
+                                                    <TextBlock Style="{StaticResource FormLabel}"><Run Text="Quantity" /><Run Text=" *" Foreground="{StaticResource ErrorBrush}" /></TextBlock>
+                                                    <TextBox Style="{StaticResource FormBox}" Margin="0,0,0,12" TextAlignment="Right"
+                                                             Text="{Binding QuantityText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Quantity" />
+                                                </StackPanel>
+                                            </Grid>
+                                            <TextBlock Text="Location" Style="{StaticResource FormLabel}" />
+                                            <TextBox Style="{StaticResource FormBox}" Margin="0,0,0,12" Text="{Binding Location, UpdateSourceTrigger=PropertyChanged}"
+                                                     AutomationProperties.Name="Location" ToolTip="Where it goes, e.g. Living room" />
+
+                                            <StackPanel Visibility="{Binding AsksBrand, Converter={StaticResource BoolToVisibility}}">
+                                                <TextBlock Text="Brand" Style="{StaticResource FormLabel}" />
+                                                <ComboBox ItemsSource="{Binding Brands}" SelectedItem="{Binding SelectedBrand}" Padding="8,6" Margin="0,0,0,12"
+                                                          AutomationProperties.Name="Brand"
+                                                          ToolTip="The maker of the profiles. The design decides the system: sliding designs go in the brand's sliding system, casement designs in its casement system." />
+                                            </StackPanel>
+
+                                            <StackPanel Visibility="{Binding AsksGlass, Converter={StaticResource BoolToVisibility}}">
+                                                <TextBlock Text="Glass" Style="{StaticResource FormLabel}" />
+                                                <ComboBox ItemsSource="{Binding GlassOptions}" SelectedItem="{Binding SelectedGlass}" Padding="8,6"
+                                                          AutomationProperties.Name="Glass" views:SearchCombo.MinItems="6">
+                                                    <ComboBox.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <StackPanel Margin="0,1">
+                                                                <TextBlock Text="{Binding Name}" />
+                                                                <TextBlock Text="{Binding Detail}" FontSize="10" Foreground="{StaticResource MutedTextBrush}" />
+                                                            </StackPanel>
+                                                        </DataTemplate>
+                                                    </ComboBox.ItemTemplate>
+                                                </ComboBox>
+                                                <TextBlock Text="Used for every pane of the design. Single panes can be changed later in the properties."
+                                                           TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,6,0,0" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </ScrollViewer>
                                 </DockPanel>
                             </Border>
                         </Grid>

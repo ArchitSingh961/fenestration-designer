@@ -160,6 +160,7 @@ public partial class MainViewModel : IViewportDropTarget
         {
             Select(create.Frame.Id);
             if (topLeft is null) Canvas.FitToContent();
+            if (systemId is null) AskSystem(create.Frame);                     // a company's own design comes in its system
         }
         return error;
     }

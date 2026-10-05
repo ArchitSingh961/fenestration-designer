@@ -120,6 +120,28 @@ public partial class MainViewModel
         return RunForMessage(() => CompositeCommand.Combine(commands[0].Description, commands)!);
     }
 
+    /// <summary>The Select system panel shown for a new design.</summary>
+    public SystemPickerViewModel SystemPicker => _systemPicker ??= new SystemPickerViewModel(() => Library, SetSystemOf);
+
+    private SystemPickerViewModel? _systemPicker;
+
+    /// <summary>Asks which system a new frame is made in (when there is more than one system to choose from).</summary>
+    public void AskSystem(Frame frame)
+    {
+        if (IsOutsideView || !Access.CanUseDrawing) return;
+        SystemPicker.Open(frame);
+    }
+
+    /// <summary>Puts one frame in a system (from the Select system panel), one undo step. Returns an error, or null.</summary>
+    public string? SetSystemOf(Guid frameId, string systemId)
+    {
+        if (Project.Frames.FirstOrDefault(f => f.Id == frameId) is not { } frame) return "The design is no longer there.";
+        if (frame.SystemId == systemId) return null;
+        string? error = RunForMessage(() => new SetFrameSystemCommand(frame, systemId, Library, Rules));
+        if (error is null) Select(frame.Id);
+        return error;
+    }
+
     /// <summary>Why a design cannot be applied under the company's package, or null.</summary>
     private string? DesignBlocked(DesignTemplate template)
     {

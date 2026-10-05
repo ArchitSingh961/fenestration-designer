@@ -1881,9 +1881,49 @@
                             <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,0,0,14">
                                 <StackPanel>
                                     <TextBlock Text="Terms and conditions" Style="{StaticResource CardTitle}" />
-                                    <TextBlock Text="One term per line; they are numbered on the quotation." FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,6" />
+                                    <TextBlock Text="One term per line; they are numbered on the quotation (lines you number yourself, like 1. or a., are printed as written)." FontSize="11"
+                                               Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,6" TextWrapping="Wrap" />
                                     <TextBox Style="{StaticResource FormBox}" MinHeight="200" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top"
                                              VerticalScrollBarVisibility="Auto" Text="{Binding Terms, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Content="Use MARK's text" Padding="10,3"
+                                                Command="{Binding DefaultSectionCommand}" CommandParameter="cancellation"
+                                                ToolTip="Replace this section with MARK's standard text, to change as you like" />
+                                        <TextBlock Text="Cancellation policy" Style="{StaticResource CardTitle}" />
+                                    </DockPanel>
+                                    <TextBlock Text="One point per line, printed after the terms. Leave empty to leave it out." FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,6" TextWrapping="Wrap" />
+                                    <TextBox Style="{StaticResource FormBox}" MinHeight="120" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top"
+                                             VerticalScrollBarVisibility="Auto" Text="{Binding CancellationPolicy, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Content="Use MARK's text" Padding="10,3"
+                                                Command="{Binding DefaultSectionCommand}" CommandParameter="warranty"
+                                                ToolTip="Replace this section with MARK's standard text, to change as you like" />
+                                        <TextBlock Text="Warranty" Style="{StaticResource CardTitle}" />
+                                    </DockPanel>
+                                    <TextBlock Text="What the warranty covers and does not, one point per line. Leave empty to leave it out." FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,6" TextWrapping="Wrap" />
+                                    <TextBox Style="{StaticResource FormBox}" MinHeight="120" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top"
+                                             VerticalScrollBarVisibility="Auto" Text="{Binding Warranty, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Content="Use MARK's text" Padding="10,3"
+                                                Command="{Binding DefaultSectionCommand}" CommandParameter="installation"
+                                                ToolTip="Replace this section with MARK's standard text, to change as you like" />
+                                        <TextBlock Text="Pre-requisites for installation" Style="{StaticResource CardTitle}" />
+                                    </DockPanel>
+                                    <TextBlock Text="What must be ready on site before installation, one point per line. Leave empty to leave it out." FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,6" TextWrapping="Wrap" />
+                                    <TextBox Style="{StaticResource FormBox}" MinHeight="120" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top"
+                                             VerticalScrollBarVisibility="Auto" Text="{Binding InstallationPrerequisites, UpdateSourceTrigger=PropertyChanged}" />
                                 </StackPanel>
                             </Border>
                             <Border Style="{StaticResource Card}" Padding="20,16">

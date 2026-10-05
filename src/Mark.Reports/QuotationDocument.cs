@@ -69,6 +69,9 @@ public sealed record QuotationDocument
     /// <summary>Terms and conditions, one per item (numbered when printed).</summary>
     public IReadOnlyList<string> Terms { get; init; } = Array.Empty<string>();
 
+    /// <summary>More numbered sections after the terms: cancellation policy, warranty, pre-requisites for installation.</summary>
+    public IReadOnlyList<QuotationSection> Sections { get; init; } = Array.Empty<QuotationSection>();
+
     public QuotationBank? Bank { get; init; }
 
     /// <summary>The client's acceptance sentence above the signatures.</summary>
@@ -80,3 +83,6 @@ public sealed record QuotationDocument
     /// <summary>Bottom right of every page.</summary>
     public string PoweredBy { get; init; } = "powered by MARK";
 }
+
+/// <summary>A titled section of points, e.g. "Warranty" with what it covers (numbered when printed).</summary>
+public sealed record QuotationSection(string Title, IReadOnlyList<string> Points);

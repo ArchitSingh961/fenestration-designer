@@ -148,6 +148,12 @@ public static class QuotationBuilder
             Totals = totals,
             Notes = s.Notes,
             Terms = QuotationSettings.LinesOf(s.Terms),
+            Sections = new[]
+                {
+                    new QuotationSection("Cancellation Policy", QuotationSettings.LinesOf(s.CancellationPolicy)),
+                    new QuotationSection("Warranty", QuotationSettings.LinesOf(s.Warranty)),
+                    new QuotationSection("Pre-requisites for Installation", QuotationSettings.LinesOf(s.InstallationPrerequisites))
+                }.Where(x => x.Points.Count > 0).ToList(),
             Bank = bank.Count == 0 ? null : new QuotationBank(bank),
             Acceptance = s.Acceptance,
             ExtraPage = Image(s.ExtraPageBase64)

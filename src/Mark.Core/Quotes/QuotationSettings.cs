@@ -40,6 +40,15 @@ public sealed record QuotationSettings
     /// <summary>Terms and conditions, one per line (numbered when printed).</summary>
     public string Terms { get; init; } = DefaultTerms;
 
+    /// <summary>Cancellation policy, one point per line (empty: not printed).</summary>
+    public string CancellationPolicy { get; init; } = "";
+
+    /// <summary>What the warranty covers and does not, one point per line (empty: not printed).</summary>
+    public string Warranty { get; init; } = "";
+
+    /// <summary>What must be ready on site before the windows are installed, one point per line (empty: not printed).</summary>
+    public string InstallationPrerequisites { get; init; } = "";
+
     public string BankAccountName { get; init; } = "";
     public string BankAccountNumber { get; init; } = "";
     public string BankName { get; init; } = "";
@@ -73,6 +82,27 @@ public sealed record QuotationSettings
         "Delivery and installation as agreed when the order is confirmed.\n" +
         "Warranty on profiles, hardware and glass as per the manufacturers' terms.\n" +
         "Taxes as applicable at the time of billing.";
+
+    public const string DefaultCancellationPolicy =
+        "An order can be cancelled in writing within 3 days of the advance payment, without any charge.\n" +
+        "Once fabrication has started, the cost of the material cut and the work done is kept from the advance.\n" +
+        "Windows and doors are made to measure: once made, they cannot be cancelled or returned.\n" +
+        "A change of sizes or design after the order is confirmed is treated as a new order and priced again.";
+
+    public const string DefaultWarranty =
+        "Profiles: as per the profile maker's warranty against defects in the material.\n" +
+        "Hardware and accessories: as per their makers' warranty.\n" +
+        "Workmanship and installation: one year from the date of installation.\n" +
+        "Glass breakage is not covered by the warranty.\n" +
+        "Not covered: damage from misuse, accidents, movement of the building, natural calamities, or repairs by others.";
+
+    public const string DefaultInstallationPrerequisites =
+        "The openings must be finished (plaster, sill and levels) and of the sizes measured for the order.\n" +
+        "Electricity (220 V) and water must be available on site.\n" +
+        "A safe, dry place must be given to store the windows delivered before installation.\n" +
+        "Scaffolding, where needed for upper floors, is to be arranged by the customer.\n" +
+        "Painting, polishing and other finishing near the openings should be done before installation, or the windows protected.\n" +
+        "The site must be clear for our team to work during installation.";
 
     public const string DefaultAcceptance =
         "I accept this quotation with the prices and specifications above, and have read and agree to the terms and conditions.";

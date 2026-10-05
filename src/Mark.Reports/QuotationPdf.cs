@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using System.IO;
 using MigraDoc.DocumentObjectModel;
 using MigraDoc.DocumentObjectModel.Tables;
@@ -200,13 +201,19 @@ public static class QuotationPdf
             if (i == 0) line.Format.Font.Bold = true;
         }
 
-        var dear = section.AddParagraph("Dear Customer,");
+        // The company's own letter may start with its own greeting and list its own enclosures: then they are not repeated.
+        bool ownGreeting = q.Letter.Count > 0 && q.Letter[0].StartsWith("Dear", StringComparison.OrdinalIgnoreCase);
+        bool ownEnclosures = q.Letter.Any(IsNumbered);
+        var dear = section.AddParagraph(ownGreeting ? "" : "Dear Customer,");
         dear.Format.SpaceBefore = Unit.FromCentimeter(2.2);
-        dear.Format.SpaceAfter = Unit.FromPoint(8);
+        dear.Format.SpaceAfter = Unit.FromPoint(ownGreeting ? 0 : 8);
         foreach (string text in q.Letter)
             section.AddParagraph(text).Format.SpaceAfter = Unit.FromPoint(9);
 
-        foreach (var (mark, text) in new[] { ("a.", "Window design, specification and value"), ("b.", "Terms and Conditions") })
+        var enclosures = new List<string> { "Window design, specification and value", "Terms and Conditions" };
+        enclosures.AddRange(q.Sections.Select(x => x.Title));
+        foreach (var (mark, text) in ownEnclosures ? Array.Empty<(string, string)>()
+                     : enclosures.Select((text, i) => ($"{(char)('a' + i)}.", text)).ToArray())
         {
             var item = section.AddParagraph($"{mark}\t{text}");
             item.Format.LeftIndent = Unit.FromCentimeter(2.6);
@@ -328,20 +335,11 @@ public static class QuotationPdf
 
     private static void AddTerms(Section section, QuotationDocument q)
     {
-        if (q.Terms.Count == 0 && q.Bank is null && string.IsNullOrWhiteSpace(q.Acceptance)) return;
+        if (q.Terms.Count == 0 && q.Sections.Count == 0 && q.Bank is null && string.IsNullOrWhiteSpace(q.Acceptance)) return;
         section.AddPageBreak();
-        var title = section.AddParagraph();
-        title.AddFormattedText("Terms and Conditions:-", new Font { Bold = true, Underline = Underline.Single });
-        title.Format.SpaceAfter = Unit.FromPoint(8);
-
-        for (int i = 0; i < q.Terms.Count; i++)
-        {
-            var term = section.AddParagraph($"{i + 1}.\t{q.Terms[i]}");
-            term.Format.LeftIndent = Unit.FromCentimeter(1.0);
-            term.Format.FirstLineIndent = Unit.FromCentimeter(-0.55);
-            term.Format.TabStops.AddTabStop(Unit.FromCentimeter(1.0));
-            term.Format.SpaceAfter = Unit.FromPoint(6);
-        }
+        AddPoints(section, "Terms and Conditions", q.Terms, first: true);
+        foreach (var more in q.Sections)
+            AddPoints(section, more.Title, more.Points, first: false);
 
         if (q.Bank is { Rows.Count: > 0 } bank)
         {
@@ -378,6 +376,43 @@ public static class QuotationPdf
         var customer = signRow.Cells[1].AddParagraph("Signature of Customer");
         customer.Format.Alignment = ParagraphAlignment.Right;
     }
+
+    /// <summary>
+    /// A titled list: "Warranty:-" and its points, numbered 1., 2. … unless the company numbered or lettered them itself
+    /// ("1. Payment terms:", "a. 100% advance …"): then they are printed as written, and its own headings in bold.
+    /// </summary>
+    private static void AddPoints(Section section, string heading, IReadOnlyList<string> points, bool first)
+    {
+        if (points.Count == 0) return;
+        var title = section.AddParagraph();
+        title.AddFormattedText($"{heading}:-", new Font { Bold = true, Underline = Underline.Single });
+        title.Format.SpaceBefore = Unit.FromPoint(first ? 0 : 14);
+        title.Format.SpaceAfter = Unit.FromPoint(8);
+        title.Format.KeepWithNext = true;
+
+        bool asWritten = points.Any(IsNumbered);
+        for (int i = 0; i < points.Count; i++)
+        {
+            string text = points[i];
+            var point = asWritten ? section.AddParagraph(text) : section.AddParagraph($"{i + 1}.\t{text}");
+            point.Format.SpaceAfter = Unit.FromPoint(asWritten ? 4 : 6);
+            if (asWritten)
+            {
+                bool sub = Regex.IsMatch(text, @"^([a-z]|[ivx]+)[.)]\s");                        // a. b. i. ii. under a point
+                point.Format.LeftIndent = Unit.FromCentimeter(sub ? 1.0 : 0.45);
+                if (!IsNumbered(text) && text.EndsWith(':')) point.Format.Font.Bold = true;     // "Bank Details :"
+            }
+            else
+            {
+                point.Format.LeftIndent = Unit.FromCentimeter(1.0);
+                point.Format.FirstLineIndent = Unit.FromCentimeter(-0.55);
+                point.Format.TabStops.AddTabStop(Unit.FromCentimeter(1.0));
+            }
+        }
+    }
+
+    /// <summary>A line that starts with its own number or letter: "1.", "2)", "a.", "b)", "iv.".</summary>
+    private static bool IsNumbered(string line) => Regex.IsMatch(line.TrimStart(), @"^(\d{1,3}|[a-zA-Z]|[ivxIVX]{1,4})[.)]\s");
 
     // ── Helpers ─────────────────────────────────────────────────────
 

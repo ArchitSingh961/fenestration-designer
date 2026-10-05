@@ -42,8 +42,11 @@ On an open, saved quote (header of its pages):
   value); profiles (outer, sash, mullion, reinforcement…, mesh) and accessories (hardware); remarks — about two per page;
 - the quote total: components, total area, basic value, discount, sub-total, charges, total project cost, tax (e.g.
   GST 18 %), grand total, average price per area without and with tax; notes;
-- terms and conditions (numbered), bank details, the acceptance sentence and both signatures (authorized signatory,
-  customer);
+- terms and conditions (numbered), then — when filled in — **Cancellation Policy**, **Warranty** and **Pre-requisites
+  for Installation**, each numbered; bank details, the acceptance sentence and both signatures (authorized signatory,
+  customer). Lines the company numbered or lettered itself ("1. Payment terms:", "a. 100% advance …") are printed as
+  written (its own headings such as "Bank Details :" in bold); a letter that starts with its own "Dear …" or lists its
+  own enclosures does not get MARK's as well;
 - optionally a last page with one picture (e.g. care instructions).
 
 **What it prints comes from two places:**
@@ -54,8 +57,10 @@ On an open, saved quote (header of its pages):
   fingerprint is in the signed licence, like the catalogue's); Quotation setup does not show them at all, only the PDF
   prints them. The company name and logo are the account's, as before.
 - **The company (Sales › Quotation setup)**: the covering letter (one paragraph per line), terms (one per line), the
-  acceptance sentence, notes under the total, square feet or square metres, and the money label. **Use MARK's texts**
-  restores the standard letter, terms and acceptance.
+  cancellation policy, warranty and pre-requisites for installation (one point per line; left out when empty, **Use
+  MARK's text** on each fills in a standard text to change), the acceptance sentence, notes under the total, square feet
+  or square metres, and the money label. **Use MARK's texts** restores the standard letter, terms and acceptance. The
+  setup is saved with **Save setup**, and also when leaving the page, before every quotation PDF and when MARK closes.
 
 Without a MARK account (no sign-in) the company fills in everything itself.
 

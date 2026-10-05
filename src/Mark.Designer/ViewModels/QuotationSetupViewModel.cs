@@ -35,6 +35,15 @@ public sealed class QuotationSetupViewModel : ViewModelBase
         RemoveBrandLogoCommand = new RelayCommand(() => BrandLogo = null);
         ChooseExtraPageCommand = new RelayCommand(() => ExtraPage = ChooseImage("Last page picture") ?? ExtraPage);
         RemoveExtraPageCommand = new RelayCommand(() => ExtraPage = null);
+        DefaultSectionCommand = new RelayCommand(p =>
+        {
+            switch (p as string)
+            {
+                case "cancellation": CancellationPolicy = QuotationSettings.DefaultCancellationPolicy; break;
+                case "warranty": Warranty = QuotationSettings.DefaultWarranty; break;
+                case "installation": InstallationPrerequisites = QuotationSettings.DefaultInstallationPrerequisites; break;
+            }
+        });
         DefaultTextsCommand = new RelayCommand(() =>
         {
             Letter = QuotationSettings.DefaultLetter;
@@ -50,6 +59,14 @@ public sealed class QuotationSetupViewModel : ViewModelBase
     public ICommand ChooseExtraPageCommand { get; }
     public ICommand RemoveExtraPageCommand { get; }
     public ICommand DefaultTextsCommand { get; }
+
+    /// <summary>Fills one of the extra sections ("cancellation", "warranty", "installation") with MARK's text.</summary>
+    public ICommand DefaultSectionCommand { get; }
+
+    private string _cancellationPolicy = "", _warranty = "", _installationPrerequisites = "";
+    public string CancellationPolicy { get => _cancellationPolicy; set => SetProperty(ref _cancellationPolicy, value); }
+    public string Warranty { get => _warranty; set => SetProperty(ref _warranty, value); }
+    public string InstallationPrerequisites { get => _installationPrerequisites; set => SetProperty(ref _installationPrerequisites, value); }
 
     private string _companyName = "", _partnerLabel = "", _address = "", _phone = "", _email = "", _website = "", _gstin = "",
         _brandName = "", _letter = "", _terms = "", _bankAccountName = "", _bankAccountNumber = "", _bankName = "", _bankIfsc = "",
@@ -168,6 +185,7 @@ public sealed class QuotationSetupViewModel : ViewModelBase
         BankAccountName = s.BankAccountName; BankAccountNumber = s.BankAccountNumber; BankName = s.BankName; BankIfsc = s.BankIfsc;
         BankBranch = s.BankBranch; Acceptance = s.Acceptance; Notes = s.Notes; AreaUnit = s.AreaUnit; CurrencyLabel = s.CurrencyLabel;
         ExtraPage = s.ExtraPageBase64;
+        CancellationPolicy = s.CancellationPolicy; Warranty = s.Warranty; InstallationPrerequisites = s.InstallationPrerequisites;
 
         var managed = _profile();
         IsManaged = managed is not null;
@@ -184,6 +202,7 @@ public sealed class QuotationSetupViewModel : ViewModelBase
         ? _loaded with
         {
             CompanyName = CompanyName.Trim(), Letter = Letter.Trim(), Terms = Terms.Trim(), Acceptance = Acceptance.Trim(), Notes = Notes.Trim(),
+            CancellationPolicy = CancellationPolicy.Trim(), Warranty = Warranty.Trim(), InstallationPrerequisites = InstallationPrerequisites.Trim(),
             AreaUnit = AreaUnit, CurrencyLabel = string.IsNullOrWhiteSpace(CurrencyLabel) ? "Rs." : CurrencyLabel.Trim()
         }
         : new()
@@ -193,6 +212,7 @@ public sealed class QuotationSetupViewModel : ViewModelBase
         BrandLogoBase64 = BrandLogo, Letter = Letter.Trim(), Terms = Terms.Trim(), BankAccountName = BankAccountName.Trim(),
         BankAccountNumber = BankAccountNumber.Trim(), BankName = BankName.Trim(), BankIfsc = BankIfsc.Trim().ToUpperInvariant(),
         BankBranch = BankBranch.Trim(), Acceptance = Acceptance.Trim(), Notes = Notes.Trim(), AreaUnit = AreaUnit,
+        CancellationPolicy = CancellationPolicy.Trim(), Warranty = Warranty.Trim(), InstallationPrerequisites = InstallationPrerequisites.Trim(),
         CurrencyLabel = string.IsNullOrWhiteSpace(CurrencyLabel) ? "Rs." : CurrencyLabel.Trim(), ExtraPageBase64 = ExtraPage
     };
 

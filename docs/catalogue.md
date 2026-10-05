@@ -71,7 +71,15 @@ frosted and bronze glass bronze. The look comes with the catalogue like everythi
 ## The owner's catalogue (MARK Owner → Catalogue)
 
 1. **Use the sample catalogue**, **Import file…** (a library file), or **Edit catalogue…** to open the Library Manager on a
-   working copy. Closing it with changes asks to **publish** them.
+   working copy. Closing it with changes asks to **publish** them. **Import file…** asks where the file goes:
+   - **Universal catalogue: add these items** — everything in the catalogue stays; items whose id is already used are
+     kept as they are;
+   - **Universal catalogue: replace it** — the whole catalogue becomes the file;
+   - **One company's own items** — only that company gets them (see below), its profiles in a tab per series.
+
+   For the catalogue, **Give its systems to** ticks the file's systems in the chosen companies' accounts at once (a
+   company gets a system only with a licence for its material; the message says when one is missing).
+   The page lists the catalogue's **systems** and its **items**: profiles by series, then glass and hardware.
 2. In each company's account (and in each company type, for new accounts) tick, under **Catalogue**, the **systems** it
    gets — they bring everything they use — and any further single items. Items that come with a ticked system show as
    "with its system".

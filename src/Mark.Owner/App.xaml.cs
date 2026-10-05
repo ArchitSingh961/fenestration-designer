@@ -2,6 +2,7 @@ using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Threading;
+using Mark.Core.Library;
 using Mark.Designer.ViewModels;
 using Mark.Designer.Views;
 using Mark.Licensing.Api;
@@ -138,6 +139,15 @@ internal sealed class OwnerDialogs : IOwnerDialogs, ICatalogueEditorHost, IDialo
 
     public void ShowLibraryManager(LibraryManagerViewModel manager)
         => new LibraryManagerWindow(manager) { Owner = _owner(), Title = "Catalogue — Library Manager" }.ShowDialog();
+
+    public ImportChoice? ChooseImport(string fileName, IProductLibrary file, bool hasCatalogue, IReadOnlyList<OwnItemsRow> companies)
+    {
+        var window = new ImportWindow(fileName, CatalogueViewModel.ContentText(file), hasCatalogue, file.Systems.Count > 0, companies)
+        {
+            Owner = _owner()
+        };
+        return window.ShowDialog() == true ? window.Choice : null;
+    }
 
     /// <summary>One line of text, e.g. the name of a new tab of a company's own items.</summary>
     public string? PromptText(string title, string label, string initialText)

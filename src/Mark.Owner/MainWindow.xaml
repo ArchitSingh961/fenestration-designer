@@ -1125,7 +1125,7 @@
                     <DockPanel Margin="0,0,0,10">
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                             <Button Style="{StaticResource SecondaryButton}" Content="Import file..." Command="{Binding ImportCommand}"
-                                    ToolTip="Publish a library file as the whole catalogue" />
+                                    ToolTip="Add a library file to the catalogue, replace the catalogue with it, or make it one company's own items" />
                             <Button Style="{StaticResource SecondaryButton}" Content="Export file..." Command="{Binding ExportCommand}" />
                             <Button Style="{StaticResource PrimaryButton}" Content="Edit catalogue..." Command="{Binding EditCommand}"
                                     ToolTip="Profiles, glass, hardware, systems and bundles, in the Library Manager" />
@@ -1185,6 +1185,42 @@
                                                     </ItemsControl>
                                                 </StackPanel>
                                             </DockPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="ITEMS" Style="{StaticResource SectionTitle}" Margin="0,16,0,4" />
+                            <TextBlock Text="Profiles by series, then glass and hardware. Open a group to see its items."
+                                       FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,4" />
+                            <ItemsControl ItemsSource="{Binding ItemGroups}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="#E3E6EA" BorderThickness="0,0,0,1" Padding="0,4">
+                                            <Expander>
+                                                <Expander.Header>
+                                                    <TextBlock>
+                                                        <Run Text="{Binding Title, Mode=OneWay}" FontWeight="SemiBold" Foreground="#1F2A37" />
+                                                        <Run Text="{Binding CountText, Mode=OneWay}" FontSize="11" Foreground="#8A8A8A" />
+                                                    </TextBlock>
+                                                </Expander.Header>
+                                                <ItemsControl ItemsSource="{Binding Rows}" Margin="22,4,0,6">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Grid Margin="0,2">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="70" />
+                                                                    <ColumnDefinition Width="260" />
+                                                                    <ColumnDefinition Width="*" />
+                                                                </Grid.ColumnDefinitions>
+                                                                <TextBlock Text="{Binding Code}" Foreground="#4B5563" FontFamily="Consolas" />
+                                                                <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="#1F2A37" TextTrimming="CharacterEllipsis" />
+                                                                <TextBlock Grid.Column="2" Text="{Binding Detail}" FontSize="11" Foreground="{StaticResource MutedTextBrush}"
+                                                                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </Expander>
                                         </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>

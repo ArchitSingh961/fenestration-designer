@@ -25,6 +25,9 @@ public sealed class ClientInfo
     public string Phone { get; set; } = "";
     public string Email { get; set; } = "";
 
+    /// <summary>The client's GSTIN (15 characters) for a business client's tax invoice; empty for a consumer.</summary>
+    public string Gstin { get; set; } = "";
+
     // Site address.
     public string AddressLine1 { get; set; } = "";
     public string AddressLine2 { get; set; } = "";

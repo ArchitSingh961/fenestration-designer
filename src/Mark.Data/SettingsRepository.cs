@@ -129,6 +129,43 @@ public sealed class SettingsRepository
             command.ExecuteNonQuery();
         });
 
+    private const string AccountsKey = "accounts";
+
+    /// <summary>How the company invoices and exports to its accounts (the defaults until it is set up).</summary>
+    public Mark.Core.Accounts.AccountsSettings LoadAccountsSettings()
+        => _database.Guard("read the settings", () =>
+        {
+            using var connection = _database.Connect();
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT value_json FROM app_settings WHERE key = $key";
+            command.Parameters.AddWithValue("$key", AccountsKey);
+            try
+            {
+                return command.ExecuteScalar() is string json
+                    ? System.Text.Json.JsonSerializer.Deserialize<Mark.Core.Accounts.AccountsSettings>(json, QuotationJson) ?? new()
+                    : new Mark.Core.Accounts.AccountsSettings();
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return new Mark.Core.Accounts.AccountsSettings();
+            }
+        });
+
+    public void SaveAccountsSettings(Mark.Core.Accounts.AccountsSettings settings)
+        => _database.Guard("save the settings", () =>
+        {
+            ArgumentNullException.ThrowIfNull(settings);
+            using var connection = _database.Connect();
+            using var command = connection.CreateCommand();
+            command.CommandText = """
+                INSERT INTO app_settings (key, value_json) VALUES ($key, $value)
+                ON CONFLICT (key) DO UPDATE SET value_json = excluded.value_json
+                """;
+            command.Parameters.AddWithValue("$key", AccountsKey);
+            command.Parameters.AddWithValue("$value", System.Text.Json.JsonSerializer.Serialize(settings, QuotationJson));
+            command.ExecuteNonQuery();
+        });
+
     private static readonly System.Text.Json.JsonSerializerOptions QuotationJson = new()
     {
         Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }

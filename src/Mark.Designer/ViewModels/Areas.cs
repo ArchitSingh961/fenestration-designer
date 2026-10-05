@@ -7,7 +7,7 @@ namespace Mark.Designer.ViewModels;
 public enum AppArea { Sales, Design, Pricing, Library, Production, Orders, Purchasing, Inventory, Accounts }
 
 /// <summary>Everything MARK can show, as the tabs of the areas (one view can be a tab of more than one area).</summary>
-public enum AppView { Dashboard, Quotes, Client, Designs, Drawing, Pricing, Materials, Cutting, Library, Overview, Account, Staff, Enquiries, QuotationSetup, ProductionOrders, Offcuts, Orders, Schedule, Documents, Stock, PurchaseOrders, Suppliers }
+public enum AppView { Dashboard, Quotes, Client, Designs, Drawing, Pricing, Materials, Cutting, Library, Overview, Account, Staff, Enquiries, QuotationSetup, ProductionOrders, Offcuts, Orders, Schedule, Documents, Stock, PurchaseOrders, Suppliers, Invoices, Receipts, Outstanding, AccountsExport }
 
 /// <summary>How a tab or area looks to the signed-in login.</summary>
 public enum AccessState
@@ -84,7 +84,13 @@ public static class AreaCatalog
         {
             new AreaTabInfo(AppView.Stock, "Stock", Licensing.Features.Inventory)
         }),
-        new AreaInfo(AppArea.Accounts, "Accounts", "", "Invoices, payments and Tally export.", Overview())
+        new AreaInfo(AppArea.Accounts, "Accounts", "", "Invoices, receipts, what clients owe, and export to Tally and Excel.", new[]
+        {
+            new AreaTabInfo(AppView.Invoices, "Invoices", Licensing.Features.Invoices),
+            new AreaTabInfo(AppView.Receipts, "Receipts", Licensing.Features.Invoices),
+            new AreaTabInfo(AppView.Outstanding, "Outstanding", Licensing.Features.Invoices),
+            new AreaTabInfo(AppView.AccountsExport, "Export and setup", Licensing.Features.Invoices)
+        })
     };
 
     private static AreaTabInfo[] Overview() => new[] { new AreaTabInfo(AppView.Overview, "Overview", null) };

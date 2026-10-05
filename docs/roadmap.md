@@ -36,6 +36,7 @@ used unless changed before that milestone starts.
 | 17 | Orders | Order book from confirmation to installation: stages that follow production, dispatch and sign-off; advance, stage and final payments with balance; delivery and installation schedule; dispatch notes (PDF, DN-00001…); installation sign-off with certificate (PDF) (see orders.md) |
 | 17+ | Cost sheet, quotation and documents | Cost sheet with custom formulas (#PROFILECOST, @Profile Cost …), percentage of any line, subtotals and a per-design extra cost; quotation profile and accessory lists as on the usual quotation (colour, mesh, OUTER RI, locking, S1-hardware); a Documents tab per quote (survey report, quotations, margins, credit approval, sales order, typology history) with margin report (see pricing.md, documents.md) |
 | 18 | Purchasing and inventory | Suppliers; purchase orders worked out from what production orders need minus stock and what is on order; purchase order PDF; goods received (GRN-00001…) into stock; stock reserved for orders, issued to production, counted and adjusted, reorder levels and low-stock alerts; stock ledger (see inventory.md) |
+| 19 | Accounts | GST tax invoices from orders (INV/2026-27/0001…, CGST + SGST or IGST, HSN codes, partial invoices, cancelling, PDF); payment receipts (RCPT-00001…, PDF); what each client owes; registers for Excel and a Tally import file; client GSTIN (see accounts.md) |
 | — | Along the way | Product renamed to MARK; colour-coded bill of materials; rail and drop-down fixes |
 
 ---
@@ -192,10 +193,10 @@ Schedule tab for every order's deliveries, installations and site visits.
 
 ---
 
-## 19 — Accounts
+## 19 — Accounts — done
 
 - GST invoices from orders; payments and receipts; outstanding amounts by client.
-- **Export to Tally / Excel (default — confirm: no full bookkeeping inside MARK)**.
+- Export to Tally / Excel; no full bookkeeping inside MARK (the books stay in Tally). See accounts.md.
 
 ---
 

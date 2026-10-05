@@ -179,6 +179,8 @@ public sealed class StaffViewModel : ViewModelBase
             new[] { Features.Quotes, Features.OrderManagement }),
         new StaffPreset("Stores", "Stock, purchase orders, suppliers and goods received",
             new[] { Features.Inventory, Features.Purchasing, Features.ProductionOrders }),
+        new StaffPreset("Accounts", "Invoices, receipts, what clients owe and the Tally export",
+            new[] { Features.Invoices, Features.OrderManagement }),
         new StaffPreset("Everything", "Everything in the account",
             FeatureCatalog.All.Select(f => f.Id).ToList())
     };

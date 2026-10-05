@@ -26,7 +26,7 @@ public class DatabaseTests
             while (reader.Read()) tables.Add(reader.GetString(0));
         Assert.Equal(new[]
         {
-            "app_settings", "bundles", "customer_orders", "enquiries", "glass", "glass_material_usages", "library_settings", "materials", "offcuts",
+            "app_settings", "bundles", "customer_orders", "enquiries", "glass", "glass_material_usages", "invoices", "library_settings", "materials", "offcuts",
             "production_orders", "profile_material_usages", "profile_roles", "profile_stock_lengths", "profiles", "project_documents", "project_history",
             "project_references", "project_revisions", "projects", "purchase_orders", "sqlite_sequence", "stock_levels", "stock_moves",
             "suppliers", "systems"

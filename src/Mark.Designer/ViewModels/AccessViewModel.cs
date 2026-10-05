@@ -95,6 +95,7 @@ public sealed class AccessViewModel : ViewModelBase
     public bool CanManageOrders => Allows(Features.OrderManagement);
     public bool CanUseInventory => Allows(Features.Inventory);
     public bool CanUsePurchasing => Allows(Features.Purchasing);
+    public bool CanUseAccounts => Allows(Features.Invoices);
 
     public string OpeningsLock => Lock(Features.Openings);
     public string DesignLibraryLock => Lock(Features.DesignLibrary);
@@ -105,6 +106,7 @@ public sealed class AccessViewModel : ViewModelBase
     public string OrdersLock => Lock(Features.OrderManagement);
     public string InventoryLock => Lock(Features.Inventory);
     public string PurchasingLock => Lock(Features.Purchasing);
+    public string AccountsLock => Lock(Features.Invoices);
     public string LibraryLock => Lock(Features.LibraryManager);
 
     /// <summary>Why a feature cannot be used by this login: not in the package, or not given to this staff login.</summary>

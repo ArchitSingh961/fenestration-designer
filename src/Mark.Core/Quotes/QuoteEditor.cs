@@ -36,7 +36,7 @@ public static partial class QuoteEditor
             Title = Clean(c.Title), FirstName = Clean(c.FirstName), LastName = Clean(c.LastName), Company = Clean(c.Company),
             Phone = Clean(c.Phone), Email = Clean(c.Email), AddressLine1 = Clean(c.AddressLine1),
             AddressLine2 = Clean(c.AddressLine2), City = Clean(c.City), State = Clean(c.State),
-            PostalCode = Clean(c.PostalCode), Country = Clean(c.Country)
+            PostalCode = Clean(c.PostalCode), Country = Clean(c.Country), Gstin = Clean(c.Gstin).ToUpperInvariant()
         };
         string notes = (quote.Notes ?? "").Trim();
 
@@ -51,6 +51,8 @@ public static partial class QuoteEditor
             if (value.Length > MaxFieldLength)
                 return EditResult.Fail($"{label} can be at most {MaxFieldLength} characters.");
         }
+        if (client.Gstin.Length > 0 && !Accounts.Gst.IsGstin(client.Gstin))
+            return EditResult.Fail("The client's GSTIN should be 15 characters: 2-digit state code, PAN, entity number, Z and a check character (e.g. 08ABCDE1234F1Z0).");
         if (notes.Length > MaxNotesLength)
             return EditResult.Fail($"The notes can be at most {MaxNotesLength} characters.");
         if (client.Email.Length > 0 && !EmailPattern().IsMatch(client.Email))

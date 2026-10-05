@@ -62,7 +62,8 @@ public static class FeatureCatalog
             "Suppliers; purchase orders worked out from what orders need minus stock and what is on order; goods received into stock."),
         new Feature(Features.Inventory, "Inventory", "Inventory",
             "Stock of bars, glass and hardware: reserved for orders, issued to production, counted and adjusted, low-stock alerts."),
-        new Feature(Features.Invoices, "Accounts", "Invoices and payments", "GST invoices, receipts and Tally export.", IsBuilt: false)
+        new Feature(Features.Invoices, "Accounts", "Invoices and payments",
+            "GST tax invoices from orders, payment receipts, what each client owes, and export to Excel and Tally.")
     };
 
     private static readonly Dictionary<string, Feature> ById = All.ToDictionary(f => f.Id);

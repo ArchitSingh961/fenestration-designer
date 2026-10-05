@@ -18,7 +18,7 @@ last used there.
 | **Orders** | Orders · Schedule | Order management (see [orders.md](orders.md)) |
 | **Purchasing** | Purchase orders · Suppliers | Purchasing (see [inventory.md](inventory.md)) |
 | **Inventory** | Stock | Inventory (see [inventory.md](inventory.md)) |
-| **Accounts** | Overview of what is coming | (a later milestone) |
+| **Accounts** | Invoices · Receipts · Outstanding · Export and setup | Invoices and payments (see [accounts.md](accounts.md)) |
 
 - The open quote is shown above the quote tabs (Client, Designs, Documents, Drawing, Price, Bill of materials, Cutting plan) with
   who created and last saved it, and **Open quote…**, so someone who works only in Design, Pricing or Production can

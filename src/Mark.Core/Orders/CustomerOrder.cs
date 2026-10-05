@@ -59,6 +59,9 @@ public sealed record OrderPayment
     public string Note { get; init; } = "";
 
     public string RecordedBy { get; init; } = "";
+
+    /// <summary>"RCPT-00001" once a receipt has been made for it (Accounts › Receipts), else empty.</summary>
+    public string ReceiptNumber { get; init; } = "";
 }
 
 /// <summary>A delivery, installation or site visit in the order's schedule.</summary>

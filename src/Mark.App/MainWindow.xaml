@@ -3001,6 +3001,362 @@
                 </DockPanel>
             </DockPanel>
 
+            <!-- ══ Accounts (Milestone 19) ════════════════════════════ -->
+            <DockPanel x:Name="InvoicesPage" DataContext="{Binding Accounts}" Background="{StaticResource PageBackgroundBrush}"
+                       Visibility="{Binding DataContext.Page, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=Invoices}">
+                <DockPanel DockPanel.Dock="Top" Margin="24,16,24,0">
+                    <TextBlock Text="Invoices" Style="{StaticResource PageTitle}" />
+                    <TextBlock Text="  GST tax invoices for orders: CGST + SGST within your state, IGST otherwise." VerticalAlignment="Bottom" Margin="0,0,0,4" Foreground="{StaticResource MutedTextBrush}" TextTrimming="CharacterEllipsis" />
+                </DockPanel>
+                <ContentControl DockPanel.Dock="Top" Style="{StaticResource LockNotice}" Margin="24,12,24,0" VerticalAlignment="Top" MaxWidth="560" HorizontalAlignment="Left"
+                                Content="{Binding DataContext.Access.AccountsLock, RelativeSource={RelativeSource AncestorType=Window}}"
+                                Visibility="{Binding DataContext.Access.CanUseAccounts, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBoolToVisibility}}" />
+                <DockPanel Margin="24,10,24,18" Visibility="{Binding DataContext.Access.CanUseAccounts, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}">
+                    <Border DockPanel.Dock="Top" Padding="10" Margin="0,0,0,10" Visibility="{Binding HasMessage, Converter={StaticResource BoolToVisibility}}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#E8F5EC" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MessageIsError}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" />
+                    </Border>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource Card}" Padding="16,12" Margin="0,0,0,10">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Invoice an order" Style="{StaticResource FormLabel}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <ComboBox Width="420" ItemsSource="{Binding OrderChoices}" SelectedItem="{Binding OrderToInvoice}" AutomationProperties.Name="Order to invoice" />
+                            <Button Style="{StaticResource PrimaryButton}" Content="Make invoice" Margin="8,0,0,0" Command="{Binding DraftCommand}"
+                                    ToolTip="Everything of the order not invoiced yet, at the order's prices" />
+                        </StackPanel>
+                    </Border>
+                    <DockPanel DockPanel.Dock="Left" Width="620" Margin="0,0,14,0">
+                        <TextBox DockPanel.Dock="Top" Width="260" HorizontalAlignment="Left" Margin="0,0,0,6" Style="{StaticResource SearchBox}" Tag="Search invoices"
+                                 Text="{Binding InvoiceSearch, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Search invoices" />
+                        <ListView ItemsSource="{Binding Invoices}" SelectedItem="{Binding SelectedInvoice}" AutomationProperties.Name="Invoices">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Invoice" Width="125" DisplayMemberBinding="{Binding Number}" />
+                                    <GridViewColumn Header="Date" Width="80" DisplayMemberBinding="{Binding Date}" />
+                                    <GridViewColumn Header="Client" Width="140" DisplayMemberBinding="{Binding Client}" />
+                                    <GridViewColumn Header="Order" Width="80" DisplayMemberBinding="{Binding Order}" />
+                                    <GridViewColumn Header="Total" Width="105" DisplayMemberBinding="{Binding Total}" />
+                                    <GridViewColumn Header="" Width="70" DisplayMemberBinding="{Binding Status}" />
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </DockPanel>
+                    <Border Style="{StaticResource Card}" Padding="16,12">
+                        <Grid>
+                            <TextBlock Text="Choose an invoice, or invoice an order above." Foreground="{StaticResource MutedTextBrush}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding HasDraft}" Value="False" />
+                                                    <Condition Binding="{Binding HasSelectedInvoice}" Value="False" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <StackPanel Visibility="{Binding HasSelectedInvoice, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="{Binding SelectedInvoice.Number}" Style="{StaticResource CardTitle}" />
+                                <TextBlock Text="{Binding InvoiceDetail}" TextWrapping="Wrap" Margin="0,6,0,10" Foreground="{StaticResource TextBrush}" LineHeight="20" />
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Style="{StaticResource PrimaryButton}" Content="Invoice PDF…" Margin="0,0,8,0" Command="{Binding InvoicePdfCommand}" />
+                                    <Button Style="{StaticResource SecondaryButton}" Content="Cancel invoice" Command="{Binding CancelInvoiceCommand}" />
+                                </StackPanel>
+                            </StackPanel>
+                            <DockPanel Visibility="{Binding HasDraft, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock DockPanel.Dock="Top" Text="{Binding DraftTitle}" Style="{StaticResource CardTitle}" TextWrapping="Wrap" />
+                                <TextBlock DockPanel.Dock="Top" Text="{Binding DraftWarning}" Foreground="#9A5B00" TextWrapping="Wrap" Margin="0,4,0,0"
+                                           Visibility="{Binding DraftWarning.Length, Converter={StaticResource CountToVisibility}}" />
+                                <Button DockPanel.Dock="Top" Style="{StaticResource SecondaryButton}" Content="Use the order's value" HorizontalAlignment="Left" Margin="0,6,0,0"
+                                        Command="{Binding MatchOrderValueCommand}" Visibility="{Binding HasPriceDifference, Converter={StaticResource BoolToVisibility}}"
+                                        ToolTip="Scale the windows' rates so the invoice comes to the value the order was confirmed at (charges stay as they are)" />
+                                <Grid DockPanel.Dock="Top" Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="110" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Date" Style="{StaticResource FormLabel}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBox Grid.Column="1" Padding="4,3" Text="{Binding DraftDate, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Invoice date" />
+                                    <TextBlock Grid.Column="2" Text="Place of supply" Style="{StaticResource FormLabel}" VerticalAlignment="Center" Margin="12,0,8,0" />
+                                    <ComboBox Grid.Column="3" ItemsSource="{x:Static vm:AccountsViewModel.States}" SelectedItem="{Binding PlaceOfSupply}"
+                                              AutomationProperties.Name="Place of supply" />
+                                </Grid>
+                                <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                                    <TextBlock Text="{Binding DraftTotals}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                    <DockPanel Margin="0,8,0,0">
+                                        <TextBlock Text="Notes" Style="{StaticResource FormLabel}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                        <TextBox Padding="4,3" Text="{Binding DraftNotes, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Invoice notes" />
+                                    </DockPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                        <Button Style="{StaticResource PrimaryButton}" Content="Create invoice" Margin="0,0,8,0" Command="{Binding CreateInvoiceCommand}"
+                                                ToolTip="Gives it the next number and writes its PDF" />
+                                        <Button Style="{StaticResource SecondaryButton}" Content="Discard" Command="{Binding DiscardDraftCommand}" />
+                                    </StackPanel>
+                                </StackPanel>
+                                <Grid DockPanel.Dock="Top" Margin="0,10,0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="70" />
+                                        <ColumnDefinition Width="70" />
+                                        <ColumnDefinition Width="90" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Description" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
+                                    <TextBlock Grid.Column="1" Text="HSN/SAC" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="6,0,0,0" />
+                                    <TextBlock Grid.Column="2" Text="Qty" FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextAlignment="Right" />
+                                    <TextBlock Grid.Column="3" Text="Rate (before tax)" FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextAlignment="Right" />
+                                </Grid>
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                                    <views:ItemsList ItemsSource="{Binding DraftLines}" AutomationProperties.Name="Invoice lines">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,3">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="70" />
+                                                        <ColumnDefinition Width="70" />
+                                                        <ColumnDefinition Width="90" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
+                                                        <TextBlock FontSize="11" Foreground="{StaticResource MutedTextBrush}"><Run Text="{Binding Unit, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding LeftText, Mode=OneWay}" /></TextBlock>
+                                                    </StackPanel>
+                                                    <TextBox Grid.Column="1" Margin="6,0,0,0" Padding="4,2" VerticalAlignment="Top" Text="{Binding Hsn, UpdateSourceTrigger=PropertyChanged}"
+                                                             AutomationProperties.Name="{Binding Description, StringFormat=HSN of {0}}" />
+                                                    <TextBox Grid.Column="2" Margin="6,0,0,0" Padding="4,2" VerticalAlignment="Top" TextAlignment="Right"
+                                                             Text="{Binding QuantityText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding Description, StringFormat=Quantity of {0}}" />
+                                                    <TextBox Grid.Column="3" Margin="6,0,0,0" Padding="4,2" VerticalAlignment="Top" TextAlignment="Right"
+                                                             Text="{Binding RateText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding Description, StringFormat=Rate of {0}}" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </views:ItemsList>
+                                </ScrollViewer>
+                            </DockPanel>
+                        </Grid>
+                    </Border>
+                </DockPanel>
+            </DockPanel>
+
+            <DockPanel x:Name="ReceiptsPage" DataContext="{Binding Accounts}" Background="{StaticResource PageBackgroundBrush}"
+                       Visibility="{Binding DataContext.Page, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=Receipts}">
+                <DockPanel DockPanel.Dock="Top" Margin="24,16,24,0">
+                    <TextBlock Text="Receipts" Style="{StaticResource PageTitle}" />
+                    <TextBlock Text="  Every payment received on an order." VerticalAlignment="Bottom" Margin="0,0,0,4" Foreground="{StaticResource MutedTextBrush}" TextTrimming="CharacterEllipsis" />
+                </DockPanel>
+                <ContentControl DockPanel.Dock="Top" Style="{StaticResource LockNotice}" Margin="24,12,24,0" VerticalAlignment="Top" MaxWidth="560" HorizontalAlignment="Left"
+                                Content="{Binding DataContext.Access.AccountsLock, RelativeSource={RelativeSource AncestorType=Window}}"
+                                Visibility="{Binding DataContext.Access.CanUseAccounts, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBoolToVisibility}}" />
+                <DockPanel Margin="24,10,24,18" Visibility="{Binding DataContext.Access.CanUseAccounts, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}">
+                    <Border DockPanel.Dock="Top" Padding="10" Margin="0,0,0,10" Visibility="{Binding HasMessage, Converter={StaticResource BoolToVisibility}}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#E8F5EC" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MessageIsError}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" />
+                    </Border>
+                    <TextBlock DockPanel.Dock="Top" Text="{Binding ReceiptsTotal}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                    <TextBlock DockPanel.Dock="Top" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,8" TextWrapping="Wrap"
+                               Text="Payments are recorded on each order (Orders › Orders). A receipt gets the next number (RCPT-00001…) the first time it is made." />
+                    <ListView ItemsSource="{Binding Receipts}" AutomationProperties.Name="Receipts">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Date" Width="85" DisplayMemberBinding="{Binding Date}" />
+                                <GridViewColumn Header="Client" Width="180" DisplayMemberBinding="{Binding Client}" />
+                                <GridViewColumn Header="Order" Width="85" DisplayMemberBinding="{Binding OrderNumber}" />
+                                <GridViewColumn Header="Payment" Width="110" DisplayMemberBinding="{Binding Kind}" />
+                                <GridViewColumn Header="Amount" Width="120" DisplayMemberBinding="{Binding Amount}" />
+                                <GridViewColumn Header="Mode" Width="100" DisplayMemberBinding="{Binding Mode}" />
+                                <GridViewColumn Header="Reference" Width="130" DisplayMemberBinding="{Binding Reference}" />
+                                <GridViewColumn Header="Receipt" Width="95" DisplayMemberBinding="{Binding Number}" />
+                                <GridViewColumn Header="" Width="110">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button Style="{StaticResource SecondaryButton}" Padding="8,2" Content="Receipt PDF…" Command="{Binding PdfCommand}"
+                                                    AutomationProperties.Name="{Binding Date, StringFormat=Receipt of {0}}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </DockPanel>
+            </DockPanel>
+
+            <DockPanel x:Name="OutstandingPage" DataContext="{Binding Accounts}" Background="{StaticResource PageBackgroundBrush}"
+                       Visibility="{Binding DataContext.Page, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=Outstanding}">
+                <DockPanel DockPanel.Dock="Top" Margin="24,16,24,0">
+                    <TextBlock Text="Outstanding" Style="{StaticResource PageTitle}" />
+                    <TextBlock Text="  What each client owes: on invoices, and on orders not fully paid." VerticalAlignment="Bottom" Margin="0,0,0,4" Foreground="{StaticResource MutedTextBrush}" TextTrimming="CharacterEllipsis" />
+                </DockPanel>
+                <ContentControl DockPanel.Dock="Top" Style="{StaticResource LockNotice}" Margin="24,12,24,0" VerticalAlignment="Top" MaxWidth="560" HorizontalAlignment="Left"
+                                Content="{Binding DataContext.Access.AccountsLock, RelativeSource={RelativeSource AncestorType=Window}}"
+                                Visibility="{Binding DataContext.Access.CanUseAccounts, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBoolToVisibility}}" />
+                <DockPanel Margin="24,10,24,18" Visibility="{Binding DataContext.Access.CanUseAccounts, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}">
+                    <Border DockPanel.Dock="Top" Padding="10" Margin="0,0,0,10" Visibility="{Binding HasMessage, Converter={StaticResource BoolToVisibility}}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#E8F5EC" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MessageIsError}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" />
+                    </Border>
+                    <TextBlock DockPanel.Dock="Top" Text="{Binding OutstandingTotal}" FontWeight="SemiBold" Margin="0,0,0,8" />
+                    <ListView ItemsSource="{Binding Outstanding}" AutomationProperties.Name="Outstanding by client">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsDue}" Value="True">
+                                        <Setter Property="Foreground" Value="#9A3B00" />
+                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Client" Width="200" DisplayMemberBinding="{Binding Client}" />
+                                <GridViewColumn Header="Orders" Width="55" DisplayMemberBinding="{Binding Orders}" />
+                                <GridViewColumn Header="Order value" Width="120" DisplayMemberBinding="{Binding OrderValue}" />
+                                <GridViewColumn Header="Invoiced" Width="120" DisplayMemberBinding="{Binding Invoiced}" />
+                                <GridViewColumn Header="Received" Width="120" DisplayMemberBinding="{Binding Received}" />
+                                <GridViewColumn Header="Due on invoices" Width="120" DisplayMemberBinding="{Binding Due}" />
+                                <GridViewColumn Header="To receive on orders" Width="135" DisplayMemberBinding="{Binding Balance}" />
+                                <GridViewColumn Header="Oldest unpaid invoice" Width="190" DisplayMemberBinding="{Binding Oldest}" />
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </DockPanel>
+            </DockPanel>
+
+            <DockPanel x:Name="AccountsExportPage" DataContext="{Binding Accounts}" Background="{StaticResource PageBackgroundBrush}"
+                       Visibility="{Binding DataContext.Page, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=AccountsExport}">
+                <DockPanel DockPanel.Dock="Top" Margin="24,16,24,0">
+                    <TextBlock Text="Export and setup" Style="{StaticResource PageTitle}" />
+                    <TextBlock Text="  Registers for Excel and the Tally import file." VerticalAlignment="Bottom" Margin="0,0,0,4" Foreground="{StaticResource MutedTextBrush}" TextTrimming="CharacterEllipsis" />
+                </DockPanel>
+                <ContentControl DockPanel.Dock="Top" Style="{StaticResource LockNotice}" Margin="24,12,24,0" VerticalAlignment="Top" MaxWidth="560" HorizontalAlignment="Left"
+                                Content="{Binding DataContext.Access.AccountsLock, RelativeSource={RelativeSource AncestorType=Window}}"
+                                Visibility="{Binding DataContext.Access.CanUseAccounts, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBoolToVisibility}}" />
+                <DockPanel Margin="24,10,24,18" Visibility="{Binding DataContext.Access.CanUseAccounts, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}">
+                    <Border DockPanel.Dock="Top" Padding="10" Margin="0,0,0,10" Visibility="{Binding HasMessage, Converter={StaticResource BoolToVisibility}}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#E8F5EC" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MessageIsError}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" />
+                    </Border>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                        <StackPanel MaxWidth="900" HorizontalAlignment="Left">
+                            <Border Style="{StaticResource Card}" Padding="18,14" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock Text="Export a period" Style="{StaticResource CardTitle}" />
+                                    <TextBlock Text="Registers open in Excel; the Tally file is imported in Tally (Gateway › Import › Transactions). MARK keeps no books itself."
+                                               FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,2,0,8" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="From" Style="{StaticResource FormLabel}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                        <TextBox Width="100" Padding="4,3" Text="{Binding FromText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Export from" />
+                                        <TextBlock Text="to" Style="{StaticResource FormLabel}" VerticalAlignment="Center" Margin="8,0" />
+                                        <TextBox Width="100" Padding="4,3" Text="{Binding ToText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Export to" />
+                                    </StackPanel>
+                                    <WrapPanel Margin="0,10,0,0">
+                                        <Button Style="{StaticResource SecondaryButton}" Content="Invoices (Excel)…" Margin="0,0,8,6" Command="{Binding ExportCommand}" CommandParameter="invoices" />
+                                        <Button Style="{StaticResource SecondaryButton}" Content="HSN summary (Excel)…" Margin="0,0,8,6" Command="{Binding ExportCommand}" CommandParameter="hsn" />
+                                        <Button Style="{StaticResource SecondaryButton}" Content="Receipts (Excel)…" Margin="0,0,8,6" Command="{Binding ExportCommand}" CommandParameter="receipts" />
+                                        <Button Style="{StaticResource PrimaryButton}" Content="Tally (XML)…" Margin="0,0,8,6" Command="{Binding ExportCommand}" CommandParameter="tally" />
+                                    </WrapPanel>
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Padding="18,14">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Right" Text="{Binding NextInvoiceText}" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="Setup" Style="{StaticResource CardTitle}" />
+                                    </DockPanel>
+                                    <Grid Margin="0,8,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="150" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="150" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Invoice prefix" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="0" Grid.Column="1" Margin="0,3,16,3" Padding="4,3" Text="{Binding Prefix, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Invoice prefix" />
+                                <CheckBox Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="2" VerticalAlignment="Center" IsChecked="{Binding ByYear}"
+                                          Content="Number by financial year (INV/2026-27/0001)" />
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="HSN aluminium" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="1" Grid.Column="1" Margin="0,3,16,3" Padding="4,3" Text="{Binding HsnAluminium, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="HSN aluminium" />
+                                <TextBlock Grid.Row="1" Grid.Column="2" Text="HSN uPVC" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="1" Grid.Column="3" Margin="0,3,16,3" Padding="4,3" Text="{Binding HsnUpvc, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="HSN uPVC" />
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="HSN/SAC charges" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="2" Grid.Column="1" Margin="0,3,16,3" Padding="4,3" Text="{Binding SacCharges, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="HSN charges" />
+                                <TextBlock Grid.Row="2" Grid.Column="2" Text="Company state" Style="{StaticResource FormLabel}" VerticalAlignment="Center"
+                                           ToolTip="Used when Quotation setup has no GSTIN" />
+                                <ComboBox Grid.Row="2" Grid.Column="3" Margin="0,3,16,3" ItemsSource="{x:Static vm:AccountsViewModel.States}" SelectedItem="{Binding CompanyState}"
+                                          AutomationProperties.Name="Company state" />
+                                <TextBlock Grid.Row="3" Grid.ColumnSpan="4" Text="Tally ledgers (names as in Tally)" FontWeight="SemiBold" Margin="0,10,0,2" />
+                                <TextBlock Grid.Row="4" Grid.Column="0" Text="Sales" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="4" Grid.Column="1" Margin="0,3,16,3" Padding="4,3" Text="{Binding SalesLedger, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Sales ledger" />
+                                <TextBlock Grid.Row="4" Grid.Column="2" Text="Round off" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="4" Grid.Column="3" Margin="0,3,16,3" Padding="4,3" Text="{Binding RoundOffLedger, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Round off ledger" />
+                                <TextBlock Grid.Row="5" Grid.Column="0" Text="Output CGST" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="5" Grid.Column="1" Margin="0,3,16,3" Padding="4,3" Text="{Binding CgstLedger, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="CGST ledger" />
+                                <TextBlock Grid.Row="5" Grid.Column="2" Text="Output SGST" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="5" Grid.Column="3" Margin="0,3,16,3" Padding="4,3" Text="{Binding SgstLedger, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="SGST ledger" />
+                                <TextBlock Grid.Row="6" Grid.Column="0" Text="Output IGST" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="6" Grid.Column="1" Margin="0,3,16,3" Padding="4,3" Text="{Binding IgstLedger, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="IGST ledger" />
+                                <TextBlock Grid.Row="6" Grid.Column="2" Text="Debtors group" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="6" Grid.Column="3" Margin="0,3,16,3" Padding="4,3" Text="{Binding DebtorsGroup, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Debtors group" />
+                                <TextBlock Grid.Row="7" Grid.Column="0" Text="Cash" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="7" Grid.Column="1" Margin="0,3,16,3" Padding="4,3" Text="{Binding CashLedger, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Cash ledger" />
+                                <TextBlock Grid.Row="7" Grid.Column="2" Text="Bank" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="7" Grid.Column="3" Margin="0,3,16,3" Padding="4,3" Text="{Binding BankLedger, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Bank ledger" />
+                                <TextBlock Grid.Row="8" Grid.Column="0" Text="Tally company" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="8" Grid.Column="1" Margin="0,3,16,3" Padding="4,3" Text="{Binding TallyCompany, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Tally company" />
+                                    </Grid>
+                                    <Button Style="{StaticResource PrimaryButton}" Content="Save setup" HorizontalAlignment="Left" Margin="0,10,0,0" Command="{Binding SaveSettingsCommand}" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
+            </DockPanel>
+
             <!-- ══ Offcuts in stock (Milestone 16) ═════════════════════ -->
             <Grid DataContext="{Binding Offcuts}" Background="{StaticResource PageBackgroundBrush}"
                   Visibility="{Binding DataContext.Page, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=Offcuts}">
@@ -3436,7 +3792,11 @@
                                         <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Text="Phone" Style="{StaticResource FormLabel}" />
                                         <TextBox Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource FormBox}" Text="{Binding Phone, UpdateSourceTrigger=PropertyChanged}" />
                                         <TextBlock Grid.Row="2" Grid.Column="3" Text="Email" Style="{StaticResource FormLabel}" />
-                                        <TextBox Grid.Row="3" Grid.Column="3" Style="{StaticResource FormBox}" Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" Grid.ColumnSpan="3" />
+                                        <TextBox Grid.Row="3" Grid.Column="3" Style="{StaticResource FormBox}" Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBlock Grid.Row="2" Grid.Column="5" Text="GSTIN (business client)" Style="{StaticResource FormLabel}" />
+                                        <TextBox Grid.Row="3" Grid.Column="5" Style="{StaticResource FormBox}" Text="{Binding Gstin, UpdateSourceTrigger=PropertyChanged}"
+                                                 CharacterCasing="Upper" MaxLength="15" AutomationProperties.Name="Client GSTIN"
+                                                 ToolTip="Printed on the tax invoice; with it, the invoice is a B2B invoice" />
                                     </Grid>
                                 </StackPanel>
                             </Border>

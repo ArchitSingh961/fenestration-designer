@@ -13,7 +13,7 @@ internal static class DatabaseSchema
     public const int ApplicationId = 0x46454E31;
 
     /// <summary>The schema version written by this build.</summary>
-    public const int CurrentVersion = 11;
+    public const int CurrentVersion = 12;
 
     /// <summary>Upgrade scripts keyed by the version they upgrade FROM.</summary>
     public static readonly IReadOnlyDictionary<int, string> Upgrades = new Dictionary<int, string>
@@ -27,8 +27,21 @@ internal static class DatabaseSchema
         [7] = Version8,
         [8] = Version9,
         [9] = Version10,
-        [10] = Version11
+        [10] = Version11,
+        [11] = Version12
     };
+
+    /// <summary>Version 12 (Milestone 19, accounts): GST tax invoices for orders (JSON, with their lines and tax).</summary>
+    public const string Version12 = """
+        CREATE TABLE invoices (
+            id             TEXT PRIMARY KEY NOT NULL,
+            number         TEXT NOT NULL,
+            project_id     TEXT NOT NULL,
+            invoice_date   TEXT NOT NULL,
+            invoice_json   TEXT NOT NULL
+        );
+        CREATE INDEX ix_invoices_project ON invoices (project_id);
+        """;
 
     /// <summary>
     /// Version 11 (Milestone 18, purchasing and inventory): suppliers and purchase orders (JSON, with their goods

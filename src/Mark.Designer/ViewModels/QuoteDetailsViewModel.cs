@@ -78,6 +78,10 @@ public sealed class QuoteDetailsViewModel : ViewModelBase
     private string _postalCode = "";
     public string PostalCode { get => _postalCode; set => Set(ref _postalCode, value); }
 
+    private string _gstin = "";
+    /// <summary>The client's GSTIN (for a business client's tax invoice).</summary>
+    public string Gstin { get => _gstin; set => Set(ref _gstin, value); }
+
     private string _country = "";
     public string Country { get => _country; set => Set(ref _country, value); }
 
@@ -127,6 +131,7 @@ public sealed class QuoteDetailsViewModel : ViewModelBase
         _state = c.State;
         _postalCode = c.PostalCode;
         _country = c.Country;
+        _gstin = c.Gstin;
         _notes = q.Notes;
         Number = string.IsNullOrEmpty(q.Number) ? "New (numbered when saved)" : q.Number;
         _loadedState = StateOf(project.Name, q);
@@ -157,7 +162,7 @@ public sealed class QuoteDetailsViewModel : ViewModelBase
         {
             Title = Title, FirstName = FirstName, LastName = LastName, Company = Company, Phone = Phone, Email = Email,
             AddressLine1 = AddressLine1, AddressLine2 = AddressLine2, City = City, State = State, PostalCode = PostalCode,
-            Country = Country
+            Country = Country, Gstin = Gstin
         }
     };
 

@@ -146,7 +146,7 @@ public sealed class EnquiryEditorViewModel : ViewModelBase
         {
             Title = ClientTitle.Trim(), FirstName = FirstName.Trim(), LastName = LastName.Trim(), Company = Company.Trim(), Phone = Phone.Trim(),
             Email = Email.Trim(), AddressLine1 = AddressLine1.Trim(), AddressLine2 = AddressLine2.Trim(), City = City.Trim(), State = State.Trim(),
-            PostalCode = PostalCode.Trim(), Country = Original.Client.Country
+            PostalCode = PostalCode.Trim(), Country = Original.Client.Country, Gstin = Original.Client.Gstin
         };
         e.Stage = Stage;
         e.Source = Source.Trim();

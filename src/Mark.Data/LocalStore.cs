@@ -15,8 +15,10 @@ public sealed class LocalStore
 {
     private LocalStore(SqliteDatabase database, LibraryService library, IProjectRepository projects, SettingsRepository settings,
         IReadOnlyList<string> messages, SqliteEnquiryRepository enquiries, SqliteProductionRepository production,
-        SqliteOrderRepository orders, SqliteDocumentRepository documents, SqliteInventoryRepository inventory)
+        SqliteOrderRepository orders, SqliteDocumentRepository documents, SqliteInventoryRepository inventory,
+        SqliteInvoiceRepository invoices)
     {
+        Invoices = invoices;
         Inventory = inventory;
         Documents = documents;
         Production = production;
@@ -31,6 +33,9 @@ public sealed class LocalStore
 
     /// <summary>Production orders and offcuts in stock (Milestone 16).</summary>
     public SqliteProductionRepository Production { get; }
+
+    /// <summary>GST tax invoices (Milestone 19).</summary>
+    public SqliteInvoiceRepository Invoices { get; }
 
     /// <summary>Suppliers, purchase orders, stock and stock moves (Milestone 18).</summary>
     public SqliteInventoryRepository Inventory { get; }
@@ -137,7 +142,7 @@ public sealed class LocalStore
         return new LocalStore(database, library, projects, new SettingsRepository(database), messages,
             new SqliteEnquiryRepository(database, utcNow), new SqliteProductionRepository(database, utcNow),
             new SqliteOrderRepository(database, utcNow), new SqliteDocumentRepository(database),
-            new SqliteInventoryRepository(database, utcNow));
+            new SqliteInventoryRepository(database, utcNow), new SqliteInvoiceRepository(database, utcNow));
     }
 
     /// <summary>

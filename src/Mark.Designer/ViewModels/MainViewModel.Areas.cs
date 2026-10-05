@@ -72,6 +72,10 @@ public partial class MainViewModel
         AppPage.Stock => AppView.Stock,
         AppPage.PurchaseOrders => AppView.PurchaseOrders,
         AppPage.Suppliers => AppView.Suppliers,
+        AppPage.Invoices => AppView.Invoices,
+        AppPage.Receipts => AppView.Receipts,
+        AppPage.Outstanding => AppView.Outstanding,
+        AppPage.AccountsExport => AppView.AccountsExport,
         _ => _section switch
         {
             QuoteSection.Client => AppView.Client,
@@ -194,6 +198,10 @@ public partial class MainViewModel
                 case AppView.Stock: Page = AppPage.Stock; break;
                 case AppView.PurchaseOrders: Page = AppPage.PurchaseOrders; break;
                 case AppView.Suppliers: Page = AppPage.Suppliers; break;
+                case AppView.Invoices: Page = AppPage.Invoices; break;
+                case AppView.Receipts: Page = AppPage.Receipts; break;
+                case AppView.Outstanding: Page = AppPage.Outstanding; break;
+                case AppView.AccountsExport: Page = AppPage.AccountsExport; break;
                 default:
                     Section = view switch
                     {

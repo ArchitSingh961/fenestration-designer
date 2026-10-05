@@ -524,4 +524,35 @@ public class CuttingOptimizerTests
         Optimize(Rules(), piece);
         Assert.Equal(2, piece.Quantity);
     }
+
+    // ── Offcuts in stock (Milestone 16) ─────────────────────────────
+
+    [Fact]
+    public void Offcuts_InStock_AreCutFirst_AndNeedNoNewBar()
+    {
+        var offcuts = new[] { new StockOffcut(1, Bar6000, 1300), new StockOffcut(2, Bar6000, 2100), new StockOffcut(3, BarMulti, 5000) };
+
+        var plan = new CuttingOptimizer().Optimize(new[] { Cut(2000), Cut(1200), Cut(5000) }, Library, Rules(kerf: 0, trim: 10), offcuts)
+            .Profiles.Single();
+
+        Assert.Equal(3, plan.Bars.Count);
+        Assert.Equal(2, plan.OffcutsUsed);                                           // 2000 → the 2100 offcut, 1200 → the 1300 one
+        Assert.Equal(new long[] { 2, 1 }, plan.Bars.Where(b => b.IsOffcut).Select(b => b.OffcutId!.Value).OrderByDescending(x => x));
+        Assert.All(plan.Bars.Where(b => b.IsOffcut), b => Assert.Equal(0m, b.Cost));
+        Assert.All(plan.Bars.Where(b => b.IsOffcut), b => Assert.Equal(0, b.TrimMm));
+        Assert.Equal(new[] { new StockRequirement(6000, 1) }, plan.Stock);           // only the 5000 needs a new bar
+        Assert.Single(plan.Bars, b => !b.IsOffcut && b.Cuts.Single().CutLengthMm == 5000);
+    }
+
+    [Fact]
+    public void WithoutOffcuts_ThePlanIsAsBefore()
+    {
+        var cuts = new[] { Cut(2000), Cut(1200), Cut(900) };
+        string before = JsonSerializer.Serialize(new CuttingOptimizer().Optimize(cuts, Library, Rules(kerf: 3, trim: 5)));
+        string none = JsonSerializer.Serialize(new CuttingOptimizer().Optimize(cuts, Library, Rules(kerf: 3, trim: 5), Array.Empty<StockOffcut>()));
+        var other = new CuttingOptimizer().Optimize(cuts, Library, Rules(kerf: 3, trim: 5), new[] { new StockOffcut(9, "OTHER", 3000) });
+
+        Assert.Equal(before, none);
+        Assert.Equal(0, other.Profiles.Single().OffcutsUsed);                            // another profile's offcut is not used
+    }
 }

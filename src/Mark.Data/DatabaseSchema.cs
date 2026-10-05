@@ -13,7 +13,7 @@ internal static class DatabaseSchema
     public const int ApplicationId = 0x46454E31;
 
     /// <summary>The schema version written by this build.</summary>
-    public const int CurrentVersion = 7;
+    public const int CurrentVersion = 8;
 
     /// <summary>Upgrade scripts keyed by the version they upgrade FROM.</summary>
     public static readonly IReadOnlyDictionary<int, string> Upgrades = new Dictionary<int, string>
@@ -23,8 +23,33 @@ internal static class DatabaseSchema
         [3] = Version4,
         [4] = Version5,
         [5] = Version6,
-        [6] = Version7
+        [6] = Version7,
+        [7] = Version8
     };
+
+    /// <summary>
+    /// Version 8 (Milestone 16, production): production orders (the order as JSON with progress, and the designs as they
+    /// were when production started) and the offcuts kept in the workshop.
+    /// </summary>
+    public const string Version8 = """
+        CREATE TABLE production_orders (
+            id             TEXT PRIMARY KEY NOT NULL,
+            project_id     TEXT NOT NULL,
+            order_number   TEXT NOT NULL,
+            created_utc    TEXT NOT NULL,
+            order_json     TEXT NOT NULL,
+            document_json  TEXT NOT NULL
+        );
+        CREATE INDEX ix_production_orders_project ON production_orders (project_id);
+        CREATE TABLE offcuts (
+            id             INTEGER PRIMARY KEY,
+            definition_id  TEXT NOT NULL,
+            length_mm      REAL NOT NULL,
+            added_utc      TEXT NOT NULL,
+            source         TEXT NOT NULL
+        );
+        CREATE INDEX ix_offcuts_definition ON offcuts (definition_id);
+        """;
 
     /// <summary>
     /// Version 7 (Milestone 15, sales): enquiries; earlier revisions of quotes; for the quote list and sales charts the

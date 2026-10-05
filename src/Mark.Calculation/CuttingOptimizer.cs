@@ -28,6 +28,16 @@ public static class CuttingOptimizerExtensions
     }
 }
 
+/// <summary>A cutting optimiser that can also cut pieces from offcuts kept in stock (Milestone 16).</summary>
+public interface IOffcutCuttingOptimizer : ICuttingOptimizer
+{
+    /// <summary>
+    /// As <see cref="ICuttingOptimizer.Optimize"/>, first cutting pieces from <paramref name="offcuts"/> (each used once,
+    /// no trim) and only then from new stock bars.
+    /// </summary>
+    CuttingPlan Optimize(IEnumerable<ProfileLine> cuts, IProductLibrary library, CalculationRules rules, IReadOnlyList<StockOffcut> offcuts);
+}
+
 /// <summary>
 /// Deterministic one-dimensional cutting optimiser (a heuristic, not a proven optimum):
 /// <list type="number">
@@ -43,17 +53,25 @@ public static class CuttingOptimizerExtensions
 ///         the shortest stock length that still holds its pieces. The run that takes the least stock material wins;
 ///         ties go to fewer bars, then to the shorter opening length.</item>
 ///   <item>The leftover of each bar is a remnant if it is at least the minimum usable offcut, otherwise waste.</item>
+///   <item>With offcuts in stock (Milestone 16): pieces are first placed Best-Fit Decreasing into the profile's offcuts
+///         (no trim; the offcut a piece leaves the least room in, the shorter on ties), then the rest into new bars as
+///         above. An offcut bar costs nothing and is not a stock requirement.</item>
 /// </list>
 /// Runtime is O(s · n · b) per profile (s stock lengths, n pieces, b bars), fine for workshop batches. No randomness,
 /// no clock, no dictionary iteration order: equal inputs give equal plans.
 /// </summary>
-public sealed class CuttingOptimizer : ICuttingOptimizer
+public sealed class CuttingOptimizer : IOffcutCuttingOptimizer
 {
     /// <summary>Lengths come in rounded to 0.1 mm, so this only absorbs binary rounding noise.</summary>
     private const double Eps = 1e-6;
 
     public CuttingPlan Optimize(IEnumerable<ProfileLine> cuts, IProductLibrary library, CalculationRules rules)
+        => Optimize(cuts, library, rules, Array.Empty<StockOffcut>());
+
+    public CuttingPlan Optimize(IEnumerable<ProfileLine> cuts, IProductLibrary library, CalculationRules rules,
+        IReadOnlyList<StockOffcut> offcuts)
     {
+        ArgumentNullException.ThrowIfNull(offcuts);
         ArgumentNullException.ThrowIfNull(cuts);
         ArgumentNullException.ThrowIfNull(library);
         ArgumentNullException.ThrowIfNull(rules);
@@ -83,7 +101,9 @@ public sealed class CuttingOptimizer : ICuttingOptimizer
         var profiles = pieces
             .GroupBy(p => p.Line.DefinitionId!, StringComparer.Ordinal)
             .OrderBy(g => g.Key, StringComparer.Ordinal)
-            .Select(g => new ProfileRun(g.Key, g.ToList(), library, rules, issues).Plan())
+            .Select(g => new ProfileRun(g.Key, g.ToList(), library, rules, issues,
+                offcuts.Where(o => string.Equals(o.DefinitionId, g.Key, StringComparison.Ordinal) && o.LengthMm > Eps)
+                    .OrderBy(o => o.LengthMm).ThenBy(o => o.Id).ToList()).Plan())
             .ToList();
 
         double stock = Round(profiles.Sum(p => p.TotalStockMm), rules.LengthDecimals);
@@ -117,9 +137,16 @@ public sealed class CuttingOptimizer : ICuttingOptimizer
     /// <summary>A bar being filled. <see cref="Occupied"/> = pieces + the kerfs between them.</summary>
     private sealed class Bin
     {
-        public Bin(double stockLength) => StockLength = stockLength;
+        public Bin(double stockLength, StockOffcut? offcut = null)
+        {
+            StockLength = stockLength;
+            Offcut = offcut;
+        }
 
         public double StockLength { get; set; }
+
+        /// <summary>The offcut from stock this bin is, or null for a new bar.</summary>
+        public StockOffcut? Offcut { get; }
         public List<Piece> Pieces { get; } = new();
         public double Occupied { get; private set; }
 
@@ -144,9 +171,12 @@ public sealed class CuttingOptimizer : ICuttingOptimizer
         private readonly List<CalculationIssue> _issues;
         private readonly double _kerf;
         private readonly double _trim;
+        private readonly List<StockOffcut> _offcuts;
 
-        public ProfileRun(string id, List<Piece> pieces, IProductLibrary library, CalculationRules rules, List<CalculationIssue> issues)
+        public ProfileRun(string id, List<Piece> pieces, IProductLibrary library, CalculationRules rules, List<CalculationIssue> issues,
+            List<StockOffcut> offcuts)
         {
+            _offcuts = offcuts;
             _id = id;
             _pieces = pieces;
             _library = library;
@@ -179,6 +209,11 @@ public sealed class CuttingOptimizer : ICuttingOptimizer
                 return Build(name, definition, available, new List<Bin>(), sorted);
             }
 
+            // Offcuts in stock first: what fits there needs no new bar.
+            var offcutBins = FillOffcuts(sorted);
+            var inOffcuts = offcutBins.SelectMany(b => b.Pieces).ToHashSet();
+            sorted = sorted.Where(p => !inOffcuts.Contains(p)).ToList();
+
             double longestUsable = stock[^1] - _trim;
             var placeable = new List<Piece>(sorted.Count);
             var unplaced = new List<Piece>();
@@ -204,7 +239,27 @@ public sealed class CuttingOptimizer : ICuttingOptimizer
                     (best, bestStock) = (bins, total);
             }
 
-            return Build(name, definition, available, best!, unplaced);
+            return Build(name, definition, available, offcutBins.Concat(best!).ToList(), unplaced);
+        }
+
+        /// <summary>Best-Fit Decreasing into the offcuts (fixed lengths, no trim); returns the offcuts used.</summary>
+        private List<Bin> FillOffcuts(List<Piece> sorted)
+        {
+            if (_offcuts.Count == 0) return new List<Bin>();
+            var bins = _offcuts.Select(o => new Bin(o.LengthMm, o)).ToList();          // shortest first: ties go to the shorter
+            foreach (var piece in sorted)
+            {
+                Bin? target = null;
+                double targetRoom = double.MaxValue;
+                foreach (var bin in bins)
+                {
+                    double room = bin.RoomAfter(piece.Length, bin.StockLength, _kerf);
+                    if (room >= -Eps && room < targetRoom - Eps)
+                        (target, targetRoom) = (bin, room);
+                }
+                target?.Add(piece, _kerf);
+            }
+            return bins.Where(b => b.Pieces.Count > 0).ToList();
         }
 
         /// <summary>Best-Fit Decreasing with new bars opened at <paramref name="opening"/>, then each bar shrunk.</summary>
@@ -249,8 +304,9 @@ public sealed class CuttingOptimizer : ICuttingOptimizer
             foreach (var bin in bins)
             {
                 int n = bin.Pieces.Count;
+                double trim = bin.Offcut is null ? _trim : 0;
                 double cut = Round(bin.Pieces.Sum(p => p.Length), lengthDp);
-                double rest = bin.StockLength - _trim - bin.Occupied;
+                double rest = bin.StockLength - trim - bin.Occupied;
                 if (rest < Eps) rest = 0;
                 double finalKerf = rest > 0 ? Math.Min(_kerf, rest) : 0;   // separates the last piece from the leftover
                 double kerf = Round((n - 1) * _kerf + finalKerf, lengthDp);
@@ -262,13 +318,14 @@ public sealed class CuttingOptimizer : ICuttingOptimizer
                     StockLengthMm = bin.StockLength,
                     Cuts = bin.Pieces.Select(p => p.Line).ToList().AsReadOnly(),
                     CutLengthMm = cut,
-                    TrimMm = _trim,
+                    TrimMm = trim,
                     SawCuts = n - 1 + (rest > 0 ? 1 : 0),
                     KerfMm = kerf,
                     RemainingMm = remaining,
                     RemnantMm = remnant,
                     WasteMm = Round(bin.StockLength - cut - remnant, lengthDp),
-                    Cost = Money(Metres(bin.StockLength) * costPerMetre)
+                    Cost = bin.Offcut is null ? Money(Metres(bin.StockLength) * costPerMetre) : 0,
+                    OffcutId = bin.Offcut?.Id
                 });
             }
 
@@ -282,8 +339,9 @@ public sealed class CuttingOptimizer : ICuttingOptimizer
                 Name = name,
                 AvailableStockLengthsMm = available,
                 Bars = bars.AsReadOnly(),
-                Stock = bars.GroupBy(b => b.StockLengthMm).OrderByDescending(g => g.Key)
+                Stock = bars.Where(b => !b.IsOffcut).GroupBy(b => b.StockLengthMm).OrderByDescending(g => g.Key)
                     .Select(g => new StockRequirement(g.Key, g.Count())).ToList().AsReadOnly(),
+                OffcutsUsed = bars.Count(b => b.IsOffcut),
                 Unplaced = unplaced.Select(p => p.Line).ToList().AsReadOnly(),
                 PieceCount = bars.Sum(b => b.Cuts.Count) + unplaced.Count,
                 TotalStockMm = stock,

@@ -14,8 +14,9 @@ namespace Mark.Data;
 public sealed class LocalStore
 {
     private LocalStore(SqliteDatabase database, LibraryService library, IProjectRepository projects, SettingsRepository settings,
-        IReadOnlyList<string> messages, SqliteEnquiryRepository enquiries)
+        IReadOnlyList<string> messages, SqliteEnquiryRepository enquiries, SqliteProductionRepository production)
     {
+        Production = production;
         Database = database;
         Library = library;
         Projects = projects;
@@ -23,6 +24,9 @@ public sealed class LocalStore
         StartupMessages = messages;
         Enquiries = enquiries;
     }
+
+    /// <summary>Production orders and offcuts in stock (Milestone 16).</summary>
+    public SqliteProductionRepository Production { get; }
 
     /// <summary>The company's sales enquiries (Milestone 15).</summary>
     public SqliteEnquiryRepository Enquiries { get; }
@@ -118,7 +122,7 @@ public sealed class LocalStore
         }
 
         return new LocalStore(database, library, projects, new SettingsRepository(database), messages,
-            new SqliteEnquiryRepository(database, utcNow));
+            new SqliteEnquiryRepository(database, utcNow), new SqliteProductionRepository(database, utcNow));
     }
 
     /// <summary>

@@ -64,6 +64,7 @@ docs/
 ├── catalogue.md                product systems, used with, reinforcement, bundles, the owner's catalogue
 ├── areas.md                    areas and tabs, staff logins and permissions, who did what
 ├── sales.md                    enquiries, orders and revisions, the quotation PDF, sales charts
+├── production.md               production orders, progress, cutting list, glass order, labels, offcuts
 ├── roadmap.md                  the milestone plan
 └── geometry.md                 coordinate system, tolerance, primitives, viewport math, grid
 ```
@@ -84,6 +85,14 @@ into a quote. A saved quote can get **revisions** (QT-00012 R1…), be **convert
 as a **quotation PDF** in the usual layout — company header, covering letter, each design with its drawing and values,
 quote total with GST, terms with bank details and signatures — from **Sales › Quotation setup**. The dashboard shows
 enquiries, quotes, won and lost by week or month, and sales by person and city. See [docs/sales.md](docs/sales.md).
+
+## Production
+
+An order goes into production with **Start production**: **Production › Production orders** keeps its designs as they
+were and tracks every window through cut, assembled, glazed, ready and dispatched. Its papers are PDFs: a **cutting
+list** for profiles and steel (from offcuts in stock first), a **glass order**, a **hardware pick list**, **shop
+drawings** and **piece labels**. **Production › Offcuts** keeps the reusable leftovers. See
+[docs/production.md](docs/production.md).
 
 ## Areas, staff and who did what
 

@@ -44,6 +44,7 @@ public partial class MainViewModel
         {
             Store.Projects.User = CurrentUser;
             Store.Enquiries.User = CurrentUser;
+            Store.Production.User = CurrentUser;
         }
         OnPropertyChanged(nameof(HasStaff));
         OnPropertyChanged(nameof(QuoteTotalText));

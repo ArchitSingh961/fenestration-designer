@@ -43,9 +43,18 @@ public sealed record StockBar
     /// <summary>True when there is a leftover but it is shorter than the minimum usable offcut (a waste offcut).</summary>
     public bool HasWasteOffcut => RemainingMm > 0 && !HasRemnant;
 
-    /// <summary>Price of the whole stock bar (stock length × the profile's cost per metre).</summary>
+    /// <summary>Price of the whole stock bar (stock length × the profile's cost per metre); 0 for an offcut from stock.</summary>
     public decimal Cost { get; init; }
+
+    /// <summary>The offcut in stock this bar is (Milestone 16), or null for a new stock bar.</summary>
+    public long? OffcutId { get; init; }
+
+    /// <summary>True when the pieces are cut from an offcut kept in stock rather than a new bar.</summary>
+    public bool IsOffcut => OffcutId is not null;
 }
+
+/// <summary>A reusable leftover kept in stock that the cutting plan may cut pieces from (no trim: its ends are cut).</summary>
+public sealed record StockOffcut(long Id, string DefinitionId, double LengthMm);
 
 /// <summary>How many bars of one stock length to take from stock.</summary>
 public sealed record StockRequirement(double StockLengthMm, int Quantity);
@@ -70,8 +79,11 @@ public sealed record ProfileCuttingPlan
 
     public IReadOnlyList<StockBar> Bars { get; init; } = Array.Empty<StockBar>();
 
-    /// <summary>Bars to take from stock, grouped by length (longest first).</summary>
+    /// <summary>New bars to take from stock, grouped by length (longest first); offcuts used are not in it.</summary>
     public IReadOnlyList<StockRequirement> Stock { get; init; } = Array.Empty<StockRequirement>();
+
+    /// <summary>Offcuts from stock that pieces are cut from.</summary>
+    public int OffcutsUsed { get; init; }
 
     /// <summary>Pieces that could not be planned (no stock length, or longer than every usable bar); see the issues.</summary>
     public IReadOnlyList<ProfileLine> Unplaced { get; init; } = Array.Empty<ProfileLine>();
@@ -149,6 +161,9 @@ public sealed record CuttingPlan
 
     /// <summary>Every reusable leftover of the plan, by profile id then bar.</summary>
     public IEnumerable<Remnant> Remnants => Profiles.SelectMany(p => p.Remnants);
+
+    /// <summary>The offcuts from stock the plan cuts pieces from.</summary>
+    public IEnumerable<long> OffcutIdsUsed => Profiles.SelectMany(p => p.Bars).Where(b => b.OffcutId is not null).Select(b => b.OffcutId!.Value);
 
     /// <summary>True when every piece was placed on a bar.</summary>
     public bool IsComplete => Issues.All(i => i.Severity != IssueSeverity.Error);

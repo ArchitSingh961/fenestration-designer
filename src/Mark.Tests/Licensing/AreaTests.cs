@@ -131,7 +131,9 @@ public class AreaTests
         Assert.True(vm.Tabs.Single(t => t.Title == "Price").IsLocked);
         Assert.False(vm.Tabs.Single(t => t.Title == "Bill of materials").IsLocked);
         vm.ShowArea(AppArea.Production);
-        Assert.Equal(QuoteSection.Cutting, vm.Section);             // shown, with what is missing
+        Assert.Equal(AppPage.ProductionOrders, vm.Page);             // shown, with what is missing
+        Assert.True(vm.Tabs.Single(t => t.Title == "Production orders").IsLocked);
+        Assert.Contains("not included in your MARK package", vm.Access.ProductionOrdersLock);
         Assert.Contains("not included in your MARK package", vm.Access.CuttingPlansLock);
     }
 

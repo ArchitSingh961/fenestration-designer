@@ -32,6 +32,7 @@ used unless changed before that milestone starts.
 | 14 | Areas, staff logins and who did what | Area bar (Sales, Design, Pricing, Library, Production, Orders, Purchasing, Inventory, Accounts) with tabs; staff logins with their own features, up to the account's users; staff see only what they were given; quotes record who created and saved them, with a history (see areas.md) |
 | 13+ | A company's own items | Products the owner makes for one company only (profiles, glass, hardware, systems, bundles), using catalogue items, delivered with its catalogue (see catalogue.md) |
 | 15 | Sales | Enquiries (two-step form, stages, sources, follow-ups) → quote → order; quote revisions; quotation PDF in the usual layout with the company's setup; sales charts by week/month, person and city (see sales.md) |
+| 16 | Production | Production orders from confirmed orders (designs kept as they were); progress per window (cut, assembled, glazed, ready, dispatched); cutting list with steel and offcuts in stock used first; glass order; hardware pick list; shop drawings; piece labels; offcuts in stock (see production.md) |
 | — | Along the way | Product renamed to MARK; colour-coded bill of materials; rail and drop-down fixes |
 
 ---
@@ -151,7 +152,13 @@ package for new servers (existing servers: add them to the packages in MARK Owne
 
 ---
 
-## 16 — Production and engineering
+## 16 — Production and engineering — done
+
+Built as planned; see [production.md](production.md). Decisions taken: one production order per order, keeping the
+designs as they were when production started; progress counted per window for designs made more than once; papers as
+PDFs (labels 3 × 7 on A4, 70 × 40 mm); offcuts in stock are a simple list in this milestone (full stock with Milestone
+18), used first by the cutting list and updated once per order after cutting; Production orders is in the Complete
+package (others: as an add-on).
 
 - **Production order** per confirmed order.
 - Cutting lists for profiles **and reinforcement steel**; optimisation using stock bars **and offcuts in stock**.

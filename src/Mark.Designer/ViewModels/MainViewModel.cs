@@ -108,6 +108,7 @@ public partial class MainViewModel : ViewModelBase, IDesignService
         CreateDesignFeatures();
         CreateQuoteFeatures();
         CreateSalesFeatures();
+        CreateProductionFeatures();
         CreatePricingFeatures();
         CreateLicenceFeatures();
         CreateAreaFeatures();

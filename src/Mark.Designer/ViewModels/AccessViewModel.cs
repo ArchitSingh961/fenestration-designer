@@ -91,12 +91,14 @@ public sealed class AccessViewModel : ViewModelBase
     public bool CanUsePriceStructure => Allows(Features.PriceStructure);
     public bool CanManageLibrary => Allows(Features.LibraryManager);
     public bool CanSeeCuttingPlans => Allows(Features.CuttingPlans);
+    public bool CanUseProductionOrders => Allows(Features.ProductionOrders);
 
     public string OpeningsLock => Lock(Features.Openings);
     public string DesignLibraryLock => Lock(Features.DesignLibrary);
     public string CostingLock => Lock(Features.Costing);
     public string PriceStructureLock => Lock(Features.PriceStructure);
     public string CuttingPlansLock => Lock(Features.CuttingPlans);
+    public string ProductionOrdersLock => Lock(Features.ProductionOrders);
     public string LibraryLock => Lock(Features.LibraryManager);
 
     /// <summary>Why a feature cannot be used by this login: not in the package, or not given to this staff login.</summary>

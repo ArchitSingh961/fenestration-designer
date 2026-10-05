@@ -14,7 +14,7 @@ last used there.
 | **Design** | Designs · Drawing | Frame designer |
 | **Pricing** | Price · Bill of materials | Price structure · Bill of materials and cost |
 | **Library** | Library (systems, counts, **Open Library Manager**) | Library Manager (or a catalogue: own prices) |
-| **Production** | Cutting plan | Cutting plans |
+| **Production** | Production orders · Cutting plan · Offcuts | Production orders · Cutting plans (see [production.md](production.md)) |
 | **Orders · Purchasing · Inventory · Accounts** | Overview of what is coming | (later milestones) |
 
 - The open quote is shown above the quote tabs (Client, Designs, Drawing, Price, Bill of materials, Cutting plan) with

@@ -201,13 +201,18 @@ public static class QuotationBuilder
         _ => role.ToString()
     };
 
-    /// <summary>The design's drawing with its dimensions and opening numbers, as PNG (white background).</summary>
-    private static byte[]? Drawing(Frame frame, DesignRules rules, IProductLibrary library)
+    private static byte[]? Drawing(Frame frame, DesignRules rules, IProductLibrary library) => RenderDrawing(frame, rules, library);
+
+    /// <summary>
+    /// The design's drawing with its dimensions and opening numbers, as PNG (white background); for the workshop (shop
+    /// drawings) also with the glass sizes. WPF: call on an STA thread.
+    /// </summary>
+    public static byte[]? RenderDrawing(Frame frame, DesignRules rules, IProductLibrary library, bool workshop = false)
     {
         const double width = 380, height = 300, margin = 46;
         try
         {
-            var options = FrameRenderOptions.Drawing with { Reference = false, FloorLine = false, GlassSizes = false };
+            var options = FrameRenderOptions.Drawing with { Reference = false, FloorLine = false, GlassSizes = workshop };
             var picture = DesignThumbnails.Render(frame, rules, width - 2 * margin, height - 2 * margin, options,
                 id => DesignListViewModel.GlassLookIn(library, id));
             var visual = new DrawingVisual();

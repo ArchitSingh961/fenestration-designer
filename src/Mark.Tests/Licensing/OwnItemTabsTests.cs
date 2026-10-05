@@ -151,6 +151,7 @@ public class OwnItemTabsTests : IDisposable
         editor.FaceWidth = "50";
         editor.CostPerMetre = "400";
         editor.StockLength = "6000";
+        editor.ForCasement = true;
         manager.SaveCommand.Execute(null);
 
         Assert.False(manager.MessageIsError, manager.Message);

@@ -33,6 +33,27 @@ public sealed record UsedWith
     public bool FitsSystem(string? systemId) => SystemIds.Count == 0 || systemId is null || SystemIds.Contains(systemId);
 
     public bool FitsOpening(OpeningType opening) => OpeningTypes.Count == 0 || OpeningTypes.Contains(opening);
+
+    /// <summary>For casement windows (side hung, top / bottom hung, tilt &amp; turn, pivot); true when nothing is marked.</summary>
+    public bool ForCasement => OpeningTypes.Count == 0 || OpeningTypes.Any(t => t.IsHinged());
+
+    /// <summary>For sliding windows and doors; true when nothing is marked.</summary>
+    public bool ForSliding => OpeningTypes.Count == 0 || OpeningTypes.Any(t => t.IsSliding());
+
+    /// <summary>
+    /// True when the item may be offered where these openings are: fixed panes take any item; otherwise it must be for
+    /// casement or for sliding as (at least one of) the openings are.
+    /// </summary>
+    public bool FitsOpenings(IEnumerable<OpeningType> openings)
+    {
+        var openable = openings.Where(o => o.IsOpenable()).ToList();
+        return openable.Count == 0 || openable.Any(o => o.IsSliding() ? ForSliding : ForCasement);
+    }
+
+    /// <summary>The opening types of a style: casement, sliding, or both (= any, an empty list).</summary>
+    public static IReadOnlyList<OpeningType> StyleTypes(bool casement, bool sliding)
+        => casement == sliding ? Array.Empty<OpeningType>()
+            : Enum.GetValues<OpeningType>().Where(t => casement ? t.IsHinged() : t.IsSliding()).ToList();
 }
 
 /// <summary>

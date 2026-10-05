@@ -250,6 +250,7 @@ public class PersistenceWorkflowTests : IDisposable
             editor.Group = "Low-E";
             editor.Thickness = "6";
             editor.CostPerSquareMetre = "1800";
+            editor.ForCasement = editor.ForSliding = true;                    // for every kind of window
             manager.SaveCommand.Execute(null);
             Assert.False(manager.MessageIsError, manager.Message);
             Assert.Equal("GLS-LOWE-6", manager.SelectedItem!.Id);
@@ -274,6 +275,7 @@ public class PersistenceWorkflowTests : IDisposable
             manager.ItemEditor!.Name = "Dup";
             manager.ItemEditor!.RoleFrame = true;
             manager.ItemEditor!.FaceWidth = "60";
+            manager.ItemEditor!.ForCasement = true;
             manager.SaveCommand.Execute(null);
             Assert.True(manager.MessageIsError);
             Assert.Contains("already used", manager.Message);

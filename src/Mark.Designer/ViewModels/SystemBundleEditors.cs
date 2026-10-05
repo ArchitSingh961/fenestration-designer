@@ -77,12 +77,12 @@ public static class EditorText
         return new(Enum.GetValues<OpeningType>().Select(o => new CheckChoice<OpeningType>(o, o.DisplayName(), set.Contains(o))));
     }
 
-    /// <summary>"Used with" from the ticked systems and opening types; null when nothing is ticked (= any).</summary>
+    /// <summary>"Used with" from the ticked systems and the opening types; null when nothing is marked (= any).</summary>
     public static UsedWith? UsedWith(UsedWith? original, IEnumerable<CheckChoice<string>> systems,
-        IEnumerable<CheckChoice<OpeningType>>? openings = null)
+        IReadOnlyList<OpeningType>? openings = null)
     {
         var systemIds = systems.Where(s => s.IsChecked).Select(s => s.Value).ToList();
-        var openingTypes = openings?.Where(o => o.IsChecked).Select(o => o.Value).ToList() ?? original?.OpeningTypes.ToList() ?? new();
+        var openingTypes = openings?.ToList() ?? original?.OpeningTypes.ToList() ?? new();
         if (systemIds.Count == 0 && openingTypes.Count == 0 && (original?.Use ?? ProductUse.WindowAndDoor) == ProductUse.WindowAndDoor)
             return null;
         return (original ?? new UsedWith()) with { SystemIds = systemIds, OpeningTypes = openingTypes };

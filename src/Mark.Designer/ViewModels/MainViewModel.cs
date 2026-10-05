@@ -358,7 +358,10 @@ public partial class MainViewModel : ViewModelBase, IDesignService
                 switch (FindObject(Selection.SelectedIds.First()))
                 {
                     case Frame frame: Properties.ShowFrame(frame); break;
-                    case Profile profile: Properties.ShowProfile(profile, FrameOf(profile.Id)?.SystemId); break;
+                    case Profile profile:
+                        var frameOfProfile = FrameOf(profile.Id);
+                        Properties.ShowProfile(profile, frameOfProfile?.SystemId, frameOfProfile?.GlassPanels.Select(g => g.Opening).ToList());
+                        break;
                     case GlassPanel glass: Properties.ShowGlass(glass, FrameOf(glass.Id)?.SystemId); break;
                     default: Properties.ShowNothing(); break;
                 }

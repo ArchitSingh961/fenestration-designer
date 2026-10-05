@@ -22,8 +22,13 @@ frame's system; glass outside its range is a warning.
 
 ## "Used with"
 
-Every profile, glass and hardware item can be marked as **used with** some systems (none = any system), and hardware also
-with opening types. Pickers use it, and the catalogue sends an item with the systems it is used with.
+Every profile, glass and hardware item can be marked as **used with** some systems (none = any system). Pickers use it,
+and the catalogue sends an item with the systems it is used with.
+
+Every item is also marked **For: Casement, Sliding or both** — required for a new item (it cannot be saved without),
+shown for existing ones (an item never marked counts as both). Casement covers side hung, top / bottom hung, tilt &
+turn and pivot. When designing, the profile and glass pickers offer only the items for the selected window's openings:
+a casement pane only items for casement, a sliding pane only items for sliding, a fixed pane any item.
 
 ## Reinforcement
 

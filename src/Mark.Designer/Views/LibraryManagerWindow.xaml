@@ -85,6 +85,22 @@
                     <CheckBox Grid.Row="4" Grid.Column="1" Margin="0,4" Content="Active (offered for new designs)" IsChecked="{Binding IsActive}" />
                 </Grid>
 
+                <!-- What kind of window it is for: required for a new item -->
+                <Border IsEnabled="{Binding CanEditDetails}" Background="#EEF3FB" BorderBrush="#D5E2F5" BorderThickness="1" CornerRadius="4"
+                        Padding="10,6" Margin="0,6,0,4">
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock Text="For *" Style="{StaticResource FormLabel}" Width="142" FontWeight="SemiBold" />
+                            <CheckBox Content="Casement" Margin="0,0,18,0" VerticalAlignment="Center" IsChecked="{Binding ForCasement}"
+                                      ToolTip="Side hung, top / bottom hung, tilt &amp; turn and pivot windows" />
+                            <CheckBox Content="Sliding" VerticalAlignment="Center" IsChecked="{Binding ForSliding}"
+                                      ToolTip="Sliding windows and doors" />
+                        </DockPanel>
+                        <TextBlock Text="Tick one or both. When designing, a casement window offers only items for casement, a sliding one only items for sliding."
+                                   TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="150,2,0,0" />
+                    </StackPanel>
+                </Border>
+
                 <!-- Profile -->
                 <Grid Visibility="{Binding IsProfile, Converter={StaticResource BoolToVisibility}}">
                     <Grid.ColumnDefinitions>
@@ -211,11 +227,6 @@
                 <StackPanel IsEnabled="{Binding CanEditDetails}" Visibility="{Binding HasSystems, Converter={StaticResource BoolToVisibility}}">
                     <TextBlock Text="USED WITH SYSTEMS (NONE TICKED = ANY)" Style="{StaticResource SectionLabel}" />
                     <ItemsControl ItemsSource="{Binding UsedWithSystems}" ItemTemplate="{StaticResource CheckChoiceTemplate}"
-                                  ItemsPanel="{StaticResource WrapItems}" />
-                </StackPanel>
-                <StackPanel IsEnabled="{Binding CanEditDetails}" Visibility="{Binding IsMaterial, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Text="FOR OPENING TYPES (NONE TICKED = ANY)" Style="{StaticResource SectionLabel}" />
-                    <ItemsControl ItemsSource="{Binding UsedWithOpenings}" ItemTemplate="{StaticResource CheckChoiceTemplate}"
                                   ItemsPanel="{StaticResource WrapItems}" />
                 </StackPanel>
 

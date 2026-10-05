@@ -23,7 +23,10 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase, ILibraryEditor
         IsNew = isNew;
         library ??= ProductLibrary.Empty;
         UsedWithSystems = EditorText.SystemChoices(library, usedWith?.SystemIds);
-        UsedWithOpenings = EditorText.OpeningChoices(usedWith?.OpeningTypes);
+        // A new item must be marked; an existing one shows what it is for (nothing marked = both).
+        _forCasement = !isNew && (usedWith?.ForCasement ?? true);
+        _forSliding = !isNew && (usedWith?.ForSliding ?? true);
+        _styleBefore = (_forCasement, _forSliding);
         ReinforcementChoices = library.Profiles.Where(p => p.Supports(ProfileType.Reinforcement))
             .Select(p => new LibraryChoice(p.Id, p.Name)).Prepend(new LibraryChoice(null, "(none)")).ToList();
         Reinforcement = ReinforcementChoices[0];
@@ -37,8 +40,21 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase, ILibraryEditor
 
     public bool HasSystems => UsedWithSystems.Count > 0;
 
-    /// <summary>Hardware and accessories: the opening types they are for (none ticked = any).</summary>
-    public ObservableCollection<CheckChoice<OpeningType>> UsedWithOpenings { get; }
+    private readonly (bool Casement, bool Sliding) _styleBefore;
+
+    private bool _forCasement;
+    /// <summary>The item is for casement windows (side hung, top / bottom hung, tilt &amp; turn, pivot).</summary>
+    public bool ForCasement { get => _forCasement; set => SetProperty(ref _forCasement, value); }
+
+    private bool _forSliding;
+    /// <summary>The item is for sliding windows and doors.</summary>
+    public bool ForSliding { get => _forSliding; set => SetProperty(ref _forSliding, value); }
+
+    /// <summary>The opening types to save: unchanged when the style was not changed (keeps a finer list), else the style's.</summary>
+    private IReadOnlyList<OpeningType> StyleOpenings(UsedWith? original)
+        => (ForCasement, ForSliding) == _styleBefore && original is not null
+            ? original.OpeningTypes
+            : UsedWith.StyleTypes(ForCasement, ForSliding);
 
     /// <summary>The reinforcement section inside this profile, or "(none)".</summary>
     public IReadOnlyList<LibraryChoice> ReinforcementChoices { get; }
@@ -180,6 +196,8 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase, ILibraryEditor
     {
         error = null;
         var errors = new List<string>();
+        if (!ForCasement && !ForSliding)
+            errors.Add("Mark what it is for: Casement, Sliding or both.");
         object? result = Kind switch
         {
             LibraryItemKind.Profile => BuildProfile(errors),
@@ -227,7 +245,7 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase, ILibraryEditor
             GlazingBiteMm = Number(GlazingBite, "Glazing bite", errors, blankIsZero: true),
             Materials = Usages(errors),
             Reinforcement = reinforcement,
-            UsedWith = EditorText.UsedWith(original.UsedWith, UsedWithSystems)
+            UsedWith = EditorText.UsedWith(original.UsedWith, UsedWithSystems, StyleOpenings(original.UsedWith))
         };
     }
 
@@ -239,7 +257,8 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase, ILibraryEditor
         WeightKgPerSquareMetre = string.IsNullOrWhiteSpace(WeightPerSquareMetre) ? null : Number(WeightPerSquareMetre, "Weight per m²", errors),
         MinChargeableAreaM2 = Number(MinChargeableArea, "Minimum chargeable area", errors, blankIsZero: true),
         Materials = Usages(errors),
-        UsedWith = EditorText.UsedWith(((GlassDefinition)_original).UsedWith, UsedWithSystems),
+        UsedWith = EditorText.UsedWith(((GlassDefinition)_original).UsedWith, UsedWithSystems,
+            StyleOpenings(((GlassDefinition)_original).UsedWith)),
         Look = LookOf(GlassPattern, GlassColour, ((GlassDefinition)_original).Look)
     };
 
@@ -255,7 +274,8 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase, ILibraryEditor
     {
         Id = Id.Trim(), Name = Name.Trim(), Code = Optional(Code), Manufacturer = Optional(Manufacturer), IsActive = IsActive,
         Category = MaterialCategory, Unit = MaterialUnit, CostPerUnit = Money(CostPerUnit, "Cost per unit", errors),
-        UsedWith = EditorText.UsedWith(((MaterialDefinition)_original).UsedWith, UsedWithSystems, UsedWithOpenings)
+        UsedWith = EditorText.UsedWith(((MaterialDefinition)_original).UsedWith, UsedWithSystems,
+            StyleOpenings(((MaterialDefinition)_original).UsedWith))
     };
 
     private IReadOnlyList<MaterialUsage> Usages(List<string> errors)

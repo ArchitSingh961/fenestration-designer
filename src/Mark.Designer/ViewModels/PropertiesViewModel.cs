@@ -43,6 +43,9 @@ public class PropertiesViewModel : ViewModelBase
     /// <summary>The system of the frame the selection is in (pickers offer what fits it), or null.</summary>
     private string? _systemId;
 
+    /// <summary>The openings of what is selected: pickers offer only items for casement or sliding as they are.</summary>
+    private IReadOnlyList<OpeningType> _openings = Array.Empty<OpeningType>();
+
     /// <summary>Stores new design information for the selected frame; returns an error message or null.</summary>
     public Func<DesignInfo, string?>? SetDesignInfo { get; set; }
 
@@ -231,6 +234,7 @@ public class PropertiesViewModel : ViewModelBase
             .Distinct().ToList();
         var systems = frames.Select(f => f.SystemId).Distinct().ToList();
         _systemId = systems.Count == 1 ? systems[0] : null;
+        _openings = panes.Select(p => p.Opening).ToList();
         if (frames.Count > 0 && Library.Systems.Count > 0)
             SystemPicker = CreateSystemPicker(frames);
         if (members.Count > 0)
@@ -270,6 +274,7 @@ public class PropertiesViewModel : ViewModelBase
     {
         Reset("FRAME");
         _systemId = frame.SystemId;
+        _openings = frame.GlassPanels.Select(p => p.Opening).ToList();
         IsFrameEditable = true;
         WidthText = Format(frame.Width);
         HeightText = Format(frame.Height);
@@ -310,11 +315,13 @@ public class PropertiesViewModel : ViewModelBase
     }
 
     /// <param name="systemId">The system of the frame the member is in (the picker offers what fits it).</param>
-    public void ShowProfile(Profile profile, string? systemId = null)
+    /// <param name="openings">The openings of the profile's frame: only profiles for casement or sliding as they are are offered.</param>
+    public void ShowProfile(Profile profile, string? systemId = null, IReadOnlyList<OpeningType>? openings = null)
     {
         bool isDivision = Members.IsDivision(profile);
         Reset(profile.ProfileType.ToString().ToUpperInvariant());
         _systemId = systemId;
+        _openings = openings ?? Array.Empty<OpeningType>();
 
         if (isDivision)
         {
@@ -351,6 +358,7 @@ public class PropertiesViewModel : ViewModelBase
     {
         Reset("GLASS");
         _systemId = systemId;
+        _openings = new[] { panel.Opening };
         Items.Add(new PropertyItem("Width", Format(panel.Boundary.Width), "mm"));
         Items.Add(new PropertyItem("Height", Format(panel.Boundary.Height), "mm"));
         Items.Add(new PropertyItem("Area", (panel.Boundary.Area / 1_000_000.0).ToString("0.###", CultureInfo.InvariantCulture), "m²"));
@@ -389,7 +397,8 @@ public class PropertiesViewModel : ViewModelBase
         var system = Library.FindSystem(_systemId);
         return new LibraryPickerViewModel(label, currentText, currentId,
             text => Library.SearchGlass(new LibraryQuery(text))
-                .Where(g => (g.UsedWith?.FitsSystem(_systemId) ?? true) && (system?.AcceptsGlass(g.ThicknessMm) ?? true))
+                .Where(g => (g.UsedWith?.FitsSystem(_systemId) ?? true) && (system?.AcceptsGlass(g.ThicknessMm) ?? true)
+                            && (g.UsedWith?.FitsOpenings(_openings) ?? true))
                 .Select(g => new LibraryOption(g.Id, g.Name,
                     Join($"{Format(g.ThicknessMm)} mm", g.Category, $"{Money(g.CostPerSquareMetre)}/m²"))).ToList(),
             id => AssignGlass is { } assign ? assign(id) : "The glass cannot be changed here.");
@@ -428,7 +437,8 @@ public class PropertiesViewModel : ViewModelBase
         string currentText = ids.Count > 1 ? "Mixed" : DescribeProfile(currentId, roles);
         return new LibraryPickerViewModel(label, currentText, currentId,
             text => Library.SearchProfiles(new LibraryQuery(text, roles.Count == 1 ? roles[0] : null))
-                .Where(p => roles.All(p.Supports) && (p.UsedWith?.FitsSystem(_systemId) ?? true))
+                .Where(p => roles.All(p.Supports) && (p.UsedWith?.FitsSystem(_systemId) ?? true)
+                            && (p.UsedWith?.FitsOpenings(_openings) ?? true))
                 .Select(p => new LibraryOption(p.Id, p.Name,
                     Join($"{Format(p.FaceWidthMm)} mm", p.Series, $"{Money(p.CostPerMetre)}/m"))).ToList(),
             id => AssignProfile is { } assign ? assign(id) : "The profile cannot be changed here.");
@@ -517,6 +527,7 @@ public class PropertiesViewModel : ViewModelBase
         GlassPicker = null;
         SystemPicker = null;
         _systemId = null;
+        _openings = Array.Empty<OpeningType>();
         DesignEditor = null;
         OpeningEditor = null;
         CalculationItems.Clear();

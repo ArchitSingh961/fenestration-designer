@@ -7,7 +7,7 @@ namespace Mark.Designer.ViewModels;
 public enum AppArea { Sales, Design, Pricing, Library, Production, Orders, Purchasing, Inventory, Accounts }
 
 /// <summary>Everything MARK can show, as the tabs of the areas (one view can be a tab of more than one area).</summary>
-public enum AppView { Dashboard, Quotes, Client, Designs, Drawing, Pricing, Materials, Cutting, Library, Overview, Account, Staff, Enquiries, QuotationSetup, ProductionOrders, Offcuts, Orders, Schedule, Documents }
+public enum AppView { Dashboard, Quotes, Client, Designs, Drawing, Pricing, Materials, Cutting, Library, Overview, Account, Staff, Enquiries, QuotationSetup, ProductionOrders, Offcuts, Orders, Schedule, Documents, Stock, PurchaseOrders, Suppliers }
 
 /// <summary>How a tab or area looks to the signed-in login.</summary>
 public enum AccessState
@@ -75,8 +75,15 @@ public static class AreaCatalog
             new AreaTabInfo(AppView.Orders, "Orders", Licensing.Features.OrderManagement),
             new AreaTabInfo(AppView.Schedule, "Schedule", Licensing.Features.OrderManagement)
         }),
-        new AreaInfo(AppArea.Purchasing, "Purchasing", "", "Suppliers, purchase orders and goods received.", Overview()),
-        new AreaInfo(AppArea.Inventory, "Inventory", "", "Stock of bars, glass and hardware.", Overview()),
+        new AreaInfo(AppArea.Purchasing, "Purchasing", "", "Suppliers, purchase orders and goods received.", new[]
+        {
+            new AreaTabInfo(AppView.PurchaseOrders, "Purchase orders", Licensing.Features.Purchasing),
+            new AreaTabInfo(AppView.Suppliers, "Suppliers", Licensing.Features.Purchasing)
+        }),
+        new AreaInfo(AppArea.Inventory, "Inventory", "", "Stock of bars, glass and hardware.", new[]
+        {
+            new AreaTabInfo(AppView.Stock, "Stock", Licensing.Features.Inventory)
+        }),
         new AreaInfo(AppArea.Accounts, "Accounts", "", "Invoices, payments and Tally export.", Overview())
     };
 

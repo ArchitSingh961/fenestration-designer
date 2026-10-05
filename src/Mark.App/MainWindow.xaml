@@ -2582,6 +2582,425 @@
                 </ScrollViewer>
             </Grid>
 
+            <!-- ══ Inventory › Stock (Milestone 18) ════════════════════ -->
+            <DockPanel x:Name="StockPage" DataContext="{Binding Inventory}" Background="{StaticResource PageBackgroundBrush}"
+                       Visibility="{Binding DataContext.Page, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=Stock}">
+                <DockPanel DockPanel.Dock="Top" Margin="24,16,24,0">
+                    <TextBlock Text="Stock" Style="{StaticResource PageTitle}" />
+                    <TextBlock Text="  Bars, glass and hardware: on hand, reserved for production orders, available and on order."
+                               VerticalAlignment="Bottom" Margin="0,0,0,4" Foreground="{StaticResource MutedTextBrush}" />
+                </DockPanel>
+                <ContentControl DockPanel.Dock="Top" Style="{StaticResource LockNotice}" Margin="24,12,24,0" VerticalAlignment="Top" MaxWidth="560" HorizontalAlignment="Left"
+                                Content="{Binding DataContext.Access.InventoryLock, RelativeSource={RelativeSource AncestorType=Window}}"
+                                Visibility="{Binding DataContext.Access.CanUseInventory, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBoolToVisibility}}" />
+                <DockPanel Margin="24,10,24,18" Visibility="{Binding DataContext.Access.CanUseInventory, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}">
+                    <Border DockPanel.Dock="Top" Padding="10" Margin="0,0,0,10" Visibility="{Binding HasMessage, Converter={StaticResource BoolToVisibility}}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#E8F5EC" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MessageIsError}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" />
+                    </Border>
+                    <Border DockPanel.Dock="Top" Padding="10" Margin="0,0,0,10" Background="#FFF4E0" BorderBrush="#F0C987" BorderThickness="1" CornerRadius="4"
+                            Visibility="{Binding HasLow, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock TextWrapping="Wrap" Foreground="#7A4A00" FontWeight="SemiBold">
+                            <Run Text="&#x26A0; " /><Run Text="{Binding LowText, Mode=OneWay}" />
+                        </TextBlock>
+                    </Border>
+                    <!-- Right: the selected item, and production orders to issue. -->
+                    <ScrollViewer DockPanel.Dock="Right" Width="380" Margin="14,0,0,0" VerticalScrollBarVisibility="Auto" Focusable="False">
+                        <StackPanel>
+                            <Border Style="{StaticResource Card}" Padding="16,12" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock Text="Keep stock of" Style="{StaticResource CardTitle}" />
+                                    <ComboBox Margin="0,6,0,0" ItemsSource="{Binding Choices}" SelectedItem="{Binding NewStockItem}" AutomationProperties.Name="Item to keep in stock" />
+                                    <Button Style="{StaticResource SecondaryButton}" Content="Add to stock list" Margin="0,6,0,0" HorizontalAlignment="Left"
+                                            Command="{Binding AddStockItemCommand}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Padding="16,12" Margin="0,0,0,12" Visibility="{Binding HasSelectedStock, Converter={StaticResource BoolToVisibility}}">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding SelectedStock.Name}" Style="{StaticResource CardTitle}" TextWrapping="Wrap" />
+                                    <TextBlock Foreground="{StaticResource MutedTextBrush}" FontSize="11" TextWrapping="Wrap">
+                                        <Run Text="On hand " /><Run Text="{Binding SelectedStock.OnHand, Mode=OneWay}" /><Run Text=" " /><Run Text="{Binding SelectedStock.Unit, Mode=OneWay}" /><Run Text="  ·  for orders " /><Run Text="{Binding SelectedStock.Reserved, Mode=OneWay}" /><Run Text="  ·  on order " /><Run Text="{Binding SelectedStock.OnOrder, Mode=OneWay}" />
+                                    </TextBlock>
+                                    <Grid Margin="0,10,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="110" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Text="Count found" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                        <TextBox Grid.Column="1" Margin="0,2" Padding="4,3" TextAlignment="Right" AutomationProperties.Name="Count found"
+                                                 Text="{Binding CountText, UpdateSourceTrigger=PropertyChanged}" ToolTip="What a stock count found: on hand becomes this" />
+                                        <Button Grid.Column="2" Style="{StaticResource SecondaryButton}" Content="Set" Margin="6,2,0,2" Command="{Binding CountCommand}"
+                                                AutomationProperties.Name="Set count" />
+                                        <TextBlock Grid.Row="1" Text="Add / take out" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                        <TextBox Grid.Row="1" Grid.Column="1" Margin="0,2" Padding="4,3" TextAlignment="Right" AutomationProperties.Name="Add or take out"
+                                                 Text="{Binding AdjustText, UpdateSourceTrigger=PropertyChanged}" ToolTip="e.g. 10 to add, -2 to take out" />
+                                        <Button Grid.Row="1" Grid.Column="2" Style="{StaticResource SecondaryButton}" Content="Book" Margin="6,2,0,2" Command="{Binding AdjustCommand}"
+                                                AutomationProperties.Name="Book adjustment" />
+                                        <TextBlock Grid.Row="2" Text="Note" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                        <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,2" Padding="4,3" AutomationProperties.Name="Stock note"
+                                                 Text="{Binding NoteText, UpdateSourceTrigger=PropertyChanged}" ToolTip="Why: damaged, returned, found in the store …" />
+                                        <TextBlock Grid.Row="3" Text="Reorder level" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                        <TextBox Grid.Row="3" Grid.Column="1" Margin="0,8,0,2" Padding="4,3" TextAlignment="Right" AutomationProperties.Name="Reorder level"
+                                                 Text="{Binding ReorderText, UpdateSourceTrigger=PropertyChanged}" ToolTip="Warn when this much or less is free (0: no warning)" />
+                                        <TextBlock Grid.Row="4" Text="Kept at" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                        <TextBox Grid.Row="4" Grid.Column="1" Margin="0,2" Padding="4,3" AutomationProperties.Name="Kept at"
+                                                 Text="{Binding LocationText, UpdateSourceTrigger=PropertyChanged}" ToolTip="Rack, bay or store" />
+                                        <Button Grid.Row="4" Grid.Column="2" Style="{StaticResource SecondaryButton}" Content="Save" Margin="6,2,0,2"
+                                                Command="{Binding SaveStockSettingsCommand}" AutomationProperties.Name="Save stock settings" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Padding="16,12" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock Text="Issue to production" Style="{StaticResource CardTitle}" />
+                                    <TextBlock Text="Production orders whose material is still reserved. Issue it when it goes to the workshop: it leaves stock."
+                                               FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,2,0,6" />
+                                    <TextBlock Text="Nothing to issue." Foreground="{StaticResource MutedTextBrush}"
+                                               Visibility="{Binding HasIssues, Converter={StaticResource InverseBoolToVisibility}}" />
+                                    <views:ItemsList ItemsSource="{Binding Issues}" AutomationProperties.Name="Production orders to issue">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="0,6">
+                                                    <DockPanel>
+                                                        <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Content="Issue" VerticalAlignment="Center"
+                                                                Command="{Binding IssueCommand}" AutomationProperties.Name="{Binding OrderNumber, StringFormat=Issue stock of {0}}" />
+                                                        <StackPanel>
+                                                            <TextBlock FontWeight="SemiBold"><Run Text="{Binding OrderNumber, Mode=OneWay}" /><Run Text="  " /><Run Text="{Binding Project, Mode=OneWay}" FontWeight="Normal" /></TextBlock>
+                                                            <TextBlock Text="{Binding Needs}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" />
+                                                        </StackPanel>
+                                                    </DockPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </views:ItemsList>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                        <ComboBox DockPanel.Dock="Right" Width="200" VerticalAlignment="Center" ItemsSource="{x:Static vm:InventoryViewModel.StockFilters}" SelectedItem="{Binding StockFilter}"
+                                  AutomationProperties.Name="Show stock" />
+                        <TextBox Width="260" HorizontalAlignment="Left" Style="{StaticResource SearchBox}" Tag="Search items"
+                                 Text="{Binding StockSearch, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Search stock" />
+                    </DockPanel>
+                    <Grid DockPanel.Dock="Bottom" Height="190" Margin="0,10,0,0">
+                        <Border Style="{StaticResource Card}" Padding="12,8">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Top" Style="{StaticResource CardTitle}" Text="Stock moves (newest first; of the selected item when one is chosen)" />
+                                <ListView ItemsSource="{Binding Moves}" BorderThickness="0" Margin="0,4,0,0" AutomationProperties.Name="Stock moves">
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Header="When" Width="135" DisplayMemberBinding="{Binding When}" />
+                                            <GridViewColumn Header="Item" Width="210" DisplayMemberBinding="{Binding Item}" />
+                                            <GridViewColumn Header="Qty" Width="70" DisplayMemberBinding="{Binding Quantity}" />
+                                            <GridViewColumn Header="Why" Width="80" DisplayMemberBinding="{Binding Reason}" />
+                                            <GridViewColumn Header="Reference" Width="120" DisplayMemberBinding="{Binding Reference}" />
+                                            <GridViewColumn Header="By" Width="100" DisplayMemberBinding="{Binding By}" />
+                                            <GridViewColumn Header="Note" Width="160" DisplayMemberBinding="{Binding Note}" />
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+                            </DockPanel>
+                        </Border>
+                    </Grid>
+                    <Grid>
+                        <ListView ItemsSource="{Binding Stock}" SelectedItem="{Binding SelectedStock}" AutomationProperties.Name="Stock list">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsLow}" Value="True">
+                                            <Setter Property="Foreground" Value="#9A3B00" />
+                                            <Setter Property="FontWeight" Value="SemiBold" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Item" Width="230" DisplayMemberBinding="{Binding Name}" />
+                                    <GridViewColumn Header="Kind" Width="140" DisplayMemberBinding="{Binding Kind}" />
+                                    <GridViewColumn Header="Unit" Width="45" DisplayMemberBinding="{Binding Unit}" />
+                                    <GridViewColumn Header="On hand" Width="70" DisplayMemberBinding="{Binding OnHand}" />
+                                    <GridViewColumn Header="For orders" Width="75" DisplayMemberBinding="{Binding Reserved}" />
+                                    <GridViewColumn Header="Free" Width="60" DisplayMemberBinding="{Binding Available}" />
+                                    <GridViewColumn Header="On order" Width="65" DisplayMemberBinding="{Binding OnOrder}" />
+                                    <GridViewColumn Header="Reorder at" Width="75" DisplayMemberBinding="{Binding Reorder}" />
+                                    <GridViewColumn Header="To buy" Width="60" DisplayMemberBinding="{Binding ToBuy}" />
+                                    <GridViewColumn Header="Kept at" Width="80" DisplayMemberBinding="{Binding Location}" />
+                                    <GridViewColumn Header="Orders" Width="130" DisplayMemberBinding="{Binding ForOrders}" />
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                        <TextBlock Margin="16,40,16,0" TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" IsHitTestVisible="False"
+                                   Visibility="{Binding IsStockEmpty, Converter={StaticResource BoolToVisibility}}"
+                                   Text="Nothing here yet. Items appear when a production order needs them, when they are bought, or when you add them with Keep stock of." />
+                    </Grid>
+                </DockPanel>
+            </DockPanel>
+
+            <!-- ══ Purchasing › Purchase orders (Milestone 18) ══════════ -->
+            <DockPanel x:Name="PurchaseOrdersPage" DataContext="{Binding Inventory}" Background="{StaticResource PageBackgroundBrush}"
+                       Visibility="{Binding DataContext.Page, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=PurchaseOrders}">
+                <DockPanel DockPanel.Dock="Top" Margin="24,16,24,0">
+                    <TextBlock Text="Purchase orders" Style="{StaticResource PageTitle}" />
+                </DockPanel>
+                <ContentControl DockPanel.Dock="Top" Style="{StaticResource LockNotice}" Margin="24,12,24,0" VerticalAlignment="Top" MaxWidth="560" HorizontalAlignment="Left"
+                                Content="{Binding DataContext.Access.PurchasingLock, RelativeSource={RelativeSource AncestorType=Window}}"
+                                Visibility="{Binding DataContext.Access.CanUsePurchasing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBoolToVisibility}}" />
+                <DockPanel Margin="24,10,24,18" Visibility="{Binding DataContext.Access.CanUsePurchasing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}">
+                    <Border DockPanel.Dock="Top" Padding="10" Margin="0,0,0,10" Visibility="{Binding HasMessage, Converter={StaticResource BoolToVisibility}}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#E8F5EC" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MessageIsError}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" />
+                    </Border>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource Card}" Padding="16,12" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="{Binding ShortfallText}" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" />
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <TextBlock Text="Supplier" Style="{StaticResource FormLabel}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <ComboBox Width="240" ItemsSource="{Binding ActiveSuppliers}" SelectedItem="{Binding PurchaseSupplier}" AutomationProperties.Name="Supplier" />
+                                <Button Style="{StaticResource PrimaryButton}" Content="Order what is short" Margin="8,0,0,0" Command="{Binding SuggestCommand}"
+                                        ToolTip="A draft purchase order with everything this supplier supplies that open orders and reorder levels need, after stock and what is on order" />
+                                <Button Style="{StaticResource SecondaryButton}" Content="Empty purchase order" Margin="8,0,0,0" Command="{Binding NewPurchaseCommand}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <DockPanel DockPanel.Dock="Left" Width="560" Margin="0,0,14,0">
+                        <ComboBox DockPanel.Dock="Top" Width="160" HorizontalAlignment="Left" Margin="0,0,0,6" ItemsSource="{x:Static vm:InventoryViewModel.PurchaseFilters}"
+                                  SelectedItem="{Binding PurchaseFilter}" AutomationProperties.Name="Show purchase orders" />
+                        <ListView ItemsSource="{Binding Purchases}" SelectedItem="{Binding SelectedPurchase}" AutomationProperties.Name="Purchase orders">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Number" Width="85" DisplayMemberBinding="{Binding Number}" />
+                                    <GridViewColumn Header="Supplier" Width="150" DisplayMemberBinding="{Binding Supplier}" />
+                                    <GridViewColumn Header="Date" Width="85" DisplayMemberBinding="{Binding Date}" />
+                                    <GridViewColumn Header="Status" Width="90" DisplayMemberBinding="{Binding Status}" />
+                                    <GridViewColumn Header="Total" Width="120" DisplayMemberBinding="{Binding Total}" />
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </DockPanel>
+                    <Border Style="{StaticResource Card}" Padding="16,12">
+                        <Grid>
+                            <TextBlock Text="Choose a purchase order, or make one above." Foreground="{StaticResource MutedTextBrush}"
+                                       Visibility="{Binding HasPurchase, Converter={StaticResource InverseBoolToVisibility}}" />
+                            <DockPanel Visibility="{Binding HasPurchase, Converter={StaticResource BoolToVisibility}}">
+                                <DockPanel DockPanel.Dock="Top">
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding PurchaseStatusText}" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" />
+                                    <TextBlock Text="{Binding PurchaseTitle}" Style="{StaticResource CardTitle}" />
+                                </DockPanel>
+                                <TextBlock DockPanel.Dock="Top" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Purchase.ForOrders, StringFormat=For orders: {0}}"
+                                           Visibility="{Binding Purchase.ForOrders.Length, Converter={StaticResource CountToVisibility}}" />
+                                <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="120" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Wanted by" Style="{StaticResource FormLabel}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                        <TextBox Grid.Column="1" Padding="4,3" Text="{Binding ExpectedText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Wanted by"
+                                                 ToolTip="dd-mm-yyyy" />
+                                        <TextBlock Grid.Column="2" Text="Note" Style="{StaticResource FormLabel}" VerticalAlignment="Center" Margin="12,0,8,0" />
+                                        <TextBox Grid.Column="3" Padding="4,3" Text="{Binding PurchaseNote, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Purchase note" />
+                                    </Grid>
+                                    <WrapPanel Margin="0,10,0,0">
+                                        <Button Style="{StaticResource SecondaryButton}" Content="Save" Margin="0,0,6,6" Command="{Binding SavePurchaseCommand}" AutomationProperties.Name="Save purchase order" />
+                                        <Button Style="{StaticResource PrimaryButton}" Content="Place order" Margin="0,0,6,6" Command="{Binding PlaceOrderCommand}"
+                                                Visibility="{Binding IsDraft, Converter={StaticResource BoolToVisibility}}" ToolTip="Its items are on order from now on" />
+                                        <Button Style="{StaticResource SecondaryButton}" Content="Purchase order PDF…" Margin="0,0,6,6" Command="{Binding PurchasePdfCommand}" />
+                                        <Button Style="{StaticResource SecondaryButton}" Content="Cancel order" Margin="0,0,6,6" Command="{Binding CancelPurchaseCommand}" />
+                                    </WrapPanel>
+                                    <StackPanel Visibility="{Binding CanReceive, Converter={StaticResource BoolToVisibility}}" Margin="0,6,0,0">
+                                        <TextBlock Text="Goods received" Style="{StaticResource CardTitle}" />
+                                        <TextBlock Text="Enter what came in on each line (Received column), then book it: it goes into stock with a GRN number."
+                                                   FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" />
+                                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                            <TextBlock Text="Supplier's invoice / challan" Style="{StaticResource FormLabel}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                            <TextBox Width="160" Padding="4,3" Text="{Binding SupplierInvoice, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Supplier invoice" />
+                                            <Button Style="{StaticResource PrimaryButton}" Content="Receive goods" Margin="8,0,0,0" Command="{Binding ReceiveCommand}" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding ReceiptsText}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,8,0,0" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,8,0,0"
+                                            Visibility="{Binding IsDraft, Converter={StaticResource BoolToVisibility}}">
+                                    <ComboBox Width="280" ItemsSource="{Binding Choices}" SelectedItem="{Binding LineItem}" AutomationProperties.Name="Item to buy" />
+                                    <TextBox Width="80" Margin="6,0,0,0" Padding="4,3" TextAlignment="Right" Text="{Binding LineQuantityText, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="Quantity to buy" />
+                                    <Button Style="{StaticResource SecondaryButton}" Content="Add item" Margin="6,0,0,0" Command="{Binding AddLineCommand}" />
+                                </StackPanel>
+                                <TextBlock DockPanel.Dock="Bottom" HorizontalAlignment="Right" FontWeight="SemiBold" Margin="0,6,0,0"
+                                           Text="{Binding PurchaseTotalText, StringFormat=Total {0}}" />
+                                <Grid DockPanel.Dock="Top" Margin="0,10,0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="80" />
+                                        <ColumnDefinition Width="45" />
+                                        <ColumnDefinition Width="90" />
+                                        <ColumnDefinition Width="70" />
+                                        <ColumnDefinition Width="80" />
+                                        <ColumnDefinition Width="34" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Item" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
+                                    <TextBlock Grid.Column="1" Text="Quantity" FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextAlignment="Right" />
+                                    <TextBlock Grid.Column="3" Text="Rate" FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextAlignment="Right" />
+                                    <TextBlock Grid.Column="4" Text="Came in" FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextAlignment="Right" />
+                                    <TextBlock Grid.Column="5" Text="Received" FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextAlignment="Right"
+                                               Visibility="{Binding CanReceive, Converter={StaticResource BoolToVisibility}}" />
+                                </Grid>
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                                    <views:ItemsList ItemsSource="{Binding Lines}" AutomationProperties.Name="Purchase order lines">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,2">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="80" />
+                                                        <ColumnDefinition Width="45" />
+                                                        <ColumnDefinition Width="90" />
+                                                        <ColumnDefinition Width="70" />
+                                                        <ColumnDefinition Width="80" />
+                                                        <ColumnDefinition Width="34" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}" />
+                                                    <TextBox Grid.Column="1" Padding="4,2" TextAlignment="Right" Text="{Binding QuantityText, UpdateSourceTrigger=PropertyChanged}"
+                                                             IsReadOnly="{Binding DataContext.IsLocked, RelativeSource={RelativeSource AncestorType=views:ItemsList}}"
+                                                             AutomationProperties.Name="{Binding Name, StringFormat=Quantity of {0}}" />
+                                                    <TextBlock Grid.Column="2" Text="{Binding Unit}" Margin="4,0,0,0" VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
+                                                    <TextBox Grid.Column="3" Padding="4,2" TextAlignment="Right" Text="{Binding RateText, UpdateSourceTrigger=PropertyChanged}"
+                                                             IsReadOnly="{Binding DataContext.IsLocked, RelativeSource={RelativeSource AncestorType=views:ItemsList}}"
+                                                             AutomationProperties.Name="{Binding Name, StringFormat=Rate of {0}}" />
+                                                    <TextBlock Grid.Column="4" Text="{Binding ReceivedText}" TextAlignment="Right" VerticalAlignment="Center" />
+                                                    <TextBox Grid.Column="5" Margin="6,0,0,0" Padding="4,2" TextAlignment="Right" Text="{Binding ReceiveText, UpdateSourceTrigger=PropertyChanged}"
+                                                             Visibility="{Binding DataContext.CanReceive, RelativeSource={RelativeSource AncestorType=views:ItemsList}, Converter={StaticResource BoolToVisibility}}"
+                                                             AutomationProperties.Name="{Binding Name, StringFormat=Received now of {0}}" />
+                                                    <Button Grid.Column="6" Style="{StaticResource SecondaryButton}" Padding="7,2" Margin="4,0,0,0" Content="&#x2715;"
+                                                            Command="{Binding RemoveCommand}" ToolTip="Remove"
+                                                            Visibility="{Binding DataContext.IsDraft, RelativeSource={RelativeSource AncestorType=views:ItemsList}, Converter={StaticResource BoolToVisibility}}"
+                                                            AutomationProperties.Name="{Binding Name, StringFormat=Remove {0}}" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </views:ItemsList>
+                                </ScrollViewer>
+                            </DockPanel>
+                        </Grid>
+                    </Border>
+                </DockPanel>
+            </DockPanel>
+
+            <!-- ══ Purchasing › Suppliers (Milestone 18) ════════════════ -->
+            <DockPanel x:Name="SuppliersPage" DataContext="{Binding Inventory}" Background="{StaticResource PageBackgroundBrush}"
+                       Visibility="{Binding DataContext.Page, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=Suppliers}">
+                <DockPanel DockPanel.Dock="Top" Margin="24,16,24,0">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Content="New supplier" Command="{Binding NewSupplierCommand}" />
+                    <TextBlock Text="Suppliers" Style="{StaticResource PageTitle}" />
+                </DockPanel>
+                <ContentControl DockPanel.Dock="Top" Style="{StaticResource LockNotice}" Margin="24,12,24,0" VerticalAlignment="Top" MaxWidth="560" HorizontalAlignment="Left"
+                                Content="{Binding DataContext.Access.PurchasingLock, RelativeSource={RelativeSource AncestorType=Window}}"
+                                Visibility="{Binding DataContext.Access.CanUsePurchasing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBoolToVisibility}}" />
+                <DockPanel Margin="24,10,24,18" Visibility="{Binding DataContext.Access.CanUsePurchasing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}">
+                    <Border DockPanel.Dock="Top" Padding="10" Margin="0,0,0,10" Visibility="{Binding HasMessage, Converter={StaticResource BoolToVisibility}}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#E8F5EC" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MessageIsError}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" />
+                    </Border>
+                    <ListView DockPanel.Dock="Left" Width="460" Margin="0,0,14,0" ItemsSource="{Binding Suppliers}" SelectedItem="{Binding SelectedSupplier}"
+                              AutomationProperties.Name="Suppliers">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Supplier" Width="180" DisplayMemberBinding="{Binding Name}" />
+                                <GridViewColumn Header="Contact" Width="120" DisplayMemberBinding="{Binding ContactPerson}" />
+                                <GridViewColumn Header="Phone" Width="120" DisplayMemberBinding="{Binding Phone}" />
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                    <Border Style="{StaticResource Card}" Padding="18,14" VerticalAlignment="Top" MaxWidth="560" HorizontalAlignment="Left">
+                        <Grid>
+                            <TextBlock Text="Choose a supplier, or New supplier." Foreground="{StaticResource MutedTextBrush}"
+                                       Visibility="{Binding IsEditingSupplier, Converter={StaticResource InverseBoolToVisibility}}" />
+                            <Grid DataContext="{Binding Editing}" Visibility="{Binding DataContext.IsEditingSupplier, RelativeSource={RelativeSource AncestorType=DockPanel}, Converter={StaticResource BoolToVisibility}}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="380" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="Name *" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Margin="0,3" Padding="4,3" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Supplier name" />
+                                <TextBlock Grid.Row="1" Text="Contact person" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="1" Grid.Column="1" Margin="0,3" Padding="4,3" Text="{Binding ContactPerson, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Contact person" />
+                                <TextBlock Grid.Row="2" Text="Phone" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="2" Grid.Column="1" Margin="0,3" Padding="4,3" Text="{Binding Phone, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Supplier phone" />
+                                <TextBlock Grid.Row="3" Text="E-mail" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="3" Grid.Column="1" Margin="0,3" Padding="4,3" Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Supplier e-mail" />
+                                <TextBlock Grid.Row="4" Text="Address" Style="{StaticResource FormLabel}" VerticalAlignment="Top" Margin="0,6,0,0" />
+                                <TextBox Grid.Row="4" Grid.Column="1" Margin="0,3" Padding="4,3" MinHeight="48" TextWrapping="Wrap" AcceptsReturn="True"
+                                         Text="{Binding Address, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Supplier address" />
+                                <TextBlock Grid.Row="5" Text="GSTIN" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="5" Grid.Column="1" Margin="0,3" Padding="4,3" Text="{Binding Gstin, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Supplier GSTIN" />
+                                <TextBlock Grid.Row="6" Text="Supplies" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                <StackPanel Grid.Row="6" Grid.Column="1" Orientation="Horizontal" Margin="0,6">
+                                    <CheckBox Content="Profiles" Margin="0,0,14,0" IsChecked="{Binding DataContext.SuppliesProfiles, RelativeSource={RelativeSource AncestorType=DockPanel}}" />
+                                    <CheckBox Content="Glass" Margin="0,0,14,0" IsChecked="{Binding DataContext.SuppliesGlass, RelativeSource={RelativeSource AncestorType=DockPanel}}" />
+                                    <CheckBox Content="Hardware and accessories" IsChecked="{Binding DataContext.SuppliesMaterials, RelativeSource={RelativeSource AncestorType=DockPanel}}" />
+                                </StackPanel>
+                                <TextBlock Grid.Row="7" Text="Note" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="7" Grid.Column="1" Margin="0,3" Padding="4,3" Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Supplier note" />
+                                <CheckBox Grid.Row="8" Grid.Column="1" Margin="0,6" Content="Active (offered for new purchase orders)" IsChecked="{Binding IsActive}" />
+                                <Button Grid.Row="9" Grid.Column="1" Style="{StaticResource PrimaryButton}" Content="Save supplier" HorizontalAlignment="Left" Margin="0,8,0,0"
+                                        Command="{Binding DataContext.SaveSupplierCommand, RelativeSource={RelativeSource AncestorType=DockPanel}}" />
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </DockPanel>
+            </DockPanel>
+
             <!-- ══ Offcuts in stock (Milestone 16) ═════════════════════ -->
             <Grid DataContext="{Binding Offcuts}" Background="{StaticResource PageBackgroundBrush}"
                   Visibility="{Binding DataContext.Page, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=Offcuts}">

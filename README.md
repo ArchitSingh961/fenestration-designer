@@ -104,7 +104,7 @@ dispatch and sign-off), advance and stage **payments** with the balance, the **d
 
 ## Areas, staff and who did what
 
-MARK is organised into areas (Sales, Design, Pricing, Library, Production, Orders, and Purchasing, Inventory and
+MARK is organised into areas (Sales, Design, Pricing, Library, Production, Orders, Purchasing, Inventory, and
 Accounts to come) in a bar on the left, each with its tabs in the header. The account owner gives staff their own
 logins in **Account → Staff logins**, each with only the parts of MARK they need (a cutter sees only Production), up to
 the users the MARK supplier allows. Every quote records who created and saved it, with a history of what changed. See

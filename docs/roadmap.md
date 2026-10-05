@@ -34,6 +34,8 @@ used unless changed before that milestone starts.
 | 15 | Sales | Enquiries (two-step form, stages, sources, follow-ups) → quote → order; quote revisions; quotation PDF in the usual layout with the company's setup; sales charts by week/month, person and city (see sales.md) |
 | 16 | Production | Production orders from confirmed orders (designs kept as they were); progress per window (cut, assembled, glazed, ready, dispatched); cutting list with steel and offcuts in stock used first; glass order; hardware pick list; shop drawings; piece labels; offcuts in stock (see production.md) |
 | 17 | Orders | Order book from confirmation to installation: stages that follow production, dispatch and sign-off; advance, stage and final payments with balance; delivery and installation schedule; dispatch notes (PDF, DN-00001…); installation sign-off with certificate (PDF) (see orders.md) |
+| 17+ | Cost sheet, quotation and documents | Cost sheet with custom formulas (#PROFILECOST, @Profile Cost …), percentage of any line, subtotals and a per-design extra cost; quotation profile and accessory lists as on the usual quotation (colour, mesh, OUTER RI, locking, S1-hardware); a Documents tab per quote (survey report, quotations, margins, credit approval, sales order, typology history) with margin report (see pricing.md, documents.md) |
+| 18 | Purchasing and inventory | Suppliers; purchase orders worked out from what production orders need minus stock and what is on order; purchase order PDF; goods received (GRN-00001…) into stock; stock reserved for orders, issued to production, counted and adjusted, reorder levels and low-stock alerts; stock ledger (see inventory.md) |
 | — | Along the way | Product renamed to MARK; colour-coded bill of materials; rail and drop-down fixes |
 
 ---
@@ -182,11 +184,11 @@ Schedule tab for every order's deliveries, installations and site visits.
 
 ---
 
-## 18 — Purchasing and inventory
+## 18 — Purchasing and inventory — done
 
-- Suppliers; purchase orders from what orders need minus stock; goods received.
-- Stock of bars, glass and hardware; **offcuts kept and reused by the cutting plan (default — confirm)**;
-  stock reserved for orders; low-stock alerts.
+- Suppliers; purchase orders from what orders need minus stock and what is on order; goods received.
+- Stock of bars, glass and hardware; offcuts kept and reused by the cutting plan (Milestone 16); stock reserved for
+  production orders until issued; counts, adjustments and reorder levels with low-stock alerts. See inventory.md.
 
 ---
 

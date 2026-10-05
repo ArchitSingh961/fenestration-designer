@@ -13,7 +13,7 @@ internal static class DatabaseSchema
     public const int ApplicationId = 0x46454E31;
 
     /// <summary>The schema version written by this build.</summary>
-    public const int CurrentVersion = 10;
+    public const int CurrentVersion = 11;
 
     /// <summary>Upgrade scripts keyed by the version they upgrade FROM.</summary>
     public static readonly IReadOnlyDictionary<int, string> Upgrades = new Dictionary<int, string>
@@ -26,8 +26,48 @@ internal static class DatabaseSchema
         [6] = Version7,
         [7] = Version8,
         [8] = Version9,
-        [9] = Version10
+        [9] = Version10,
+        [10] = Version11
     };
+
+    /// <summary>
+    /// Version 11 (Milestone 18, purchasing and inventory): suppliers and purchase orders (JSON, with their goods
+    /// receipts), the stock of every item (on hand, reorder level, where it is kept) and the ledger of stock moves.
+    /// </summary>
+    public const string Version11 = """
+        CREATE TABLE suppliers (
+            id             TEXT PRIMARY KEY NOT NULL,
+            name           TEXT NOT NULL,
+            supplier_json  TEXT NOT NULL
+        );
+        CREATE TABLE purchase_orders (
+            id             TEXT PRIMARY KEY NOT NULL,
+            number         TEXT NOT NULL,
+            supplier_id    TEXT NOT NULL,
+            created_utc    TEXT NOT NULL,
+            order_json     TEXT NOT NULL
+        );
+        CREATE TABLE stock_levels (
+            kind           TEXT NOT NULL,
+            item_id        TEXT NOT NULL,
+            on_hand        REAL NOT NULL,
+            reorder_level  REAL NOT NULL,
+            location       TEXT NOT NULL,
+            PRIMARY KEY (kind, item_id)
+        );
+        CREATE TABLE stock_moves (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            utc            TEXT NOT NULL,
+            kind           TEXT NOT NULL,
+            item_id        TEXT NOT NULL,
+            quantity       REAL NOT NULL,
+            reason         TEXT NOT NULL,
+            reference      TEXT NOT NULL,
+            by_user        TEXT NOT NULL,
+            note           TEXT NOT NULL
+        );
+        CREATE INDEX ix_stock_moves_item ON stock_moves (kind, item_id);
+        """;
 
     /// <summary>
     /// Version 10 (the quote's Documents tab): files kept with each quote — uploads (site survey, credit approval, signed

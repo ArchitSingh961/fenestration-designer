@@ -139,7 +139,8 @@ public class AccessTests
         Assert.True(features["Openings"].IsIncluded);
         Assert.Equal("Not in your package", features["Price structure"].State);
         Assert.StartsWith("Included until", features["Cutting plans"].State);
-        Assert.Equal("Coming in a later version", features["Inventory"].State);
+        Assert.Equal("Not in your package", features["Inventory"].State);
+        Assert.Equal("Coming in a later version", features["Invoices and payments"].State);
 
         account.KeyText = "MARK-AAAAA-BBBBB-CCCCC-DDDDD";
         await account.RedeemKeyAsync();

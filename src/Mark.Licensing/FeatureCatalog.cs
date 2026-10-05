@@ -58,8 +58,10 @@ public static class FeatureCatalog
             "Production orders from confirmed orders: cutting lists with offcuts, glass orders, hardware pick lists, shop drawings, labels and progress."),
         new Feature(Features.OrderManagement, "Orders", "Order management",
             "Orders from confirmation to installation: stage, advance and stage payments, delivery and installation schedule, dispatch notes and installation sign-off."),
-        new Feature(Features.Purchasing, "Purchasing", "Purchasing", "Suppliers, purchase orders and goods received.", IsBuilt: false),
-        new Feature(Features.Inventory, "Inventory", "Inventory", "Stock of bars, glass and hardware, offcut reuse.", IsBuilt: false),
+        new Feature(Features.Purchasing, "Purchasing", "Purchasing",
+            "Suppliers; purchase orders worked out from what orders need minus stock and what is on order; goods received into stock."),
+        new Feature(Features.Inventory, "Inventory", "Inventory",
+            "Stock of bars, glass and hardware: reserved for orders, issued to production, counted and adjusted, low-stock alerts."),
         new Feature(Features.Invoices, "Accounts", "Invoices and payments", "GST invoices, receipts and Tally export.", IsBuilt: false)
     };
 

@@ -69,6 +69,9 @@ public partial class MainViewModel
         AppPage.Offcuts => AppView.Offcuts,
         AppPage.Orders => AppView.Orders,
         AppPage.Schedule => AppView.Schedule,
+        AppPage.Stock => AppView.Stock,
+        AppPage.PurchaseOrders => AppView.PurchaseOrders,
+        AppPage.Suppliers => AppView.Suppliers,
         _ => _section switch
         {
             QuoteSection.Client => AppView.Client,
@@ -188,6 +191,9 @@ public partial class MainViewModel
                 case AppView.Offcuts: Page = AppPage.Offcuts; break;
                 case AppView.Orders: Page = AppPage.Orders; break;
                 case AppView.Schedule: Page = AppPage.Schedule; break;
+                case AppView.Stock: Page = AppPage.Stock; break;
+                case AppView.PurchaseOrders: Page = AppPage.PurchaseOrders; break;
+                case AppView.Suppliers: Page = AppPage.Suppliers; break;
                 default:
                     Section = view switch
                     {

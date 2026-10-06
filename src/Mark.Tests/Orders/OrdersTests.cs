@@ -108,6 +108,36 @@ public class OrdersTests : IDisposable
     }
 
     [Fact]
+    public void TheNextPayment_FollowsTheBalance_AndMoreThanItIsAskedAndKeptAsCredit()
+    {
+        var vm = Order();
+        vm.ShowOrder();
+        var book = vm.OrderBook;
+        var dialogs = (FakeDialogs)vm.Dialogs!;
+        decimal value = vm.Store!.Orders.ForProject(vm.Project.Id)!.Value!.Value;
+
+        Assert.Equal(PaymentKind.Advance, book.PaymentKind);                                // the first one
+        book.PaymentAmount = "1000";
+        Assert.Null(book.AddPayment());
+        Assert.Equal(PaymentKind.Stage, book.PaymentKind);                                  // then stage payments …
+        book.PaymentAmount = (value - 1000m).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        Assert.Equal(PaymentKind.Final, book.PaymentKind);                                  // … and what clears it is the final one
+
+        // More than the balance: asked first; "no" records nothing.
+        book.PaymentAmount = (value + 4000m).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        dialogs.ConfirmAnswer = false;
+        Assert.Null(book.AddPayment());
+        Assert.Contains("more than the balance", dialogs.Confirms.Last());
+        Assert.Single(vm.Store.Orders.ForProject(vm.Project.Id)!.Payments);
+
+        dialogs.ConfirmAnswer = true;
+        Assert.Null(book.AddPayment());
+        Assert.True(book.HasCredit);
+        Assert.Contains("5,000.00", book.CreditText);                                       // 1,000 + value + 4,000 − value
+        Assert.Contains("credit", book.CreditText);
+    }
+
+    [Fact]
     public void DispatchNotes_AreNumbered_CountWhatWent_AndTheLastOneMakesTheOrderDispatched()
     {
         var vm = Order();

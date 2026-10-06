@@ -252,9 +252,50 @@ public sealed class OrdersViewModel : ViewModelBase
     private DateTime? _paymentDate;
     public DateTime? PaymentDate { get => _paymentDate; set => SetProperty(ref _paymentDate, value); }
     private string _paymentAmount = "";
-    public string PaymentAmount { get => _paymentAmount; set => SetProperty(ref _paymentAmount, value ?? ""); }
+    public string PaymentAmount
+    {
+        get => _paymentAmount;
+        set
+        {
+            if (!SetProperty(ref _paymentAmount, value ?? "") || _kindChosen) return;
+            // Until "For" is chosen by hand it follows the amount: what clears the balance is the final payment.
+            var kind = SuggestedKind(TryMoney(_paymentAmount, out decimal amount) ? amount : 0);
+            if (kind != _paymentKind)
+            {
+                _paymentKind = kind;
+                OnPropertyChanged(nameof(PaymentKind));
+            }
+        }
+    }
+
     private PaymentKind _paymentKind = PaymentKind.Advance;
-    public PaymentKind PaymentKind { get => _paymentKind; set => SetProperty(ref _paymentKind, value); }
+    private bool _kindChosen;
+    public PaymentKind PaymentKind
+    {
+        get => _paymentKind;
+        set
+        {
+            if (SetProperty(ref _paymentKind, value)) _kindChosen = true;
+        }
+    }
+
+    /// <summary>
+    /// The usual kind of the next payment: the first is the advance; one that clears the balance the final payment; the
+    /// others stage payments.
+    /// </summary>
+    private PaymentKind SuggestedKind(decimal amount)
+    {
+        if (_order is null || _order.Payments.Count == 0) return PaymentKind.Advance;
+        if (_order.Balance is { } balance && balance > 0 && amount >= balance) return PaymentKind.Final;
+        return PaymentKind.Stage;
+    }
+
+    /// <summary>Received more than the order's value: the difference is the client's credit (shown, never lost).</summary>
+    public bool HasCredit => _order?.Value is { } v && _order.Paid > v;
+
+    public string CreditText => _order?.Value is { } v && _order.Paid > v
+        ? $"{WithCurrency(Money(_order.Paid - v))} received more than the order value: the client's credit (advance for extra work, or to refund)."
+        : "";
     private PaymentMethod _paymentMethod = PaymentMethod.BankTransfer;
     public PaymentMethod PaymentMethod { get => _paymentMethod; set => SetProperty(ref _paymentMethod, value); }
     private string _paymentReference = "";
@@ -513,7 +554,8 @@ public sealed class OrdersViewModel : ViewModelBase
         _paymentDate = today;
         _paymentAmount = "";
         _paymentReference = "";
-        _paymentKind = _order is { Payments.Count: 0 } ? PaymentKind.Advance : _order?.Balance is { } b && b > 0 ? PaymentKind.Stage : PaymentKind.Other;
+        _paymentKind = SuggestedKind(0);
+        _kindChosen = false;
         _visitDate = today.AddDays(1);
         _visitTime = "";
         _visitTeam = "";
@@ -572,7 +614,7 @@ public sealed class OrdersViewModel : ViewModelBase
         foreach (string name in new[]
                  {
                      nameof(HasOrder), nameof(OrderTitle), nameof(OrderDetail), nameof(SiteText), nameof(StageText), nameof(ValueText), nameof(PaidText),
-                     nameof(BalanceText), nameof(PaidFraction), nameof(PaidPercentText), nameof(ProductionText), nameof(HasSignOff), nameof(SignOffText),
+                     nameof(BalanceText), nameof(HasCredit), nameof(CreditText), nameof(PaidFraction), nameof(PaidPercentText), nameof(ProductionText), nameof(HasSignOff), nameof(SignOffText),
                      nameof(Notes), nameof(HasDispatchLeft)
                  })
             OnPropertyChanged(name);
@@ -646,11 +688,20 @@ public sealed class OrdersViewModel : ViewModelBase
         if (Blocked() is { } blocked) return blocked;
         if (!TryMoney(PaymentAmount, out decimal amount) || amount <= 0) return "Enter the amount received, e.g. 25000.";
         if (PaymentDate is not { } date) return "Enter the day the payment was received.";
+        // More than the balance: ask, and keep the difference as the client's credit (shown on the order).
+        if (_order.Value is { } value && _order.Paid + amount > value && _dialogs() is { } dialogs)
+        {
+            decimal over = _order.Paid + amount - value;
+            if (!dialogs.Confirm("More than the balance",
+                    $"{WithCurrency(Money(amount))} is more than the balance of {BalanceText}.\n\nRecord it? {WithCurrency(Money(over))} will be shown as the client's credit."))
+                return null;
+        }
         _order.Payments.Add(new OrderPayment
         {
             Date = date.Date, Amount = amount, Kind = PaymentKind, Method = PaymentMethod, Reference = PaymentReference.Trim(), RecordedBy = _user()
         });
-        string? error = SaveAndRefresh($"Recorded {Money(amount)} ({CustomerOrder.KindName(PaymentKind).ToLowerInvariant()}). Balance {BalanceText}.");
+        string? error = SaveAndRefresh($"Recorded {Money(amount)} ({CustomerOrder.KindName(PaymentKind).ToLowerInvariant()}). Balance {BalanceText}."
+                                       + (HasCredit ? $" Credit {WithCurrency(Money(_order.Paid - _order.Value!.Value))}." : ""));
         if (error is null) ResetForms();
         return error;
     }

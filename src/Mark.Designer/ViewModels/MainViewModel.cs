@@ -640,7 +640,9 @@ public partial class MainViewModel : ViewModelBase, IDesignService
     {
         if (SingleSelectedFrame is not { } frame)
             return "Select a frame first.";
-        return RunForMessage(() => new ResizeFrameCommand(frame, width, height, Rules));
+        string? error = RunForMessage(() => new ResizeFrameCommand(frame, width, height, Rules));
+        if (error is null) Canvas.FitToContent();
+        return error;
     }
 
     private string? MoveSelectedDivision(double position)

@@ -33,6 +33,38 @@ public class NewDesignPanelTests
         => DesignTemplates.All.First(t => !t.KeepsLayout && t.Openings.Any(o => o is { } x && x.IsHinged()));
 
     [Fact]
+    public void A_PlainNewFrame_AsksItsSizeAndType_AndAppliesThemInOneStep()
+    {
+        var vm = Designer();
+        vm.CreateFrame();
+        var panel = vm.NewDesignPanel;
+        Assert.True(panel.AsksType);
+        Assert.Equal(("1200", "1500"), (panel.WidthText, panel.HeightText));
+
+        panel.Reference = "W1";
+        panel.WidthText = "1800";
+        panel.SelectedType = NewDesignViewModel.Types.Single(t => t.TemplateId == "sld-2");
+        Assert.Contains(vm.Library.Systems, x => x.Id == panel.SystemId);                    // the type picks a sliding system
+        panel.ConfirmCommand.Execute(null);
+
+        var frame = vm.Project.Frames.Single();
+        Assert.False(panel.IsOpen);
+        Assert.Equal((1800d, 1500d), (frame.Width, frame.Height));
+        Assert.Equal(2, frame.GlassPanels.Count(g => g.Opening.IsSliding()));
+        Assert.Equal("W1", frame.Design.Reference);
+
+        vm.UndoCommand.Execute(null);                                                        // size, type and details: one step
+        Assert.Equal(1200, frame.Width);
+        Assert.Single(frame.GlassPanels);
+
+        panel.WidthText = "wide";
+        vm.NewDesignPanel.Open(frame);
+        panel.WidthText = "wide";
+        panel.ConfirmCommand.Execute(null);
+        Assert.Contains("width and height", panel.Message);
+    }
+
+    [Fact]
     public void A_NewDesign_AsksForTheBrand_NotTheSystem()
     {
         var vm = Designer();

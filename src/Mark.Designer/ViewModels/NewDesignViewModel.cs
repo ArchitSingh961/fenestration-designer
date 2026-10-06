@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows.Input;
+using Mark.Core.Design;
 using Mark.Core.Library;
 using Mark.Core.Models;
 
@@ -9,7 +10,16 @@ namespace Mark.Designer.ViewModels;
 /// <summary>What the New design panel sets on the design just made.</summary>
 /// <param name="SystemId">The system, or null to keep the one it was made in.</param>
 /// <param name="GlassId">The glass for all its panes, or null to keep it.</param>
-public sealed record NewDesignChoice(string? SystemId, string? GlassId, string Reference, int Quantity, string Location);
+/// <param name="WidthMm">The size, when it was changed in the panel (null = as drawn).</param>
+/// <param name="TemplateId">The type chosen in the panel (a design template), or null to keep the design as it is.</param>
+public sealed record NewDesignChoice(string? SystemId, string? GlassId, string Reference, int Quantity, string Location,
+    double? WidthMm = null, double? HeightMm = null, string? TemplateId = null);
+
+/// <summary>A type offered in the New design panel for a plain new frame: a design template, or none (fixed glass).</summary>
+public sealed record NewDesignType(string? TemplateId, string Name)
+{
+    public override string ToString() => Name;
+}
 
 /// <summary>
 /// The New design panel shown when a design is made: its reference, quantity and location, the brand (asked when the
@@ -23,7 +33,9 @@ public sealed class NewDesignViewModel : ViewModelBase
     private readonly Func<IProductLibrary> _library;
     private readonly Func<Guid, NewDesignChoice, string?> _apply;
     private Guid _frameId;
+    private Frame? _frame;
     private string? _frameSystemId;
+    private double _drawnWidth, _drawnHeight;
     private IReadOnlyList<OpeningType> _openings = Array.Empty<OpeningType>();
 
     /// <param name="apply">Sets the choice on the frame; returns an error, or null.</param>
@@ -52,6 +64,61 @@ public sealed class NewDesignViewModel : ViewModelBase
 
     private string _location = "";
     public string Location { get => _location; set => SetProperty(ref _location, value); }
+
+    private string _widthText = "";
+    /// <summary>Width in mm (the size it was drawn at, until changed here).</summary>
+    public string WidthText { get => _widthText; set => SetProperty(ref _widthText, value); }
+
+    private string _heightText = "";
+    public string HeightText { get => _heightText; set => SetProperty(ref _heightText, value); }
+
+    /// <summary>The usual types a plain new frame can be made into here (more in the design library).</summary>
+    public static IReadOnlyList<NewDesignType> Types { get; } = new[]
+    {
+        new NewDesignType(null, "Fixed glass"),
+        new NewDesignType("cas-left", "Casement, hinged left"),
+        new NewDesignType("cas-right", "Casement, hinged right"),
+        new NewDesignType("cas-french", "Pair of casements (French)"),
+        new NewDesignType("cas-fixed-left", "Fixed + casement"),
+        new NewDesignType("cas-top", "Top hung"),
+        new NewDesignType("sld-2", "Sliding, 2 track 2 panel"),
+        new NewDesignType("sld-3", "Sliding, 3 track 3 panel"),
+        new NewDesignType("sld-3-fixed", "Sliding, 3 panel with fixed centre")
+    };
+
+    /// <summary>The type is asked for a plain new frame (one fixed pane); a design from the library already has one.</summary>
+    public bool AsksType { get; private set; }
+
+    private NewDesignType _selectedType = Types[0];
+    public NewDesignType SelectedType
+    {
+        get => _selectedType;
+        set
+        {
+            if (!SetProperty(ref _selectedType, value ?? Types[0])) return;
+            // The type decides the openings, so the system (sliding or casement) and the glass that fit.
+            _openings = OpeningsOf(_selectedType.TemplateId);
+            UpdateSystem();
+            OnPropertyChanged(nameof(AsksGlass));
+        }
+    }
+
+    /// <summary>The openings the frame will have with <paramref name="templateId"/> (worked out on a copy).</summary>
+    private IReadOnlyList<OpeningType> OpeningsOf(string? templateId)
+    {
+        if (_frame is null) return _openings;
+        if (templateId is null || DesignTemplates.Find(templateId) is not { } template) return _frame.GlassPanels.Select(p => p.Opening).ToList();
+        var copy = _frame.Clone();
+        try
+        {
+            FrameEditor.ApplyTemplate(copy, template, null, new DesignRules());
+        }
+        catch (DesignValidationException)
+        {
+            return _frame.GlassPanels.Select(p => p.Opening).ToList();
+        }
+        return copy.GlassPanels.Select(p => p.Opening).ToList();
+    }
 
     /// <summary>True when the brand is asked: systems of two or more makers, and the design was not made in its own system.</summary>
     public bool AsksBrand { get; private set; }
@@ -100,7 +167,17 @@ public sealed class NewDesignViewModel : ViewModelBase
         ArgumentNullException.ThrowIfNull(frame);
         var library = _library();
         _frameId = frame.Id;
+        _frame = frame;
         _frameSystemId = frame.SystemId;
+        _drawnWidth = frame.Width;
+        _drawnHeight = frame.Height;
+        WidthText = Format(frame.Width);
+        HeightText = Format(frame.Height);
+        AsksType = frame.GlassPanels.Count == 1 && frame.GlassPanels[0].Opening == OpeningType.Fixed && !frame.GlassPanels[0].HasMesh
+                   && frame.Profiles.All(p => p.ProfileType == ProfileType.Frame);
+        _selectedType = Types[0];
+        OnPropertyChanged(nameof(SelectedType));
+        OnPropertyChanged(nameof(AsksType));
         _openings = frame.GlassPanels.Select(p => p.Opening).ToList();
         Reference = frame.Design.Reference;
         QuantityText = frame.Design.Quantity.ToString(CultureInfo.CurrentCulture);
@@ -172,8 +249,15 @@ public sealed class NewDesignViewModel : ViewModelBase
             Message = "Enter the design ref., e.g. W1.";
             return;
         }
+        if (!PropertiesViewModel.TryParse(WidthText, out double width) || !PropertiesViewModel.TryParse(HeightText, out double height))
+        {
+            Message = "Enter the width and height in mm, e.g. 1200 and 1500.";
+            return;
+        }
+        bool resized = Math.Abs(width - _drawnWidth) > 0.01 || Math.Abs(height - _drawnHeight) > 0.01;
         var choice = new NewDesignChoice(SystemId != _frameSystemId ? SystemId : null, AsksGlass ? SelectedGlass?.Id : null,
-            Reference.Trim(), quantity, Location ?? "");
+            Reference.Trim(), quantity, Location ?? "", resized ? width : null, resized ? height : null,
+            AsksType ? SelectedType.TemplateId : null);
         if (_apply(_frameId, choice) is { } error)
         {
             Message = error;

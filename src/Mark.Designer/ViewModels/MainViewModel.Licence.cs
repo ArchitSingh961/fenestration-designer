@@ -140,8 +140,19 @@ public partial class MainViewModel
         info.Reference = choice.Reference;
         info.Quantity = choice.Quantity;
         info.Location = choice.Location;
-        string? error = RunForMessage(() => new SetUpNewDesignCommand(frame, choice.SystemId, choice.GlassId, info, Library, Rules));
-        if (error is null) Select(frame.Id);
+        // Size, type and details in one undo step.
+        var steps = new List<IUndoableCommand>();
+        if (choice.WidthMm is { } width && choice.HeightMm is { } height)
+            steps.Add(new ResizeFrameCommand(frame, width, height, Rules));
+        if (choice.TemplateId is { } templateId && Core.Design.DesignTemplates.Find(templateId) is { } template)
+            steps.Add(new ApplyTemplateCommand(frame, template, null, Rules));
+        steps.Add(new SetUpNewDesignCommand(frame, choice.SystemId, choice.GlassId, info, Library, Rules));
+        string? error = RunForMessage(() => CompositeCommand.Combine("New design", steps)!);
+        if (error is null)
+        {
+            Select(frame.Id);
+            if (steps.Count > 1) Canvas.FitToContent();                       // the new size is in view
+        }
         return error;
     }
 

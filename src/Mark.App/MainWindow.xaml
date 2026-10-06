@@ -2262,6 +2262,10 @@
                                                 <ProgressBar Value="{Binding PaidFraction, Mode=OneWay}" Maximum="1" Height="6" Margin="0,8,0,2" BorderThickness="0"
                                                              Background="#E5E9EF" Foreground="#2E9D63" />
                                                 <TextBlock Text="{Binding PaidPercentText}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
+                                                <Border Margin="0,8,0,0" Padding="8,6" CornerRadius="4" Background="#FFF8E6"
+                                                        Visibility="{Binding HasCredit, Converter={StaticResource BoolToVisibility}}">
+                                                    <TextBlock Text="{Binding CreditText}" TextWrapping="Wrap" FontSize="11" Foreground="#7A4A00" />
+                                                </Border>
                                             </StackPanel>
                                         </Border>
                                     </Grid>
@@ -5437,6 +5441,30 @@
                                             <TextBlock Text="Location" Style="{StaticResource FormLabel}" />
                                             <TextBox Style="{StaticResource FormBox}" Margin="0,0,0,12" Text="{Binding Location, UpdateSourceTrigger=PropertyChanged}"
                                                      AutomationProperties.Name="Location" ToolTip="Where it goes, e.g. Living room" />
+
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="12" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="Width (mm)" Style="{StaticResource FormLabel}" />
+                                                    <TextBox Style="{StaticResource FormBox}" Margin="0,0,0,12" TextAlignment="Right"
+                                                             Text="{Binding WidthText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Width" />
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2">
+                                                    <TextBlock Text="Height (mm)" Style="{StaticResource FormLabel}" />
+                                                    <TextBox Style="{StaticResource FormBox}" Margin="0,0,0,12" TextAlignment="Right"
+                                                             Text="{Binding HeightText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Height" />
+                                                </StackPanel>
+                                            </Grid>
+                                            <StackPanel Visibility="{Binding AsksType, Converter={StaticResource BoolToVisibility}}">
+                                                <TextBlock Text="Type" Style="{StaticResource FormLabel}" />
+                                                <ComboBox ItemsSource="{x:Static vm:NewDesignViewModel.Types}" SelectedItem="{Binding SelectedType}" Padding="8,6" Margin="0,0,0,12"
+                                                          AutomationProperties.Name="Type"
+                                                          ToolTip="How it opens. More designs (and mesh) are in the design library on the left." />
+                                            </StackPanel>
 
                                             <StackPanel Visibility="{Binding AsksBrand, Converter={StaticResource BoolToVisibility}}">
                                                 <TextBlock Text="Brand" Style="{StaticResource FormLabel}" />

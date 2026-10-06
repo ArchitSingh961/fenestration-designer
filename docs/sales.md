@@ -87,3 +87,18 @@ Won and lost count on the day the quote was decided (stored when its status chan
 | `Mark.Data` | Schema 7: `enquiries`, `project_revisions`, projects' `client_city`, `decided_utc`, `order_number`, `revision`; `SqliteEnquiryRepository`; `KeepRevision` / `Revisions` / `LoadRevision`; quotation settings |
 | `Mark.Reports` | `QuotationDocument` and `QuotationPdf` (PDFsharp / MigraDoc, MIT) — layout only, no calculation |
 | `Mark.Designer` | `QuotationBuilder` (quote → document, drawings rendered like the canvas), `EnquiriesViewModel`, `QuotationSetupViewModel`, `SalesChartsViewModel`, `MainViewModel.Sales` |
+
+## Enquiries & quotes: one list
+
+Sales › **Enquiries & quotes** lists every enquiry (with its quote's number and value, once it has one) and every quote
+that did not come from an enquiry (as a row of its own, marked Quote). Filters: Open (enquiries not quoted yet), Quoted
+(and active quotes), Won, Lost, All (the default). **Open** opens an enquiry's form or a quote; **New enquiry** and
+**New quote** both start here; a quote of its own can be deleted from its row (not the open one). Without the enquiries
+feature the list shows the quotes only. The old Quotes tab is gone (its view still opens this list).
+
+## Cutting list and labels from a quote
+
+The quote header's **Cutting list & labels** makes one PDF from the open quote (no production order needed): the
+windows, every bar drawn to scale (pieces, offcut, waste) with its list of cuts, then a label for every piece and pane.
+It uses the quote's bar lengths (Products tab); a copy is kept in the quote's Documents › Others. A production order has
+the same paper (Cutting list + labels), made from the designs as they were when production started.

@@ -1616,15 +1616,19 @@
                 </Grid.ColumnDefinitions>
                 <DockPanel>
                     <DockPanel DockPanel.Dock="Top" Margin="24,18,24,10">
-                        <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Content="New enquiry" Command="{Binding NewCommand}" />
+                        <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Content="New quote" Command="{Binding NewQuoteCommand}"
+                                ToolTip="A quote straight away (Ctrl+N)" />
+                        <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Content="New enquiry" Command="{Binding NewCommand}"
+                                ToolTip="A client who asked: their details, source and follow-up; make the quote from it later"
+                                Visibility="{Binding EnquiriesAllowed, Converter={StaticResource BoolToVisibility}}" />
                         <StackPanel>
-                            <TextBlock Text="Enquiries" Style="{StaticResource PageTitle}" />
+                            <TextBlock Text="Enquiries &amp; quotes" Style="{StaticResource PageTitle}" />
                             <TextBlock Text="{Binding DueText}" Foreground="#B7791F" FontWeight="SemiBold" />
                         </StackPanel>
                     </DockPanel>
                     <DockPanel DockPanel.Dock="Top" Margin="24,0,24,8">
-                        <TextBox DockPanel.Dock="Right" Width="240" Style="{StaticResource SearchBox}" Tag="Search enquiries…"
-                                 ToolTip="Search by number, client, city, phone, source, salesperson or quote" AutomationProperties.Name="Search enquiries"
+                        <TextBox DockPanel.Dock="Right" Width="240" Style="{StaticResource SearchBox}" Tag="Search enquiries and quotes…"
+                                 ToolTip="Search by number, client, city, phone, source, salesperson or quote" AutomationProperties.Name="Search enquiries and quotes"
                                  Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" />
                         <StackPanel Orientation="Horizontal">
                             <RadioButton Style="{StaticResource FilterTab}" Content="{Binding OpenHeader}"
@@ -1639,9 +1643,15 @@
                                          IsChecked="{Binding Filter, Converter={StaticResource EnumToBool}, ConverterParameter=All}" />
                         </StackPanel>
                     </DockPanel>
-                    <TextBlock DockPanel.Dock="Bottom" Margin="24,8,24,16" Text="{Binding Message}" TextWrapping="Wrap"
-                               Foreground="{StaticResource MutedTextBrush}" />
-                    <Border Style="{StaticResource Card}" Margin="24,0,24,0" Padding="0">
+                    <Border DockPanel.Dock="Top" Padding="10" Margin="24,0,24,8" CornerRadius="6" Background="#EEF2F7"
+                            Visibility="{Binding HasMessage, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" />
+                    </Border>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource Card}" Padding="16,14" Margin="24,0,24,8"
+                            Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="{Binding EmptyText}" TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" />
+                    </Border>
+                    <Border Style="{StaticResource Card}" Margin="24,0,24,16" Padding="0">
                         <ListView ItemsSource="{Binding Rows}" BorderThickness="0" Background="Transparent">
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem">
@@ -1652,14 +1662,15 @@
                             </ListView.ItemContainerStyle>
                             <ListView.View>
                                 <GridView>
-                                    <GridViewColumn Header="Enquiry" Width="90" DisplayMemberBinding="{Binding Number}" />
+                                    <GridViewColumn Header="" Width="62" DisplayMemberBinding="{Binding Kind}" />
+                                    <GridViewColumn Header="No." Width="90" DisplayMemberBinding="{Binding Number}" />
                                     <GridViewColumn Header="Client" Width="160" DisplayMemberBinding="{Binding Client}" />
                                     <GridViewColumn Header="City" Width="90" DisplayMemberBinding="{Binding City}" />
                                     <GridViewColumn Header="Phone" Width="105" DisplayMemberBinding="{Binding Phone}" />
                                     <GridViewColumn Header="Stage" Width="80" DisplayMemberBinding="{Binding Stage}" />
                                     <GridViewColumn Header="Source" Width="85" DisplayMemberBinding="{Binding Source}" />
                                     <GridViewColumn Header="Salesperson" Width="100" DisplayMemberBinding="{Binding Owner}" />
-                                    <GridViewColumn Header="Expected value" Width="105">
+                                    <GridViewColumn Header="Value" Width="105">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding Value}" TextAlignment="Right" MinWidth="90" />
@@ -1685,12 +1696,18 @@
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn Header="Quote" Width="90" DisplayMemberBinding="{Binding Quote}" />
-                                    <GridViewColumn Header="" Width="70">
+                                    <GridViewColumn Header="" Width="104">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Button Style="{StaticResource SecondaryButton}" Content="Open" Padding="10,2" Margin="0"
-                                                        Command="{Binding DataContext.EditCommand, ElementName=EnquiriesPage}" CommandParameter="{Binding}"
-                                                        AutomationProperties.Name="{Binding Number, StringFormat=Open {0}}" />
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Button Style="{StaticResource SecondaryButton}" Content="Open" Padding="10,2" Margin="0"
+                                                            Command="{Binding DataContext.EditCommand, ElementName=EnquiriesPage}" CommandParameter="{Binding}"
+                                                            AutomationProperties.Name="{Binding Number, StringFormat=Open {0}}" />
+                                                    <Button Style="{StaticResource SecondaryButton}" Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" Padding="7,2" Margin="4,0,0,0"
+                                                            Command="{Binding DataContext.DeleteQuoteCommand, ElementName=EnquiriesPage}" CommandParameter="{Binding}"
+                                                            ToolTip="Delete this quote" AutomationProperties.Name="{Binding Number, StringFormat=Delete {0}}"
+                                                            Visibility="{Binding QuoteOnly, Converter={StaticResource BoolToVisibility}}" />
+                                                </StackPanel>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>

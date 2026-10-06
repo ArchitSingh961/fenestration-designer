@@ -185,7 +185,7 @@ public partial class MainViewModel
             switch (view)
             {
                 case AppView.Dashboard: Page = AppPage.Dashboard; break;
-                case AppView.Quotes: Page = AppPage.Quotes; break;
+                case AppView.Quotes: Page = AppPage.Enquiries; break;            // one list for enquiries and quotes
                 case AppView.Account: Page = AppPage.Account; break;
                 case AppView.Staff: Page = AppPage.Staff; break;
                 case AppView.Library: Page = AppPage.Library; break;

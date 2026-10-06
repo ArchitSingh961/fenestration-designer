@@ -43,8 +43,7 @@ public static class AreaCatalog
         new AreaInfo(AppArea.Sales, "Sales", "", "Dashboard, enquiries, quotes, clients and quotations.", new[]
         {
             new AreaTabInfo(AppView.Dashboard, "Dashboard", Licensing.Features.Quotes),
-            new AreaTabInfo(AppView.Enquiries, "Enquiries", Licensing.Features.Enquiries),
-            new AreaTabInfo(AppView.Quotes, "Quotes", Licensing.Features.Quotes),
+            new AreaTabInfo(AppView.Enquiries, "Enquiries & quotes", Licensing.Features.Quotes),
             new AreaTabInfo(AppView.Client, "Client", Licensing.Features.Quotes),
             new AreaTabInfo(AppView.Designs, "Designs", Licensing.Features.Quotes),
             new AreaTabInfo(AppView.Documents, "Documents", Licensing.Features.Quotes),

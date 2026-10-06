@@ -8,7 +8,9 @@ using Mark.Data;
 namespace Mark.Designer.ViewModels;
 
 /// <summary>An enquiry in the list: "EN-00012 · Mr. Archit Singh · Jaipur · Site visit · Referral · Ravi · 1,20,000".</summary>
-public sealed record EnquiryRow(EnquirySummary Summary, DateTime Today)
+/// <param name="QuoteOnly">A quote that did not come from an enquiry (the list shows every quote too).</param>
+/// <param name="QuoteValue">The value of the row's quote, when it has one (shown instead of the expected value).</param>
+public sealed record EnquiryRow(EnquirySummary Summary, DateTime Today, bool QuoteOnly = false, decimal? QuoteValue = null)
 {
     public override string ToString() => $"{Summary.Number} {Summary.ClientName}";
 
@@ -20,7 +22,10 @@ public sealed record EnquiryRow(EnquirySummary Summary, DateTime Today)
     public string Stage => Enquiry.StageName(Summary.Stage);
     public string Source => Summary.Source;
     public string Owner => Summary.Owner;
-    public string Value => Summary.ExpectedValue is { } v ? v.ToString("N0", CultureInfo.GetCultureInfo("en-IN")) : "";
+    public string Value => (QuoteValue ?? Summary.ExpectedValue) is { } v ? v.ToString("N0", CultureInfo.GetCultureInfo("en-IN")) : "";
+
+    /// <summary>"Enquiry" or "Quote".</summary>
+    public string Kind => QuoteOnly ? "Quote" : "Enquiry";
     public string FollowUp => Summary.FollowUp?.ToString("dd MMM yyyy", CultureInfo.InvariantCulture) ?? "";
     public string Quote => Summary.QuoteId is null ? "" : Summary.QuoteNumber.Length > 0 ? Summary.QuoteNumber : "Not saved yet";
     public string Created => Summary.CreatedUtc.ToLocalTime().ToString("dd MMM yyyy", CultureInfo.InvariantCulture);
@@ -187,8 +192,23 @@ public sealed class EnquiriesViewModel : ViewModelBase
         _dialogs = dialogs;
         _currentUser = currentUser;
         _today = today ?? (() => DateTime.Today);
-        NewCommand = new RelayCommand(() => Edit(new Enquiry { Owner = _currentUser(), Source = "" }));
-        EditCommand = new RelayCommand(p => { if (p is EnquiryRow row) Open(row.Id); });
+        NewCommand = new RelayCommand(() =>
+        {
+            if (!EnquiriesAllowed)
+            {
+                Message = "Enquiries are not in your package: start a New quote, or ask your MARK supplier.";
+                return;
+            }
+            Edit(new Enquiry { Owner = _currentUser(), Source = "" });
+        });
+        EditCommand = new RelayCommand(p =>
+        {
+            if (p is not EnquiryRow row) return;
+            if (row.QuoteOnly) Message = _openQuote(row.Id);                  // a quote: open it
+            else Open(row.Id);
+        });
+        NewQuoteCommand = new RelayCommand(() => NewQuote?.Invoke());
+        DeleteQuoteCommand = new RelayCommand(p => { if (p is EnquiryRow { QuoteOnly: true } row) DeleteQuote(row); });
         NextCommand = new RelayCommand(Next, () => Editor is { IsStep1: true });
         BackCommand = new RelayCommand(() => { if (Editor is not null) Editor.Step = 1; }, () => Editor is { IsStep2: true });
         SaveCommand = new RelayCommand(() => Save(), () => Editor is not null);
@@ -211,6 +231,61 @@ public sealed class EnquiriesViewModel : ViewModelBase
     public ICommand DeleteCommand { get; }
     public ICommand CreateQuoteCommand { get; }
     public ICommand OpenQuoteCommand { get; }
+    public ICommand NewQuoteCommand { get; }
+    public ICommand DeleteQuoteCommand { get; }
+
+    // ── Quotes in the same list ─────────────────────────────────────
+
+    /// <summary>The saved quotes: those that did not come from an enquiry are listed too. Set by the main view model.</summary>
+    public Func<Mark.Data.IProjectRepository?>? Quotes { get; set; }
+
+    /// <summary>The open quote (it cannot be deleted from the list).</summary>
+    public Func<Guid>? OpenQuoteId { get; set; }
+
+    /// <summary>Starts a new quote. Set by the main view model.</summary>
+    public Action? NewQuote { get; set; }
+
+    /// <summary>The package has enquiries (else the list shows quotes only, and New enquiry says why).</summary>
+    public Func<bool>? CanUseEnquiries { get; set; }
+
+    public bool EnquiriesAllowed => CanUseEnquiries?.Invoke() ?? true;
+
+    private HashSet<Guid> _quoteOnly = new();
+    private Dictionary<Guid, decimal?> _quoteValues = new();
+
+    private static EnquiryStage StageOf(QuoteStatus status) => status switch
+    {
+        QuoteStatus.Won => EnquiryStage.Won,
+        QuoteStatus.Lost => EnquiryStage.Lost,
+        _ => EnquiryStage.Quoted
+    };
+
+    private void DeleteQuote(EnquiryRow row)
+    {
+        if (Blocked?.Invoke() is { } blocked)
+        {
+            Message = blocked;
+            return;
+        }
+        if (Quotes?.Invoke() is not { } repository) return;
+        if (OpenQuoteId?.Invoke() == row.Id)
+        {
+            Message = "This quote is open. Start a new quote or open another one first to delete it.";
+            return;
+        }
+        if (_dialogs() is { } dialogs && !dialogs.Confirm("Delete quote", $"Delete {row.Number} '{row.Client}' permanently?"))
+            return;
+        try
+        {
+            repository.Delete(row.Id);
+            Reload();
+            Message = $"Deleted {row.Number}.";
+        }
+        catch (DataStoreException ex)
+        {
+            Message = ex.Message;
+        }
+    }
 
     /// <summary>Why enquiries cannot be changed now (read-only), or null. Set by the main view model.</summary>
     public Func<string?>? Blocked { get; set; }
@@ -220,7 +295,7 @@ public sealed class EnquiriesViewModel : ViewModelBase
     /// <summary>The salespeople already used (for the Owner box).</summary>
     public ObservableCollection<string> Owners { get; } = new();
 
-    private EnquiryFilter _filter = EnquiryFilter.Open;
+    private EnquiryFilter _filter = EnquiryFilter.All;                // everything at first: nothing looks missing
     public EnquiryFilter Filter
     {
         get => _filter;
@@ -302,6 +377,33 @@ public sealed class EnquiriesViewModel : ViewModelBase
                 Message = ex.Message;
             }
         }
+        // Every quote is in the list: on its enquiry's row, or as a row of its own.
+        _quoteOnly = new HashSet<Guid>();
+        _quoteValues = new Dictionary<Guid, decimal?>();
+        if (!EnquiriesAllowed) _all = Array.Empty<EnquirySummary>();                 // not in the package: quotes only
+        try
+        {
+            if (Quotes?.Invoke() is { } quotes)
+            {
+                var linked = _all.Where(e => e.QuoteId is not null).Select(e => e.QuoteId!.Value).ToHashSet();
+                var rows = _all.ToList();
+                foreach (var q in quotes.List())
+                {
+                    _quoteValues[q.Id] = q.Value;
+                    if (linked.Contains(q.Id)) continue;
+                    string number = string.IsNullOrEmpty(q.QuoteNumber) ? "—" : q.NumberText;
+                    rows.Add(new EnquirySummary(q.Id, number, q.CreatedUtc, q.CreatedBy, q.ClientName.Length > 0 ? q.ClientName : q.Name,
+                        q.ClientCity, "", StageOf(q.Status), "", q.CreatedBy, null, null, q.Id, number));
+                    _quoteOnly.Add(q.Id);
+                }
+                _all = rows.OrderByDescending(e => e.CreatedUtc).ToList();
+            }
+        }
+        catch (DataStoreException ex)
+        {
+            Message = ex.Message;
+        }
+        OnPropertyChanged(nameof(EnquiriesAllowed));
         Owners.Clear();
         foreach (string owner in _all.Select(e => e.Owner).Append(_currentUser()).Where(o => o.Length > 0).Distinct().Order())
             Owners.Add(owner);
@@ -309,6 +411,13 @@ public sealed class EnquiriesViewModel : ViewModelBase
             OnPropertyChanged(header);
         ApplyFilter();
     }
+
+    /// <summary>The list is empty: <see cref="EmptyText"/> says why and what to do.</summary>
+    public bool IsEmpty => Rows.Count == 0;
+
+    public string EmptyText => _all.Count == 0
+        ? "No enquiries or quotes yet. Start with New enquiry (a client who asked) or New quote."
+        : $"Nothing here. All ({_all.Count}) shows every enquiry and quote.";
 
     private static bool IsOpen(EnquiryStage stage) => stage is EnquiryStage.New or EnquiryStage.Contacted or EnquiryStage.SiteVisit;
 
@@ -328,9 +437,12 @@ public sealed class EnquiriesViewModel : ViewModelBase
             };
             string haystack = $"{e.Number} {e.ClientName} {e.City} {e.Phone} {e.Source} {e.Owner} {e.QuoteNumber}";
             if (keep && words.All(w => haystack.Contains(w, StringComparison.OrdinalIgnoreCase)))
-                Rows.Add(new EnquiryRow(e, _today()));
+                Rows.Add(new EnquiryRow(e, _today(), _quoteOnly.Contains(e.Id),
+                    e.QuoteId is { } quoteId && _quoteValues.TryGetValue(quoteId, out var value) ? value : null));
         }
         OnPropertyChanged(nameof(DueText));
+        OnPropertyChanged(nameof(IsEmpty));
+        OnPropertyChanged(nameof(EmptyText));
     }
 
     private void Edit(Enquiry enquiry)

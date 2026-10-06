@@ -48,7 +48,7 @@ public class AreaTests
         Assert.Equal(Enum.GetValues<AppArea>(), Visible(vm));
         Assert.All(vm.Areas, a => Assert.False(a.IsLocked));
         vm.ShowArea(AppArea.Sales);
-        Assert.Equal(new[] { "Dashboard", "Enquiries", "Quotes", "Client", "Designs", "Documents", "Company & quotation" }, TabTitles(vm));
+        Assert.Equal(new[] { "Dashboard", "Enquiries & quotes", "Client", "Designs", "Documents", "Company & quotation" }, TabTitles(vm));
     }
 
     [Fact]
@@ -88,16 +88,16 @@ public class AreaTests
     {
         var vm = Designer(Status(Professional));
         vm.ShowArea(AppArea.Sales);
-        vm.ShowView(AppView.Quotes);
+        vm.ShowView(AppView.Enquiries);
         vm.ShowArea(AppArea.Design);
 
         vm.ShowArea(AppArea.Sales);
 
-        Assert.Equal(AppPage.Quotes, vm.Page);
+        Assert.Equal(AppPage.Enquiries, vm.Page);
         Assert.Equal(AppArea.Sales, vm.Area);
         Assert.Single(vm.Areas, a => a.IsSelected);
         Assert.True(vm.Areas.Single(a => a.Area == AppArea.Sales).IsSelected);
-        Assert.Equal("Quotes", vm.Tabs.Single(t => t.IsSelected).Title);
+        Assert.Equal("Enquiries & quotes", vm.Tabs.Single(t => t.IsSelected).Title);
     }
 
     [Fact]

@@ -41,7 +41,11 @@ public partial class MainViewModel
     {
         Enquiries = new EnquiriesViewModel(() => Store?.Enquiries, CreateQuoteFromEnquiry, OpenQuote, () => Dialogs, () => CurrentUser.DisplayName)
         {
-            Blocked = () => Access.ReadOnlyMessage
+            Blocked = () => Access.ReadOnlyMessage,
+            Quotes = () => Store?.Projects,
+            OpenQuoteId = () => Project.Id,
+            NewQuote = NewQuote,
+            CanUseEnquiries = () => Access.Allows(Features.Enquiries)
         };
         QuotationSetup = new QuotationSetupViewModel(() => Store?.Settings, () => Dialogs, CompanyProfile);
         SalesCharts = new SalesChartsViewModel(() => Store?.Projects, () => Store?.Enquiries);

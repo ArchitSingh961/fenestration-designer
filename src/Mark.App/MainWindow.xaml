@@ -2022,7 +2022,9 @@
                                         <TextBlock Text="Each is made as a PDF from the designs as they were when production started, and opened for printing."
                                                    FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,10" />
                                         <WrapPanel>
-                                            <Button Style="{StaticResource PrimaryButton}" Content="Cutting list" Margin="0,0,8,6" Command="{Binding PaperCommand}" CommandParameter="CuttingList"
+                                            <Button Style="{StaticResource PrimaryButton}" Content="Cutting list + labels" Margin="0,0,8,6" Command="{Binding PaperCommand}" CommandParameter="CuttingListAndLabels"
+                                                    ToolTip="One PDF: the windows, every bar drawn to scale and listed piece by piece, then the piece labels" />
+                                            <Button Style="{StaticResource SecondaryButton}" Content="Cutting list" Margin="0,0,8,6" Command="{Binding PaperCommand}" CommandParameter="CuttingList"
                                                     ToolTip="Profiles and steel, bar by bar, with each piece's label number" />
                                             <Button Style="{StaticResource SecondaryButton}" Content="Glass order" Margin="0,0,8,6" Command="{Binding PaperCommand}" CommandParameter="GlassOrder"
                                                     ToolTip="Glass sizes and quantities for the glass supplier" />
@@ -3864,6 +3866,9 @@
                                 </Button.Visibility>
                             </Button>
                         </StackPanel>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Content="Cutting list &amp; labels" VerticalAlignment="Center"
+                                Command="{Binding CuttingAndLabelsCommand}" Visibility="{Binding Access.CanUseDrawing, Converter={StaticResource BoolToVisibility}}"
+                                ToolTip="One PDF for the workshop: every bar drawn and listed (with this quote's bar lengths), then a label for every piece and pane" />
                         <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Content="Quotation PDF…" VerticalAlignment="Center" Margin="6,0,6,0"
                                 Command="{Binding ExportQuotationCommand}" ToolTip="Make the quotation of this quote as a PDF, with your setup"
                                 Visibility="{Binding Access.CanMakeQuotation, Converter={StaticResource BoolToVisibility}}" />

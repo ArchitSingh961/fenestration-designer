@@ -30,6 +30,7 @@ public static class ProductionPdf
         ProductionSheet.GlassOrder => "Glass order",
         ProductionSheet.HardwarePickList => "Hardware pick list",
         ProductionSheet.ShopDrawings => "Shop drawings",
+        ProductionSheet.CuttingListAndLabels => "Cutting list and labels",
         _ => "Piece labels"
     };
 
@@ -73,11 +74,17 @@ public static class ProductionPdf
         page.HeaderDistance = Unit.FromCentimeter(0.9);
         page.BottomMargin = Unit.FromCentimeter(1.6);
         page.FooterDistance = Unit.FromCentimeter(0.7);
-        AddHeader(section, d, Title(sheet));
+        AddHeader(section, d, sheet == ProductionSheet.CuttingListAndLabels ? Title(ProductionSheet.CuttingList) : Title(sheet));
         AddFooter(section, d);
 
         switch (sheet)
         {
+            case ProductionSheet.CuttingListAndLabels:
+                // One PDF for the workshop: what to make, every bar drawn and listed, then the labels on their own sheets.
+                AddWindows(section, d);
+                AddCuttingList(section, d, drawBars: true);
+                AddLabels(document, d);
+                break;
             case ProductionSheet.CuttingList: AddCuttingList(section, d); break;
             case ProductionSheet.GlassOrder: AddGlassOrder(section, d); break;
             case ProductionSheet.HardwarePickList: AddHardware(section, d); break;
@@ -137,7 +144,88 @@ public static class ProductionPdf
 
     // ── Cutting list ────────────────────────────────────────────────
 
-    private static void AddCuttingList(Section section, ProductionDocument d)
+    /// <summary>The windows the pieces are for: reference, name, size and how many.</summary>
+    private static void AddWindows(Section section, ProductionDocument d)
+    {
+        if (d.Drawings.Count == 0) return;
+        var title = section.AddParagraph("Windows");
+        title.Format.Font.Bold = true;
+        title.Format.Font.Size = 10;
+        title.Format.SpaceAfter = Unit.FromPoint(3);
+        var table = Table(section, new[] { 2.0, 5.0, 3.6, 1.4, 6.0 }, new[] { "Ref.", "Name", "Size", "Qty", "System · location · openings" });
+        foreach (var w in d.Drawings)
+        {
+            var row = table.AddRow();
+            Cell(row.Cells[0], w.Reference, bold: true);
+            Cell(row.Cells[1], w.Name);
+            Cell(row.Cells[2], w.SizeText);
+            Cell(row.Cells[3], w.Quantity.ToString(CultureInfo.InvariantCulture)).Format.Alignment = ParagraphAlignment.Right;
+            Cell(row.Cells[4], w.Details).Format.Font.Size = 7.5;
+        }
+        var total = section.AddParagraph($"{d.Drawings.Sum(w => w.Quantity)} window{(d.Drawings.Sum(w => w.Quantity) == 1 ? "" : "s")} · {d.Labels.Count} label{(d.Labels.Count == 1 ? "" : "s")} after the cutting list");
+        total.Format.Font.Color = Muted;
+        total.Format.SpaceBefore = Unit.FromPoint(3);
+        total.Format.SpaceAfter = Unit.FromPoint(10);
+    }
+
+    private static readonly Color[] PieceShades = { new(0xC9, 0xDB, 0xF2), new(0xA9, 0xC6, 0xEA) };
+    private static readonly Color WasteShade = new(0xE4, 0xE4, 0xE4);
+    private static readonly Color OffcutShade = new(0xCF, 0xEB, 0xD9);
+
+    /// <summary>
+    /// One bar drawn to scale across the page: a box per piece (its label and length) and what is left (offcut to
+    /// stock, or waste), so the cutter sees at a glance how the bar is cut.
+    /// </summary>
+    private static void AddBarDrawing(Section section, CutBar bar)
+    {
+        if (bar.StockLengthMm <= 0 || bar.Pieces.Count == 0) return;
+        var caption = section.AddParagraph();
+        caption.Format.SpaceBefore = Unit.FromPoint(5);
+        caption.Format.SpaceAfter = Unit.FromPoint(1.5);
+        caption.Format.KeepWithNext = true;
+        caption.Format.Font.Size = 7.5;
+        caption.AddFormattedText($"Bar {bar.Number}", TextFormat.Bold);
+        caption.AddText($"   {bar.BarText}" + (bar.LeftoverText.Length > 0 ? $"   ·   {bar.LeftoverText}" : ""));
+
+        // Widths to scale, but never too narrow to read; then fitted to the page.
+        const double minCm = 1.05;
+        var parts = bar.Pieces.Select(p => (Text: $"{p.Label}\n{Mm(p.LengthMm)}", Mm: p.LengthMm, Shade: (Color?)null)).ToList();
+        if (bar.LeftoverMm >= 1)
+            parts.Add((bar.LeftoverIsOffcut ? $"offcut\n{Mm(bar.LeftoverMm)}" : Mm(bar.LeftoverMm), bar.LeftoverMm, bar.LeftoverIsOffcut ? OffcutShade : WasteShade));
+        double scale = ContentWidthCm / bar.StockLengthMm;
+        var widths = parts.Select(p => Math.Max(minCm, p.Mm * scale)).ToList();
+        double sum = widths.Sum();
+        if (sum > ContentWidthCm) widths = widths.Select(w => w * ContentWidthCm / sum).ToList();
+
+        var table = section.AddTable();
+        table.Borders.Width = Unit.FromPoint(0.6);
+        table.Borders.Color = new Color(0x5B, 0x6B, 0x80);
+        table.LeftPadding = table.RightPadding = Unit.FromPoint(1);
+        table.TopPadding = table.BottomPadding = Unit.FromPoint(1);
+        foreach (double w in widths) table.AddColumn(Unit.FromCentimeter(w));
+        var row = table.AddRow();
+        row.Height = Unit.FromCentimeter(0.75);
+        row.HeightRule = RowHeightRule.AtLeast;
+        row.VerticalAlignment = VerticalAlignment.Center;
+        row.KeepWith = 0;
+        for (int i = 0; i < parts.Count; i++)
+        {
+            var cell = row.Cells[i];
+            cell.Shading.Color = parts[i].Shade ?? (bar.IsOffcut ? OffcutShade : PieceShades[i % 2]);
+            var lines = parts[i].Text.Split('\n');
+            var p = cell.AddParagraph();
+            p.Format.Alignment = ParagraphAlignment.Center;
+            p.Format.Font.Size = 6.5;
+            p.AddFormattedText(lines[0], new Font { Bold = parts[i].Shade is null });
+            if (lines.Length > 1)
+            {
+                p.AddLineBreak();
+                p.AddText(lines[1]);
+            }
+        }
+    }
+
+    private static void AddCuttingList(Section section, ProductionDocument d, bool drawBars = false)
     {
         Intro(section, d.CuttingSummary,
             "Cut the bars in order, longest piece first. Stick each piece's label (P…) on it. Offcuts from stock are marked green.");
@@ -166,6 +254,12 @@ public static class ProductionPdf
             heading.AddFormattedText(profile.Name, TextFormat.Bold);
             if (profile.Code.Length > 0) heading.AddText($"  ({profile.Code})");
             heading.AddText($"   —   {profile.StockText}");
+
+            if (drawBars)
+            {
+                foreach (var bar in profile.Bars) AddBarDrawing(section, bar);
+                section.AddParagraph().Format.SpaceAfter = Unit.FromPoint(4);
+            }
 
             var table = Table(section, new[] { 1.2, 3.6, 1.4, 2.0, 2.2, 4.2, 3.4 },
                 new[] { "Bar", "From", "Label", "Length mm", "Angles", "For", "Leftover" });
@@ -323,6 +417,10 @@ public static class ProductionPdf
         page.PageFormat = PageFormat.A4;
         page.LeftMargin = page.RightMargin = Unit.FromCentimeter(0);
         page.TopMargin = page.BottomMargin = Unit.FromCentimeter(0.6);           // 7 rows of 4 cm fit with room to spare
+        // After the cutting list (one PDF) the label sheets have no header or footer of their own: nothing over the labels.
+        section.Headers.Primary.AddParagraph();
+        section.Footers.Primary.AddParagraph();
+        page.HeaderDistance = page.FooterDistance = Unit.FromCentimeter(0);
         if (d.Labels.Count == 0)
         {
             section.AddParagraph("No labels.");

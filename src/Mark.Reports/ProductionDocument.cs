@@ -16,7 +16,10 @@ public enum ProductionSheet
     ShopDrawings,
 
     /// <summary>A label for every profile piece and glass pane, numbered as on the cutting list.</summary>
-    Labels
+    Labels,
+
+    /// <summary>The cutting list (with a drawing of every bar) and then the piece labels, in one PDF.</summary>
+    CuttingListAndLabels
 }
 
 /// <summary>
@@ -65,7 +68,11 @@ public sealed record CutProfile(string Name, string Code, bool IsSteel, string S
 
 /// <param name="BarText">"6000 mm" or "Offcut 1450 mm from stock".</param>
 /// <param name="LeftoverText">"Offcut 820 mm → stock", "Waste 35 mm" or "".</param>
-public sealed record CutBar(int Number, string BarText, bool IsOffcut, IReadOnlyList<CutPiece> Pieces, string LeftoverText);
+/// <param name="StockLengthMm">The bar's length (for its drawing); 0 = not drawn.</param>
+/// <param name="LeftoverMm">What is left of the bar after the cuts.</param>
+/// <param name="LeftoverIsOffcut">The leftover goes to stock as an offcut (else it is waste).</param>
+public sealed record CutBar(int Number, string BarText, bool IsOffcut, IReadOnlyList<CutPiece> Pieces, string LeftoverText,
+    double StockLengthMm = 0, double LeftoverMm = 0, bool LeftoverIsOffcut = false);
 
 /// <param name="Label">The piece's label number, "P12".</param>
 /// <param name="Angles">"45° / 45°".</param>

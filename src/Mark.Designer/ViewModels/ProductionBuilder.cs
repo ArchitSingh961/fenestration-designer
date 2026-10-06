@@ -60,7 +60,8 @@ public static class ProductionBuilder
                 string from = bar.IsOffcut ? $"Offcut {Mm(bar.StockLengthMm)} mm from stock" : $"{Mm(bar.StockLengthMm)} mm bar";
                 string leftover = bar.HasRemnant ? $"Offcut {Mm(bar.RemnantMm)} mm → stock"
                     : bar.RemainingMm > 0 ? $"Waste {Mm(bar.RemainingMm)} mm" : "";
-                bars.Add(new CutBar(bar.Number, from, bar.IsOffcut, pieces, leftover));
+                bars.Add(new CutBar(bar.Number, from, bar.IsOffcut, pieces, leftover, bar.StockLengthMm,
+                    Math.Max(0, bar.HasRemnant ? bar.RemnantMm : bar.RemainingMm), bar.HasRemnant));
             }
             var stockParts = p.Stock.Select(s => $"{s.Quantity} × {Mm(s.StockLengthMm)} mm").ToList();
             string stockText = (stockParts.Count > 0 ? string.Join(", ", stockParts) + " new" : "no new bars")

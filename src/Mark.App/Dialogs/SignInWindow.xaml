@@ -45,7 +45,7 @@
                 <ProgressBar IsIndeterminate="True" Height="3" Margin="0,6,0,0" BorderThickness="0"
                              Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
 
-                <Expander Header="Connection" Margin="0,14,0,0" Foreground="{StaticResource MutedTextBrush}">
+                <Expander Header="Connection" Margin="0,14,0,0" IsExpanded="{Binding ShowConnection}" Foreground="{StaticResource MutedTextBrush}">
                     <StackPanel Margin="0,6,0,0">
                         <TextBlock Text="Licence server address" Style="{StaticResource FormLabel}" />
                         <TextBox Style="{StaticResource FormBox}" Text="{Binding ServerUrl, UpdateSourceTrigger=PropertyChanged}" />

@@ -173,8 +173,9 @@ public partial class App : Application
                 clients[url] = client = new LicenceApiClient(url);
             return client;
         }
+        // A new computer uses the address shipped with MARK (licence-server.txt, from the installer build).
         return new LicenceManager(new FileLicenceStateStore(path, new DpapiProtector()), LicenceVerifier.ForMark(),
-            MachineIdentity.Id(), MachineIdentity.Name, ClientFor)
+            MachineIdentity.Id(), MachineIdentity.Name, ClientFor, defaultServerUrl: LicenceDefaults.ServerUrlIn(AppContext.BaseDirectory))
         {
             AppVersion = typeof(App).Assembly.GetName().Version?.ToString()
         };

@@ -6,6 +6,33 @@ namespace Mark.Licensing.Client;
 public static class LicenceDefaults
 {
     public const string ServerUrl = "http://localhost:5180";
+
+    /// <summary>The file next to MARK.exe with the licence server's address (written by the installer build).</summary>
+    public const string ServerFileName = "licence-server.txt";
+
+    /// <summary>
+    /// The address a new copy of MARK uses: the first line of <see cref="ServerFileName"/> in <paramref name="folder"/>
+    /// that is an http(s) address (lines starting with # are notes), else <see cref="ServerUrl"/>.
+    /// </summary>
+    public static string ServerUrlIn(string folder)
+    {
+        try
+        {
+            string path = Path.Combine(folder, ServerFileName);
+            if (File.Exists(path))
+                foreach (string line in File.ReadAllLines(path))
+                {
+                    string url = line.Trim();
+                    if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                        return url.TrimEnd('/');
+                }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Unreadable: the built-in address.
+        }
+        return ServerUrl;
+    }
 }
 
 /// <summary>

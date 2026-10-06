@@ -66,6 +66,10 @@ public sealed class SignInViewModel : ViewModelBase
 
     public bool HasError => _error is not null;
 
+    private bool _showConnection;
+    /// <summary>The Connection section is open: the server could not be reached, so its address may be wrong.</summary>
+    public bool ShowConnection { get => _showConnection; set => SetProperty(ref _showConnection, value); }
+
     /// <summary>"This computer: DESKTOP-1234" (what the owner sees in the list of computers).</summary>
     public string ComputerText => $"This computer: {_manager.MachineName}";
 
@@ -78,6 +82,11 @@ public sealed class SignInViewModel : ViewModelBase
         try
         {
             Error = await _manager.SignInAsync(ServerUrl, UserId, Password, KeepSignedIn);
+            if (Error is not null && _manager.LastSignInCouldNotConnect)
+            {
+                Error += $" Check the licence server address under Connection ({ServerUrl}): your MARK supplier gives it with your User ID.";
+                ShowConnection = true;
+            }
         }
         finally
         {

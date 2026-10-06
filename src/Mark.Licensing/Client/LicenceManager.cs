@@ -36,8 +36,9 @@ public sealed class LicenceManager
 
     /// <param name="machineId">This computer (see MachineIdentity in MARK).</param>
     /// <param name="apiFor">Creates the server client for an address.</param>
+    /// <param name="defaultServerUrl">The address a computer that never signed in uses (null: <see cref="LicenceDefaults.ServerUrl"/>).</param>
     public LicenceManager(ILicenceStateStore store, LicenceVerifier verifier, string machineId, string machineName,
-        Func<string, ILicenceApi> apiFor, Func<DateTime>? utcNow = null)
+        Func<string, ILicenceApi> apiFor, Func<DateTime>? utcNow = null, string? defaultServerUrl = null)
     {
         _store = store ?? throw new ArgumentNullException(nameof(store));
         _verifier = verifier ?? throw new ArgumentNullException(nameof(verifier));
@@ -45,8 +46,11 @@ public sealed class LicenceManager
         _utcNow = utcNow ?? (() => DateTime.UtcNow);
         MachineId = machineId;
         MachineName = machineName;
-        _state = store.Load() ?? new LicenceState();
+        _state = store.Load() ?? new LicenceState { ServerUrl = defaultServerUrl ?? LicenceDefaults.ServerUrl };
     }
+
+    /// <summary>The last sign-in failed because the server could not be reached (not a wrong password).</summary>
+    public bool LastSignInCouldNotConnect { get; private set; }
 
     public string MachineId { get; }
 
@@ -124,7 +128,9 @@ public sealed class LicenceManager
         }
         catch (LicenceServerException ex) when (ex.IsConnectionFailure)
         {
-            return SignInOffline(userId, password, keepSignedIn) ? null : ex.Message;
+            if (SignInOffline(userId, password, keepSignedIn)) return null;
+            LastSignInCouldNotConnect = true;
+            return ex.Message;
         }
         catch (LicenceServerException ex)
         {

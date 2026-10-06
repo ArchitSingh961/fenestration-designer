@@ -7,7 +7,11 @@
 # 3. Publishes MARK Setup as one self-contained file.
 # The version comes from src\Directory.Build.props (raise it for each release, then publish it in MARK Owner › Updates).
 
-param([string]$Configuration = "Release")
+#   powershell -ExecutionPolicy Bypass -File installer\build.ps1 -ServerUrl https://licence.example.com
+# -ServerUrl: the licence server address your customers' MARK signs in to (written to licence-server.txt next to
+# MARK.exe). Without it, MARK asks for the address under Connection on the sign-in page.
+
+param([string]$Configuration = "Release", [string]$ServerUrl = "")
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path $PSScriptRoot -Parent
@@ -28,6 +32,14 @@ Remove-Item $program, $setupOut -Recurse -Force -ErrorAction SilentlyContinue
 Write-Host "Publishing MARK (self-contained, win-x64)..."
 & $dotnet publish "$root\src\Mark.App\Mark.App.csproj" -c $Configuration -r win-x64 --self-contained true -o $program -v q -nologo
 if ($LASTEXITCODE -ne 0) { throw "Publishing MARK failed." }
+
+if ($ServerUrl) {
+    if ($ServerUrl -notmatch '^https?://') { throw "-ServerUrl must start with http:// or https://" }
+    Set-Content -Path (Join-Path $program "licence-server.txt") -Value $ServerUrl.TrimEnd('/') -Encoding ascii
+    Write-Host "Licence server: $ServerUrl"
+} else {
+    Write-Warning "No -ServerUrl: customers will have to enter the licence server address under Connection."
+}
 
 Write-Host "Packing it into MARK Setup..."
 Remove-Item $payload -Force -ErrorAction SilentlyContinue

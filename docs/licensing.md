@@ -130,3 +130,10 @@ gate it in MARK with `Access.Allows(...)`.
 - Product licences (uPVC / Aluminium) decide which systems of the owner's catalogue a company receives (Milestone 13,
   see catalogue.md); a company needs at least one valid product to work.
 - Staff logins and per-person permissions: done in Milestone 14 (see areas.md).
+
+## The licence server address shipped with MARK
+
+`installer\build.ps1 -ServerUrl https://your-server` writes `licence-server.txt` next to MARK.exe in the installer.
+A computer that never signed in uses that address (`LicenceDefaults.ServerUrlIn`); without the file it is
+`http://localhost:5180` (the server on the same computer). When the server cannot be reached at sign-in, the sign-in
+page opens **Connection** and says to check the address there (the supplier gives it with the User ID).

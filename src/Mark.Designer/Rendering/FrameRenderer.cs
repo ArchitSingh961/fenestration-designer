@@ -130,6 +130,7 @@ public sealed class FrameRenderer
     {
         if (OpeningGeometry.SashOf(frame, glass, _rules) is not { } sash)
         {
+            RenderFixedGlass(context, glass.Boundary.Offset(origin), scale);
             if (glass.HasMesh)
                 RenderMesh(context, glass.Boundary.Offset(origin), scale);
             return;
@@ -142,6 +143,31 @@ public sealed class FrameRenderer
             RenderMesh(context, inner, scale);
         RenderSymbol(context, glass.Opening, inner, scale);
         RenderHandle(context, sash.Handle + origin, sash.Side, scale);
+    }
+
+    /// <summary>
+    /// A fixed pane (glass in the frame, no sash): the drawing convention for glass — two short parallel diagonal strokes
+    /// near the top-left corner — and a small FIXED label at the bottom centre, so it is never mistaken for an opening.
+    /// </summary>
+    private static void RenderFixedGlass(ViewportDrawingContext context, Rectangle2D world, double scale)
+    {
+        var r = ToRect(context, world);
+        if (r.Width < 14 || r.Height < 14) return;
+        var dc = context.DrawingContext;
+        double side = Math.Min(r.Width, r.Height);
+        double length = Math.Clamp(side * 0.16, 6, 46);
+        double gap = Math.Clamp(side * 0.07, 3, 16);
+        var start = new Point(r.Left + Math.Clamp(side * 0.12, 4, 40), r.Top + Math.Clamp(side * 0.12, 4, 40) + length);
+        for (int i = 0; i < 2; i++)
+        {
+            var a = new Point(start.X + i * gap, start.Y + i * gap * 0.35);
+            dc.DrawLine(DesignTheme.FixedGlassPen, a, new Point(a.X + length, a.Y - length));
+        }
+        if (r.Width >= 60 && r.Height >= 70)
+        {
+            var text = context.CreateText("FIXED", DesignTheme.FixedGlassText, Math.Max(7, DesignTheme.FixedGlassFontSize * Math.Clamp(scale, 0.6, 1.4)));
+            context.DrawTextCentered(text, new Point((r.Left + r.Right) / 2, r.Bottom - Math.Max(12, r.Height * 0.1)));
+        }
     }
 
     /// <summary>The sash band: the area between its outer edge and its glass, with both edges outlined.</summary>

@@ -76,3 +76,12 @@ pans, and design changes are refused until the Inside view is shown again.
 ① ② … opening numbers (top-to-bottom, left-to-right) with the glass size under them; **S1, S2…** sashes; **M1…** mesh
 shutters; **F1, F2…** frames (by position in the project); **HH = …** handle heights. Labels are screen-sized and are
 left out when an opening is too small on screen to hold them.
+
+## Fixed panes and mesh on any design
+
+- A fixed pane (glass in the frame, no sash) is drawn with the usual glass mark — two short diagonal strokes at its
+  top left — and a small **FIXED** at the bottom, on the canvas, in the design library thumbnails and in quotation and
+  shop drawings.
+- **Mesh for any design** is the first section of every design category: *Add mesh (keeps the design)* puts an insect
+  mesh on the selected opening (or every opening of the selected frame) without changing how it opens or its divisions;
+  *Remove mesh* takes it off.

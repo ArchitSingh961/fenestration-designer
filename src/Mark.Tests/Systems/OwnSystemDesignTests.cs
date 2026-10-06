@@ -37,7 +37,8 @@ public class OwnSystemDesignTests
 
         Assert.Equal("Sozluk", library.Categories.Last().Name);
         library.SelectedCategory = "Sozluk";
-        var section = library.Sections.Single();
+        Assert.Equal(DesignTemplates.UniversalSection, library.Sections[0].Title);      // mesh for any design first
+        var section = library.Sections.Single(x => x.Title != DesignTemplates.UniversalSection);
         Assert.Equal(system.Name, section.Title);
         Assert.All(section.Items, i => Assert.EndsWith("@SYS-UPVC-62C", i.DragId));
 

@@ -29,6 +29,11 @@ public static class DesignTheme
     public static readonly Brush HandleBrush = Brush(0x3C, 0x43, 0x4B);
     public static readonly Pen MeshPen = Pen(Color.FromArgb(0x8C, 0x55, 0x5D, 0x66), 0.75);
 
+    /// <summary>The glass mark of a fixed pane: two short diagonal "shine" strokes, and the word FIXED.</summary>
+    public static readonly Pen FixedGlassPen = Pen(Color.FromArgb(0xB0, 0x4F, 0x8F, 0xBF), 1.4);
+    public static readonly Brush FixedGlassText = Brush(0x4F, 0x7F, 0xA8);
+    public const double FixedGlassFontSize = 9.5;
+
     /// <summary>Opening-number circles and S/M/F tags.</summary>
     public static readonly Brush TagFill = Brush(0xFF, 0xFF, 0xFF);
     public static readonly Pen TagPen = Pen(Color.FromRgb(0x3C, 0x43, 0x4B), 1.0);

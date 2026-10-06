@@ -144,13 +144,18 @@ public sealed class DesignLibraryViewModel : ViewModelBase
             if (IsFramePanel) return Array.Empty<DesignLibrarySection>();
             if (!_sections.TryGetValue(_selectedCategory, out var sections))
             {
-                sections = _company is not null && _selectedCategory == _company.Name
+                var built = _company is not null && _selectedCategory == _company.Name
                     ? _companyDesigns.Select(d => new DesignLibrarySection(d.System.Name,
                         d.Templates.Select(t => CreateItem(t, d.System)).ToList())).ToList()
                     : DesignTemplates.InCategory(_selectedCategory)
                     .GroupBy(t => t.Section)
                     .Select(g => new DesignLibrarySection(g.Key, g.Select(CreateItem).ToList()))
                     .ToList();
+                // Mesh can go on any design: first in every other category too (the Mesh category has it already).
+                if (_selectedCategory != DesignTemplates.Mesh)
+                    built.Insert(0, new DesignLibrarySection(DesignTemplates.UniversalSection,
+                        DesignTemplates.Universal.Select(CreateItem).ToList()));
+                sections = built;
                 _sections[_selectedCategory] = sections;
             }
             return sections;

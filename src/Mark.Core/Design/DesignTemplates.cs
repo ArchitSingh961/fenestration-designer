@@ -102,6 +102,15 @@ public static class DesignTemplates
     public static IEnumerable<DesignTemplate> InCategory(string category) => All.Where(t => t.Category == category);
 
     /// <summary>
+    /// Designs that only add or remove the insect mesh and keep everything else (openings, divisions): offered in every
+    /// category, so a mesh can be put on any design — a casement, a sliding window, a fixed pane — in one click.
+    /// </summary>
+    public static IReadOnlyList<DesignTemplate> Universal => All.Where(t => t.Id is "mesh-add" or "mesh-remove").ToList();
+
+    /// <summary>The heading of the universal designs in each category.</summary>
+    public const string UniversalSection = "Mesh for any design";
+
+    /// <summary>
     /// The ready-made designs that suit a product system: those whose openings the system's hardware sets cover (a
     /// sliding system gets sliding designs, a casement system casement and tilt &amp; turn ones), or the openable designs
     /// when the system has no hardware sets; a system without a sash only gets fixed designs. At most
@@ -207,8 +216,8 @@ public static class DesignTemplates
 
         // ── Mesh ────────────────────────────────────────────────────
         const string mesh = "Add-on mesh";
-        Add("mesh-add", "Add a mesh shutter (keep the opening)", Mesh, mesh, new TemplateLeaf(null, true));
-        Add("mesh-remove", "Remove the mesh shutter", Mesh, mesh, new TemplateLeaf(null, false));
+        Add("mesh-add", "Add mesh (keeps the design)", Mesh, mesh, new TemplateLeaf(null, true));
+        Add("mesh-remove", "Remove mesh (keeps the design)", Mesh, mesh, new TemplateLeaf(null, false));
         Add("mesh-left", "Mesh shutter hinged left", Mesh, mesh, L(hl, mesh: true));
         Add("mesh-right", "Mesh shutter hinged right", Mesh, mesh, L(hr, mesh: true));
         Add("mesh-sliding", "Sliding mesh pair", Mesh, mesh, Columns(L(sr, true), L(sl, true)));

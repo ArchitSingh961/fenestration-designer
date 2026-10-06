@@ -377,7 +377,7 @@ public sealed class AccountsViewModel : ViewModelBase
 
         var warnings = _warnings = new List<string>();
         if (sellerState.Length == 0)
-            warnings.Add("Your company's state is not known (no GSTIN in Quotation setup, no state in Export and setup), so the tax is IGST.");
+            warnings.Add("Your company's state is not known (no GSTIN in Sales › Company & quotation, no state in Export and setup), so the tax is IGST.");
         if (place.Length == 0) warnings.Add("Choose the place of supply (the client's state).");
         _priceFactor = 1;
         if (order.Value is { } value && price.GrandTotal > 0 && Math.Abs(value - price.GrandTotal) >= 1)

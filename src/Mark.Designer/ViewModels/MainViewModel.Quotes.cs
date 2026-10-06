@@ -75,6 +75,7 @@ public partial class MainViewModel
             if (value == AppPage.Dashboard)
             {
                 Dashboard.Reload();
+                RefreshSetup();
                 SalesCharts.Reload();
             }
             if (value == AppPage.Enquiries) Enquiries.Reload();

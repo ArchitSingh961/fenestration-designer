@@ -48,7 +48,7 @@ public static class AreaCatalog
             new AreaTabInfo(AppView.Client, "Client", Licensing.Features.Quotes),
             new AreaTabInfo(AppView.Designs, "Designs", Licensing.Features.Quotes),
             new AreaTabInfo(AppView.Documents, "Documents", Licensing.Features.Quotes),
-            new AreaTabInfo(AppView.QuotationSetup, "Quotation setup", Licensing.Features.QuotationPdf)
+            new AreaTabInfo(AppView.QuotationSetup, "Company & quotation", Licensing.Features.QuotationPdf)
         }),
         new AreaInfo(AppArea.Design, "Design", "", "Windows and doors drawn to size, with openings and ready-made designs.", new[]
         {

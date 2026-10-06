@@ -48,7 +48,7 @@ public class AreaTests
         Assert.Equal(Enum.GetValues<AppArea>(), Visible(vm));
         Assert.All(vm.Areas, a => Assert.False(a.IsLocked));
         vm.ShowArea(AppArea.Sales);
-        Assert.Equal(new[] { "Dashboard", "Enquiries", "Quotes", "Client", "Designs", "Documents", "Quotation setup" }, TabTitles(vm));
+        Assert.Equal(new[] { "Dashboard", "Enquiries", "Quotes", "Client", "Designs", "Documents", "Company & quotation" }, TabTitles(vm));
     }
 
     [Fact]

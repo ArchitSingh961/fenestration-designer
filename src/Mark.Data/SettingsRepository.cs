@@ -77,6 +77,24 @@ public sealed class SettingsRepository
         SaveText(ProfileHashKey, hash);
     }
 
+    private const string SetupHiddenKey = "setup.hidden";
+
+    /// <summary>The Get started checklist was hidden on the dashboard.</summary>
+    public bool IsSetupHidden() => LoadText(SetupHiddenKey) == "yes";
+
+    public void HideSetup(bool hidden) => SaveText(SetupHiddenKey, hidden ? "yes" : null);
+
+    /// <summary>The company saved its own default pricing (Save as my default).</summary>
+    public bool HasDefaultPricing()
+        => _database.Guard("read the settings", () =>
+        {
+            using var connection = _database.Connect();
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT COUNT(*) FROM app_settings WHERE key = $key";
+            command.Parameters.AddWithValue("$key", PricingKey);
+            return Convert.ToInt64(command.ExecuteScalar()) > 0;
+        });
+
     private string? LoadText(string key)
         => _database.Guard("read the settings", () =>
         {

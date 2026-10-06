@@ -22,7 +22,38 @@ public class NewDesignPanelTests
         var vm = new MainViewModel(Sample);
         vm.NewFrameWidthText = "1200";
         vm.NewFrameHeightText = "1500";
+        vm.NewDesignPanel.StartsNextDesign = false;                  // one design at a time (the run is tested below)
         return vm;
+    }
+
+    [Fact]
+    public void Apply_GoesStraightOnToTheNextDesign_AndDoneEndsTheRun()
+    {
+        var vm = Designer();
+        var panel = vm.NewDesignPanel;
+        panel.StartsNextDesign = true;
+        vm.CreateFrame();
+        panel.Reference = "W1";
+        panel.WidthText = "900";
+        panel.ConfirmCommand.Execute(null);
+
+        // The next one is open at once: the same size, the next ref., to the right of the first.
+        Assert.True(panel.IsOpen);
+        Assert.True(panel.IsStartedNext);
+        Assert.Equal("Done", panel.CloseText);
+        Assert.Equal(2, vm.Project.Frames.Count);
+        var second = vm.Project.Frames[1];
+        Assert.Equal((900d, 1500d), (second.Width, second.Height));
+        Assert.Equal("W2", panel.Reference);
+        Assert.True(second.X > vm.Project.Frames[0].X);
+
+        panel.ConfirmCommand.Execute(null);                                                   // W2 kept, W3 started
+        Assert.Equal(3, vm.Project.Frames.Count);
+
+        panel.CloseCommand.Execute(null);                                                     // Done: W3 goes again
+        Assert.False(panel.IsOpen);
+        Assert.Equal(new[] { "W1", "W2" }, vm.Project.Frames.Select(f => f.Design.Reference));
+        Assert.Equal("Cancel", panel.CloseText);
     }
 
     private static DesignTemplate AllSliding

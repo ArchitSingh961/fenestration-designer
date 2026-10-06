@@ -27,6 +27,8 @@ public sealed record NewDesignType(string? TemplateId, string Name)
 /// panes. The system is not asked: the design decides it (a sliding design goes in the brand's sliding system, a
 /// casement design in its casement system; see <see cref="SystemMatch"/>). Apply sets everything in one undo step;
 /// Cancel keeps the design as it was made. The last brand and glass chosen are offered first the next time.
+/// With "Then start the next design" (on by default) Apply goes straight on to the next design, the same size with the
+/// next ref.; Cancel on a design started that way removes it again, which ends the run.
 /// </summary>
 public sealed class NewDesignViewModel : ViewModelBase
 {
@@ -44,11 +46,36 @@ public sealed class NewDesignViewModel : ViewModelBase
         _library = library;
         _apply = apply;
         ConfirmCommand = new RelayCommand(Confirm);
-        CloseCommand = new RelayCommand(() => IsOpen = false);
+        CloseCommand = new RelayCommand(Close);
     }
 
     public ICommand ConfirmCommand { get; }
     public ICommand CloseCommand { get; }
+
+    /// <summary>Starts the next design after Apply (its size); set by the main view model.</summary>
+    public Action<double, double>? StartNext { get; set; }
+
+    /// <summary>Removes a design that was started by itself and then cancelled; set by the main view model.</summary>
+    public Action<Guid>? DiscardStarted { get; set; }
+
+    private bool _startsNextDesign = true;
+    /// <summary>Apply goes straight on to the next design (remembered while MARK runs).</summary>
+    public bool StartsNextDesign { get => _startsNextDesign; set => SetProperty(ref _startsNextDesign, value); }
+
+    private bool _isStartedNext;
+    /// <summary>This design was started by itself after the previous one: Cancel removes it.</summary>
+    public bool IsStartedNext { get => _isStartedNext; private set => SetProperty(ref _isStartedNext, value); }
+
+    /// <summary>"Cancel" or, for a design started by itself, "Done" (it is removed, ending the run).</summary>
+    public string CloseText => _isStartedNext ? "Done" : "Cancel";
+
+    private void Close()
+    {
+        IsOpen = false;
+        if (_isStartedNext) DiscardStarted?.Invoke(_frameId);
+        IsStartedNext = false;
+        OnPropertyChanged(nameof(CloseText));
+    }
 
     private bool _isOpen;
     public bool IsOpen { get => _isOpen; private set => SetProperty(ref _isOpen, value); }
@@ -162,8 +189,11 @@ public sealed class NewDesignViewModel : ViewModelBase
 
     /// <summary>Asks for the details of a new frame.</summary>
     /// <param name="askBrand">False for a design made in its own system (the brand is not asked).</param>
-    public void Open(Frame frame, bool askBrand = true)
+    /// <param name="startedNext">The design was started by itself after the previous one (Cancel removes it).</param>
+    public void Open(Frame frame, bool askBrand = true, bool startedNext = false)
     {
+        IsStartedNext = startedNext;
+        OnPropertyChanged(nameof(CloseText));
         ArgumentNullException.ThrowIfNull(frame);
         var library = _library();
         _frameId = frame.Id;
@@ -266,6 +296,8 @@ public sealed class NewDesignViewModel : ViewModelBase
         if (AsksBrand) LastBrand = _selectedBrand;
         if (choice.GlassId is not null) LastGlassId = choice.GlassId;
         IsOpen = false;
+        IsStartedNext = false;
+        if (StartsNextDesign) StartNext?.Invoke(width, height);              // straight on to the next one
     }
 
     private static string Format(double mm) => mm.ToString("0.#", CultureInfo.CurrentCulture);

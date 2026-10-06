@@ -5448,15 +5448,17 @@
                                     <Border DockPanel.Dock="Bottom" Padding="18,10,18,18" BorderBrush="#EEF0F3" BorderThickness="0,1,0,0">
                                         <StackPanel>
                                             <TextBlock Text="{Binding Message}" Foreground="{StaticResource ErrorBrush}" TextWrapping="Wrap" Margin="0,0,0,8" />
+                                            <CheckBox Content="Then start the next design" IsChecked="{Binding StartsNextDesign}" Margin="0,0,0,10"
+                                                      ToolTip="After Apply, a new design of the same size with the next ref. opens at once" />
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*" />
                                                     <ColumnDefinition Width="10" />
                                                     <ColumnDefinition Width="*" />
                                                 </Grid.ColumnDefinitions>
-                                                <Button Style="{StaticResource SecondaryButton}" Content="Cancel" Margin="0" Padding="12,9"
+                                                <Button Style="{StaticResource SecondaryButton}" Content="{Binding CloseText}" Margin="0" Padding="12,9"
                                                         Command="{Binding CloseCommand}" IsCancel="{Binding IsOpen}"
-                                                        ToolTip="Keep the design as it was made; it can be changed in the properties" />
+                                                        ToolTip="Cancel: keep the design as it was made. Done: remove this new design and stop making more." />
                                                 <Button Grid.Column="2" Style="{StaticResource PrimaryButton}" Content="Apply" Margin="0" Padding="12,9"
                                                         Command="{Binding ConfirmCommand}" IsDefault="{Binding IsOpen}" />
                                             </Grid>

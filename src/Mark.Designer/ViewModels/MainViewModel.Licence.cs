@@ -121,7 +121,38 @@ public partial class MainViewModel
     }
 
     /// <summary>The New design panel: reference, quantity, location, brand and glass of a design just made.</summary>
-    public NewDesignViewModel NewDesignPanel => _newDesignPanel ??= new NewDesignViewModel(() => Library, SetUpNewDesign);
+    public NewDesignViewModel NewDesignPanel => _newDesignPanel ??= new NewDesignViewModel(() => Library, SetUpNewDesign)
+    {
+        StartNext = StartNextDesign,
+        DiscardStarted = DiscardStartedDesign
+    };
+
+    // The undo count just after a design was started by itself: if nothing else happened, Cancel undoes it cleanly.
+    private int _startedNextUndoCount = -1;
+
+    /// <summary>After a design is applied: a new one of the same size, to the right, with the next ref., asked at once.</summary>
+    private void StartNextDesign(double width, double height)
+    {
+        if (IsOutsideView || !Access.CanUseDrawing || Access.ReadOnlyMessage is not null) return;
+        double x = Project.Frames.Count == 0 ? 0 : Project.Frames.Max(f => f.X + f.Width) + Rules.FrameSpacingMm;
+        if (Run(() => Core.Commands.CreateFrameCommand.Create(Project, x, 0, width, height, Rules)) is not { } command) return;
+        _startedNextUndoCount = CommandHistory.UndoCount;
+        Select(command.Frame.Id);
+        Canvas.FitToContent();
+        NewDesignPanel.Open(command.Frame, startedNext: true);
+        ShowNotice($"{NewDesignPanel.Reference}: the next design. Done (or Esc) when there are no more.");
+    }
+
+    /// <summary>A design started by itself was cancelled: it goes again (undone if nothing else happened since).</summary>
+    private void DiscardStartedDesign(Guid frameId)
+    {
+        if (Project.Frames.FirstOrDefault(f => f.Id == frameId) is not { } frame) return;
+        if (CommandHistory.UndoCount == _startedNextUndoCount) Undo();
+        else RunForMessage(() => new DeleteFrameCommand(Project, frame));
+        _startedNextUndoCount = -1;
+        Notice = null;
+        Canvas.FitToContent();
+    }
 
     private NewDesignViewModel? _newDesignPanel;
 

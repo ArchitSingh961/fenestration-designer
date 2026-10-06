@@ -115,7 +115,7 @@ public sealed record DesignPriceRow(string Reference, int Quantity, string Mater
 /// one undoable step. "Save as my default" makes it the starting point of every new quote; "Use my default" loads that
 /// into the form. Product prices themselves are in the library (Library Manager).
 /// </summary>
-public sealed class PricingViewModel : ViewModelBase
+public sealed partial class PricingViewModel : ViewModelBase
 {
     private readonly Func<Project> _project;
     private readonly Func<CalculationResult> _calculation;
@@ -307,6 +307,7 @@ public sealed class PricingViewModel : ViewModelBase
         foreach (var head in pricing.Heads) Heads.Add(Row(head, Heads));
         foreach (var charge in pricing.Charges) Charges.Add(Row(charge, Charges));
         _loading = false;
+        LoadRates(pricing);
 
         _loadedState = PricingSerializer.Serialize(_project().Pricing);
         HasChanges = PricingSerializer.Serialize(pricing) != _loadedState;
@@ -324,7 +325,10 @@ public sealed class PricingViewModel : ViewModelBase
         if (PricingSerializer.Serialize(_project().Pricing) != _loadedState)
             Load(_project().Pricing);
         else
+        {
+            BuildRows();                                         // the designs may use other items now
             RefreshPreview();
+        }
     }
 
     /// <summary>The form as a price structure, or an error message.</summary>
@@ -360,6 +364,7 @@ public sealed class PricingViewModel : ViewModelBase
             if (error is not null) return (null, error);
             pricing.Charges.Add(head!);
         }
+        if (BuildRates(pricing) is { } rateError) return (null, rateError);
         return PricingEditor.Validate(pricing) is { } invalid ? (null, invalid) : (pricing, null);
     }
 
@@ -374,7 +379,7 @@ public sealed class PricingViewModel : ViewModelBase
             : "";
 
         var project = _project();
-        var calculation = _calculation();
+        var calculation = formPricing is null ? _calculation() : PreviewCalculation(formPricing);
         var price = PricingEngine.Price(project, calculation, pricing);
         string currency = price.Currency;
 

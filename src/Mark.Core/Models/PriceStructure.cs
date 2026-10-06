@@ -162,8 +162,44 @@ public sealed class PriceStructure
 
     private PriceRates _rates = new();
 
+    private Dictionary<string, decimal> _itemRates = new();
+    /// <summary>
+    /// This quote's own rates of library items, in place of the library's price (Pricing › Profile rate, Glass rate,
+    /// Hardware rate …): a profile per metre, glass per m², hardware and accessories per unit. Keyed by
+    /// <c>Mark.Core.Library.RateKey</c>; an item without one is priced from the library.
+    /// </summary>
+    public Dictionary<string, decimal> ItemRates
+    {
+        get => _itemRates;
+        set => _itemRates = value ?? new();
+    }
+
+    private Dictionary<string, decimal> _meshRates = new();
+    /// <summary>
+    /// Insect mesh per m² by mesh type (the design's mesh type, e.g. "SS Flymesh"); a design whose type has no rate
+    /// here uses <see cref="PriceRates.MeshPerSquareMetre"/>.
+    /// </summary>
+    public Dictionary<string, decimal> MeshRates
+    {
+        get => _meshRates;
+        set => _meshRates = value ?? new();
+    }
+
+    /// <summary>The mesh rate per m² for a design with this mesh type.</summary>
+    public decimal MeshRateFor(string? meshType)
+    {
+        string type = (meshType ?? "").Trim();
+        if (type.Length > 0)
+            foreach (var (name, rate) in MeshRates)
+                if (string.Equals(name.Trim(), type, StringComparison.OrdinalIgnoreCase))
+                    return rate;
+        return Rates.MeshPerSquareMetre;
+    }
+
     public PriceStructure Copy() => new()
     {
+        ItemRates = new Dictionary<string, decimal>(ItemRates),
+        MeshRates = new Dictionary<string, decimal>(MeshRates),
         Name = Name,
         Heads = Heads.Select(h => h.Copy()).ToList(),
         DiscountPercent = DiscountPercent,

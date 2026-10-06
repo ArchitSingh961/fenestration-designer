@@ -25,7 +25,22 @@ public partial class MainViewModel
             pricing => RunForMessage(() => new SetPricingCommand(Project, pricing)),
             () => Store is null ? null : DefaultPricing(),
             SaveDefaultPricing,
-            OpenLibraryManager);
+            OpenLibraryManager)
+        {
+            LibrarySource = () => Library,
+            CalculateWith = library => new CalculationEngine().Calculate(Project, library, Calculation.Rules),
+            SetDesignExtraCost = SetDesignExtraCost
+        };
+    }
+
+    /// <summary>A design's extra cost per window (Pricing › Design add-on cost heads): one undo step.</summary>
+    private string? SetDesignExtraCost(Guid frameId, decimal amount)
+    {
+        if (Project.Frames.FirstOrDefault(f => f.Id == frameId) is not { } frame) return "The design no longer exists.";
+        if (frame.Design.ExtraCost == amount) return null;
+        var info = frame.Design.Copy();
+        info.ExtraCost = amount;
+        return RunForMessage(() => new SetDesignInfoCommand(frame, info));
     }
 
     /// <summary>Forgets the cached price; called whenever the design, the pricing or the library changes.</summary>

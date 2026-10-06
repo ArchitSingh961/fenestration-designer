@@ -79,3 +79,25 @@ default. Every number is yours to change.
   get the shipped "55mm Casement Sash" and "30mm Mesh Shutter" once when MARK starts.
 - **Quantities**: calculation lines stay per window, but the bill of materials, cut list (and so the cutting plan),
   total cost and weight now include every window of every design.
+
+## The Pricing tab's pages and the quote's own rates
+
+The Pricing tab has a list of pages on the left:
+
+- **Project price structure**: the cost heads, discount, tax and charges (as above).
+- **Profile rate**, **Reinforcement rate**, **Hardware rate**, **Accessory rate**, **Glass rate**: the library items
+  this quote's designs use, each with the library's price and the rate this quote uses. Typing a rate gives the quote its
+  own (highlighted, "this quote"); **Use library rates** puts the ticked rows (or all rows) back on the library's price.
+  The per-sash hardware rates and the flat reinforcement rate are on the Hardware and Reinforcement pages.
+- **Mesh rate**: a rate per m² for each mesh type the designs use (Design properties › Mesh type), and the rate for
+  any other mesh.
+- **Design add-on cost heads**: each design's extra cost per window (the Extra cost line of its cost sheet). This
+  changes the design at once (one undo step).
+
+The rates are part of the form like the rest of the tab: the price summary previews them, and **Apply to this quote**
+(or leaving the tab, or Save) puts them in the quote. They are stored in `PriceStructure.ItemRates` (keys from
+`RateKey`: `profile:ID`, `glass:ID`, `material:ID`) and `PriceStructure.MeshRates` (by mesh type), saved with the quote.
+The calculation engine prices with `RatedLibrary.For(library, project.Pricing)`: the library's products with the quote's
+rates in place of their prices, so the bill of materials, the cost sheet, the quotation and the invoice all use them.
+The library itself (and purchasing, which buys at the library's price) does not change. An item without a rate of its
+own follows the library's price.

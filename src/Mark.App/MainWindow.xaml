@@ -4246,17 +4246,88 @@
                     <Grid DataContext="{Binding Pricing}"
                           Visibility="{Binding DataContext.Section, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=Pricing}">
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="215" />
                             <ColumnDefinition Width="3*" />
                             <ColumnDefinition Width="2*" MinWidth="330" />
                         </Grid.ColumnDefinitions>
 
                         <!-- Not in the package: the price structure is locked (the quote keeps the default pricing). -->
-                        <Border Grid.ColumnSpan="2" Panel.ZIndex="10" Background="{StaticResource PageBackgroundBrush}"
+                        <Border Grid.ColumnSpan="3" Panel.ZIndex="10" Background="{StaticResource PageBackgroundBrush}"
                                 Visibility="{Binding DataContext.Access.CanUsePriceStructure, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBoolToVisibility}}">
                             <ContentControl Style="{StaticResource LockNotice}" MaxWidth="520" Margin="24" VerticalAlignment="Top"
                                             Content="{Binding DataContext.Access.PriceStructureLock, RelativeSource={RelativeSource AncestorType=Window}}" />
                         </Border>
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                        <!-- The pages of the Pricing tab -->
+                        <Border Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0">
+                            <ListBox ItemsSource="{x:Static vm:PricingViewModel.Pages}" SelectedValuePath="Page" SelectedValue="{Binding Page}"
+                                     BorderThickness="0" Background="Transparent" Margin="0,8,0,0" AutomationProperties.Name="Pricing pages"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Cursor" Value="Hand" />
+                                        <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                                        <Setter Property="AutomationProperties.Name" Value="{Binding Title}" />
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="ListBoxItem">
+                                                    <Border x:Name="Bd" Background="Transparent" Padding="18,12">
+                                                        <ContentPresenter />
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="Bd" Property="Background" Value="#F2F6FC" />
+                                                        </Trigger>
+                                                        <Trigger Property="IsSelected" Value="True">
+                                                            <Setter TargetName="Bd" Property="Background" Value="#EAF2FB" />
+                                                            <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <DockPanel>
+                                            <TextBlock Text="{Binding Glyph}" FontFamily="Segoe MDL2 Assets" FontSize="17" Margin="0,0,12,0" VerticalAlignment="Center"
+                                                       Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
+                                            <TextBlock Text="{Binding Title}" FontSize="14" VerticalAlignment="Center" TextWrapping="Wrap"
+                                                       Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Border>
+
+                        <DockPanel Grid.Column="1">
+                            <!-- Apply: for every page (leaving the tab or Save applies too) -->
+                            <StackPanel DockPanel.Dock="Bottom" Margin="24,0,12,16">
+                            <StackPanel Orientation="Horizontal">
+                                    <Button Style="{StaticResource PrimaryButton}" Margin="0,0,8,0" Content="Apply to this quote" Command="{Binding ApplyCommand}" />
+                                    <Button Style="{StaticResource SecondaryButton}" Content="Discard changes" Command="{Binding RevertCommand}"
+                                            IsEnabled="{Binding HasChanges}" />
+                                    <TextBlock Text="Not applied to the quote yet" VerticalAlignment="Center" Margin="12,0,0,0"
+                                               Foreground="{StaticResource MutedTextBrush}"
+                                               Visibility="{Binding HasChanges, Converter={StaticResource BoolToVisibility}}" />
+                                </StackPanel>
+                                <Border Margin="0,10,0,0" Padding="10" Visibility="{Binding HasMessage, Converter={StaticResource BoolToVisibility}}">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="#E8F5EC" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding MessageIsError}" Value="True">
+                                                    <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" />
+                                </Border>
+                            </StackPanel>
+                            <Grid>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False"
+                                      Visibility="{Binding IsStructurePage, Converter={StaticResource BoolToVisibility}}">
                             <StackPanel Margin="24,16,12,24">
                                 <Border Style="{StaticResource Card}" Padding="18,14" Margin="0,0,0,12">
                                     <DockPanel>
@@ -4354,65 +4425,6 @@
 
                                 <Border Style="{StaticResource Card}" Padding="18,14" Margin="0,0,0,12">
                                     <StackPanel>
-                                        <TextBlock Text="Rates" Style="{StaticResource CardTitle}" />
-                                        <TextBlock Text="Hardware per sash, by opening type (only where the library has no hardware set for that opening: a set is priced with the materials instead); insect mesh per m²; steel reinforcement per metre of profile (uPVC)."
-                                                   FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,8" TextWrapping="Wrap" />
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="110" />
-                                                <ColumnDefinition Width="90" />
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="110" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                            </Grid.RowDefinitions>
-                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Casement" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
-                                            <TextBox Grid.Row="0" Grid.Column="1" Margin="6,2" Padding="4,3" TextAlignment="Right"
-                                                     Text="{Binding CasementText, UpdateSourceTrigger=PropertyChanged}" />
-                                            <TextBlock Grid.Row="0" Grid.Column="2" Text="per sash" FontSize="11" VerticalAlignment="Center"
-                                                       Foreground="{StaticResource MutedTextBrush}" />
-                                            <TextBlock Grid.Row="0" Grid.Column="3" Text="Top / bottom hung" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
-                                            <TextBox Grid.Row="0" Grid.Column="4" Margin="6,2" Padding="4,3" TextAlignment="Right"
-                                                     Text="{Binding HungText, UpdateSourceTrigger=PropertyChanged}" />
-                                            <TextBlock Grid.Row="0" Grid.Column="5" Text="per sash" FontSize="11" VerticalAlignment="Center"
-                                                       Foreground="{StaticResource MutedTextBrush}" />
-                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Tilt &amp; turn" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
-                                            <TextBox Grid.Row="1" Grid.Column="1" Margin="6,2" Padding="4,3" TextAlignment="Right"
-                                                     Text="{Binding TiltTurnText, UpdateSourceTrigger=PropertyChanged}" />
-                                            <TextBlock Grid.Row="1" Grid.Column="2" Text="per sash" FontSize="11" VerticalAlignment="Center"
-                                                       Foreground="{StaticResource MutedTextBrush}" />
-                                            <TextBlock Grid.Row="1" Grid.Column="3" Text="Pivot" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
-                                            <TextBox Grid.Row="1" Grid.Column="4" Margin="6,2" Padding="4,3" TextAlignment="Right"
-                                                     Text="{Binding PivotText, UpdateSourceTrigger=PropertyChanged}" />
-                                            <TextBlock Grid.Row="1" Grid.Column="5" Text="per sash" FontSize="11" VerticalAlignment="Center"
-                                                       Foreground="{StaticResource MutedTextBrush}" />
-                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Sliding" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
-                                            <TextBox Grid.Row="2" Grid.Column="1" Margin="6,2" Padding="4,3" TextAlignment="Right"
-                                                     Text="{Binding SlidingText, UpdateSourceTrigger=PropertyChanged}" />
-                                            <TextBlock Grid.Row="2" Grid.Column="2" Text="per panel" FontSize="11" VerticalAlignment="Center"
-                                                       Foreground="{StaticResource MutedTextBrush}" />
-                                            <TextBlock Grid.Row="2" Grid.Column="3" Text="Insect mesh" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
-                                            <TextBox Grid.Row="2" Grid.Column="4" Margin="6,2" Padding="4,3" TextAlignment="Right"
-                                                     Text="{Binding MeshText, UpdateSourceTrigger=PropertyChanged}" />
-                                            <TextBlock Grid.Row="2" Grid.Column="5" Text="per m²" FontSize="11" VerticalAlignment="Center"
-                                                       Foreground="{StaticResource MutedTextBrush}" />
-                                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Reinforcement" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
-                                            <TextBox Grid.Row="3" Grid.Column="1" Margin="6,2" Padding="4,3" TextAlignment="Right"
-                                                     Text="{Binding ReinforcementText, UpdateSourceTrigger=PropertyChanged}" />
-                                            <TextBlock Grid.Row="3" Grid.Column="2" Text="per m" FontSize="11" VerticalAlignment="Center"
-                                                       Foreground="{StaticResource MutedTextBrush}" />
-                                        </Grid>
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Style="{StaticResource Card}" Padding="18,14" Margin="0,0,0,12">
-                                    <StackPanel>
                                         <TextBlock Text="Discount and tax" Style="{StaticResource CardTitle}" />
                                         <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                                             <TextBlock Text="Discount" Style="{StaticResource FormLabel}" VerticalAlignment="Center" />
@@ -4484,31 +4496,224 @@
                                     </StackPanel>
                                 </Border>
 
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Style="{StaticResource PrimaryButton}" Margin="0,0,8,0" Content="Apply to this quote" Command="{Binding ApplyCommand}" />
-                                    <Button Style="{StaticResource SecondaryButton}" Content="Discard changes" Command="{Binding RevertCommand}"
-                                            IsEnabled="{Binding HasChanges}" />
-                                    <TextBlock Text="Unsaved changes in this form" VerticalAlignment="Center" Margin="12,0,0,0"
-                                               Foreground="{StaticResource MutedTextBrush}"
-                                               Visibility="{Binding HasChanges, Converter={StaticResource BoolToVisibility}}" />
-                                </StackPanel>
-                                <Border Margin="0,10,0,0" Padding="10" Visibility="{Binding HasMessage, Converter={StaticResource BoolToVisibility}}">
-                                    <Border.Style>
-                                        <Style TargetType="Border">
-                                            <Setter Property="Background" Value="#E8F5EC" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding MessageIsError}" Value="True">
-                                                    <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Border.Style>
-                                    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" />
-                                </Border>
                             </StackPanel>
                         </ScrollViewer>
+                            <!-- Profile, reinforcement, hardware, accessory, glass and mesh rates: the items the designs use -->
+                            <DockPanel Margin="24,16,12,12"
+                                       Visibility="{Binding IsStructurePage, Converter={StaticResource InverseBoolToVisibility}}">
+                                <TextBlock DockPanel.Dock="Top" Text="{Binding PageTitle}" Style="{StaticResource PageTitle}" Margin="0,0,0,4" />
+                                <TextBlock DockPanel.Dock="Top" Text="{Binding PageHelp}" TextWrapping="Wrap" FontSize="11"
+                                           Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,10" />
+                                <Border DockPanel.Dock="Bottom" Style="{StaticResource Card}" Padding="18,14" Margin="0,12,0,0"
+                                        Visibility="{Binding Page, Converter={StaticResource EnumToVisibility}, ConverterParameter=HardwareRate}">
+                                    <StackPanel>
+                                        <TextBlock Text="Hardware without a set in the library" Style="{StaticResource CardTitle}" />
+                                        <TextBlock Text="Per sash, by opening type: used for openings that have no hardware set in the library (a set is priced above)."
+                                                   FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,6" TextWrapping="Wrap" />
+                                        <WrapPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,4,18,0">
+                                            <TextBlock Text="Casement" Width="118" VerticalAlignment="Center" Foreground="{StaticResource TextBrush}" />
+                                            <TextBox Width="90" Padding="4,3" TextAlignment="Right" AutomationProperties.Name="Casement"
+                                                     Text="{Binding CasementText, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBlock Text="per sash" Margin="8,0,0,0" FontSize="11" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" />
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,4,18,0">
+                                            <TextBlock Text="Top / bottom hung" Width="118" VerticalAlignment="Center" Foreground="{StaticResource TextBrush}" />
+                                            <TextBox Width="90" Padding="4,3" TextAlignment="Right" AutomationProperties.Name="Top / bottom hung"
+                                                     Text="{Binding HungText, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBlock Text="per sash" Margin="8,0,0,0" FontSize="11" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" />
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,4,18,0">
+                                            <TextBlock Text="Tilt &amp; turn" Width="118" VerticalAlignment="Center" Foreground="{StaticResource TextBrush}" />
+                                            <TextBox Width="90" Padding="4,3" TextAlignment="Right" AutomationProperties.Name="Tilt &amp; turn"
+                                                     Text="{Binding TiltTurnText, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBlock Text="per sash" Margin="8,0,0,0" FontSize="11" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" />
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,4,18,0">
+                                            <TextBlock Text="Pivot" Width="118" VerticalAlignment="Center" Foreground="{StaticResource TextBrush}" />
+                                            <TextBox Width="90" Padding="4,3" TextAlignment="Right" AutomationProperties.Name="Pivot"
+                                                     Text="{Binding PivotText, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBlock Text="per sash" Margin="8,0,0,0" FontSize="11" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" />
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,4,18,0">
+                                            <TextBlock Text="Sliding" Width="118" VerticalAlignment="Center" Foreground="{StaticResource TextBrush}" />
+                                            <TextBox Width="90" Padding="4,3" TextAlignment="Right" AutomationProperties.Name="Sliding"
+                                                     Text="{Binding SlidingText, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBlock Text="per panel" Margin="8,0,0,0" FontSize="11" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" />
+                                        </StackPanel>
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
+                                <Border DockPanel.Dock="Bottom" Style="{StaticResource Card}" Padding="18,14" Margin="0,12,0,0"
+                                        Visibility="{Binding Page, Converter={StaticResource EnumToVisibility}, ConverterParameter=MeshRate}">
+                                    <StackPanel>
+                                        <TextBlock Text="Any other mesh" Style="{StaticResource CardTitle}" />
+                                        <TextBlock Text="For designs whose mesh type has no rate of its own above (or no mesh type)."
+                                                   FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,6" TextWrapping="Wrap" />
+                                        <StackPanel Orientation="Horizontal" Margin="0,4,18,0">
+                                            <TextBlock Text="Insect mesh" Width="118" VerticalAlignment="Center" Foreground="{StaticResource TextBrush}" />
+                                            <TextBox Width="90" Padding="4,3" TextAlignment="Right" AutomationProperties.Name="Insect mesh"
+                                                     Text="{Binding MeshText, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBlock Text="per m²" Margin="8,0,0,0" FontSize="11" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                                <Border DockPanel.Dock="Bottom" Style="{StaticResource Card}" Padding="18,14" Margin="0,12,0,0"
+                                        Visibility="{Binding Page, Converter={StaticResource EnumToVisibility}, ConverterParameter=ReinforcementRate}">
+                                    <StackPanel>
+                                        <TextBlock Text="Reinforcement not in the library" Style="{StaticResource CardTitle}" />
+                                        <TextBlock Text="Per metre of profile, for designs whose profiles list no reinforcement (uPVC); 0 for aluminium."
+                                                   FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,6" TextWrapping="Wrap" />
+                                        <StackPanel Orientation="Horizontal" Margin="0,4,18,0">
+                                            <TextBlock Text="Reinforcement" Width="118" VerticalAlignment="Center" Foreground="{StaticResource TextBrush}" />
+                                            <TextBox Width="90" Padding="4,3" TextAlignment="Right" AutomationProperties.Name="Reinforcement"
+                                                     Text="{Binding ReinforcementText, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBlock Text="per m" Margin="8,0,0,0" FontSize="11" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
 
-                        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Focusable="False">
+                                <Grid>
+                                <!-- Design add-on cost heads: each design's extra cost per window -->
+                                <Border Style="{StaticResource Card}" Padding="0"
+                                        Visibility="{Binding IsDesignAddOnPage, Converter={StaticResource BoolToVisibility}}">
+                                    <DockPanel>
+                                        <Grid DockPanel.Dock="Top" Background="#E9ECF1">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="80" />
+                                                <ColumnDefinition Width="*" MinWidth="120" />
+                                                <ColumnDefinition Width="130" />
+                                                <ColumnDefinition Width="44" />
+                                                <ColumnDefinition Width="130" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="Ref." FontWeight="SemiBold" Margin="14,9" />
+                                            <TextBlock Grid.Column="1" Text="Name" FontWeight="SemiBold" Margin="6,9" />
+                                            <TextBlock Grid.Column="2" Text="Size" FontWeight="SemiBold" Margin="6,9" />
+                                            <TextBlock Grid.Column="3" Text="Qty" FontWeight="SemiBold" Margin="6,9" />
+                                            <TextBlock Grid.Column="4" Text="Extra cost / window" FontWeight="SemiBold" Margin="6,9" />
+                                        </Grid>
+                                        <TextBlock DockPanel.Dock="Top" Text="No designs in this quote yet." Margin="14,12" Foreground="{StaticResource MutedTextBrush}"
+                                                   Visibility="{Binding DesignAddOns.Count, Converter={StaticResource CountToCollapsed}}" />
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                                            <views:ItemsList ItemsSource="{Binding DesignAddOns}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="80" />
+                                                                    <ColumnDefinition Width="*" MinWidth="120" />
+                                                                    <ColumnDefinition Width="130" />
+                                                                    <ColumnDefinition Width="44" />
+                                                                    <ColumnDefinition Width="130" />
+                                                                </Grid.ColumnDefinitions>
+                                                                <TextBlock Text="{Binding Reference}" FontWeight="SemiBold" Margin="14,9" VerticalAlignment="Center" />
+                                                                <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="6,9" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                                                <TextBlock Grid.Column="2" Text="{Binding Size}" Margin="6,9" VerticalAlignment="Center" />
+                                                                <TextBlock Grid.Column="3" Text="{Binding Quantity}" Margin="6,9" VerticalAlignment="Center" />
+                                                                <TextBox Grid.Column="4" Margin="6,5,14,5" Padding="6,4" TextAlignment="Right"
+                                                                         AutomationProperties.Name="{Binding Reference, StringFormat=Extra cost of {0}}"
+                                                                         Text="{Binding ExtraCostText, UpdateSourceTrigger=LostFocus}"
+                                                                         ToolTip="Changes the design when you leave the box (Tab)" />
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </views:ItemsList>
+                                        </ScrollViewer>
+                                    </DockPanel>
+                                </Border>
+
+                                <!-- The items and their rates -->
+                                <Border Style="{StaticResource Card}" Padding="0"
+                                        Visibility="{Binding IsDesignAddOnPage, Converter={StaticResource InverseBoolToVisibility}}">
+                                    <DockPanel>
+                                        <Border DockPanel.Dock="Top" Background="#E9ECF1" Padding="12,10" CornerRadius="6,6,0,0">
+                                            <DockPanel>
+                                                <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Content="Use library rates"
+                                                        Command="{Binding UseLibraryRatesCommand}"
+                                                        ToolTip="The ticked rows (or every row, if none is ticked) go back to the library's price" />
+                                                <Grid Width="260" HorizontalAlignment="Left">
+                                                    <TextBox Padding="26,6,6,6" Text="{Binding RateSearch, UpdateSourceTrigger=PropertyChanged}"
+                                                             AutomationProperties.Name="Search the rates" />
+                                                    <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" Margin="9,0,0,0" VerticalAlignment="Center"
+                                                               Foreground="{StaticResource MutedTextBrush}" IsHitTestVisible="False" />
+                                                </Grid>
+                                            </DockPanel>
+                                        </Border>
+                                        <Grid DockPanel.Dock="Top">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="40" />
+                                                <ColumnDefinition Width="96" />
+                                                <ColumnDefinition Width="*" MinWidth="110" />
+                                                <ColumnDefinition Width="66" />
+                                                <ColumnDefinition Width="84" />
+                                                <ColumnDefinition Width="112" />
+                                            </Grid.ColumnDefinitions>
+                                            <Button Style="{StaticResource RowButton}" Command="{Binding SelectAllRatesCommand}" Margin="12,8,0,8"
+                                                    ToolTip="Tick every row (or none)" AutomationProperties.Name="Tick every row">
+                                                <TextBlock Text="&#xE73A;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource MutedTextBrush}" />
+                                            </Button>
+                                            <TextBlock Grid.Column="1" Text="Code" FontWeight="SemiBold" Margin="6,9" />
+                                            <TextBlock Grid.Column="2" Text="Item name" FontWeight="SemiBold" Margin="6,9" />
+                                            <TextBlock Grid.Column="3" Text="Unit" FontWeight="SemiBold" Margin="6,9" />
+                                            <TextBlock Grid.Column="4" Text="Library rate" FontWeight="SemiBold" Margin="6,9" TextAlignment="Right" />
+                                            <TextBlock Grid.Column="5" Text="This quote" FontWeight="SemiBold" Margin="6,9,14,9" />
+                                        </Grid>
+                                        <TextBlock DockPanel.Dock="Top" Text="{Binding NoRowsText}" Margin="14,12" Foreground="{StaticResource MutedTextBrush}"
+                                                   Visibility="{Binding HasNoRows, Converter={StaticResource BoolToVisibility}}" />
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                                            <views:ItemsList ItemsSource="{Binding RateRows}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0">
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="40" />
+                                                                    <ColumnDefinition Width="96" />
+                                                                    <ColumnDefinition Width="*" MinWidth="110" />
+                                                                    <ColumnDefinition Width="66" />
+                                                                    <ColumnDefinition Width="84" />
+                                                                    <ColumnDefinition Width="112" />
+                                                                </Grid.ColumnDefinitions>
+                                                                <CheckBox IsChecked="{Binding IsSelected}" Margin="14,0,0,0" VerticalAlignment="Center"
+                                                                          AutomationProperties.Name="{Binding Name}" />
+                                                                <TextBlock Grid.Column="1" Text="{Binding Code}" Margin="6,9" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                                                <TextBlock Grid.Column="2" Text="{Binding Name}" Margin="6,9" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                                                <TextBlock Grid.Column="3" Text="{Binding Unit}" Margin="6,9" VerticalAlignment="Center"
+                                                                           Foreground="{StaticResource MutedTextBrush}" />
+                                                                <TextBlock Grid.Column="4" Text="{Binding LibraryRateText}" Margin="6,9" VerticalAlignment="Center"
+                                                                           TextAlignment="Right" Foreground="{StaticResource MutedTextBrush}" />
+                                                                <StackPanel Grid.Column="5" Margin="6,5,14,5">
+                                                                    <TextBox Padding="6,4" TextAlignment="Right" AutomationProperties.Name="{Binding Name, StringFormat=Rate of {0}}"
+                                                                             Text="{Binding RateText, UpdateSourceTrigger=PropertyChanged}">
+                                                                        <TextBox.Style>
+                                                                            <Style TargetType="TextBox">
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding IsOwnRate}" Value="True">
+                                                                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                                                                        <Setter Property="Background" Value="#FFF8E6" />
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </TextBox.Style>
+                                                                    </TextBox>
+                                                                    <TextBlock Text="{Binding SourceText}" FontSize="10" Foreground="{StaticResource MutedTextBrush}" HorizontalAlignment="Right" />
+                                                                </StackPanel>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </views:ItemsList>
+                                        </ScrollViewer>
+                                    </DockPanel>
+                                </Border>
+                                </Grid>
+                            </DockPanel>
+                            </Grid>
+                        </DockPanel>
+
+                        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Focusable="False">
                             <StackPanel Margin="12,16,24,24">
                                 <Border Style="{StaticResource Card}" Padding="18,14" Background="#F3FAF5" BorderBrush="#BFE3CB">
                                     <StackPanel>

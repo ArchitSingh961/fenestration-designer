@@ -88,6 +88,16 @@ public static class PricingEditor
             if (value < 0 || value > MaxAmount)
                 return $"The {label.ToLowerInvariant()} rate must be between 0 and {MaxAmount:N0}.";
         }
+        foreach (var (key, value) in pricing.ItemRates)
+        {
+            if (string.IsNullOrWhiteSpace(key) || value < 0 || value > MaxAmount)
+                return $"Every item rate must be between 0 and {MaxAmount:N0}.";
+        }
+        foreach (var (type, value) in pricing.MeshRates)
+        {
+            if (string.IsNullOrWhiteSpace(type) || value < 0 || value > MaxAmount)
+                return $"Every mesh rate must be between 0 and {MaxAmount:N0}.";
+        }
         return null;
     }
 

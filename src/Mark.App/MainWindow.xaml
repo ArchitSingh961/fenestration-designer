@@ -102,7 +102,7 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{Binding Label}" Style="{StaticResource FieldLabel}" />
                     <ComboBox Grid.Column="1" ItemsSource="{Binding Options}" SelectedItem="{Binding SelectedOption}"
-                              DisplayMemberPath="Name" ToolTip="How the opening opens, seen from inside" />
+                              DisplayMemberPath="Name" ToolTip="{Binding Hint}" AutomationProperties.HelpText="{Binding Hint}" />
                     <TextBlock Grid.Column="1" Text="{Binding MixedText}" Margin="7,0,24,0" VerticalAlignment="Center" IsHitTestVisible="False"
                                Foreground="{StaticResource MutedTextBrush}" TextTrimming="CharacterEllipsis"
                                Visibility="{Binding IsMixed, Converter={StaticResource BoolToVisibility}}" />
@@ -496,6 +496,7 @@
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Header="_Keyboard Shortcuts" InputGestureText="F1" Command="{Binding ShortcutsCommand}" />
+                <MenuItem Header="_Drawing Key" Command="{Binding DrawingKeyCommand}" ToolTip="What the labels on the drawing mean" />
                 <MenuItem Header="Check for _Updates" Command="{Binding CheckUpdatesCommand}" />
                 <Separator />
                 <MenuItem Header="_About MARK" Command="{Binding AboutCommand}" />
@@ -720,7 +721,7 @@
                           Visibility="{Binding DataContext.Page, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=Dashboard}">
                 <StackPanel Margin="24,18,24,24">
                     <DockPanel Margin="0,0,0,14">
-                        <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Content="Create quote"
+                        <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Content="New quote"
                                 Command="{Binding NewQuoteCommand}" />
                         <TextBlock Text="Dashboard" Style="{StaticResource PageTitle}" />
                     </DockPanel>
@@ -1008,7 +1009,7 @@
             <DockPanel DataContext="{Binding Quotes}" Background="{StaticResource PageBackgroundBrush}"
                        Visibility="{Binding DataContext.Page, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=Quotes}">
                 <DockPanel DockPanel.Dock="Top" Margin="24,18,24,10">
-                    <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Content="Create quote"
+                    <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Content="New quote"
                             Command="{Binding NewQuoteCommand}" />
                     <TextBlock Text="Quotes" Style="{StaticResource PageTitle}" />
                 </DockPanel>
@@ -4083,7 +4084,7 @@
                                     <DataTemplate>
                                         <Button Command="{Binding DataContext.SelectCategoryCommand, RelativeSource={RelativeSource AncestorType=views:ItemsList}}"
                                                 CommandParameter="{Binding}" AutomationProperties.Name="{Binding Name}" Cursor="Hand"
-                                                HorizontalContentAlignment="Stretch" Padding="18,13" BorderThickness="0">
+                                                HorizontalContentAlignment="Stretch" Padding="18,13" BorderThickness="0" ToolTip="{Binding Description}">
                                             <Button.Style>
                                                 <Style TargetType="Button">
                                                     <Setter Property="Background" Value="Transparent" />
@@ -4779,7 +4780,8 @@
                                             <TextBlock Text="Cost head" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource MutedTextBrush}" />
                                             <TextBlock Grid.Column="1" Text="Calculation type" FontSize="11" FontWeight="SemiBold" Width="120" Margin="6,0,0,0"
                                                        Foreground="{StaticResource MutedTextBrush}" Visibility="{Binding ShowTypes, Converter={StaticResource BoolToVisibility}}" />
-                                            <TextBlock Grid.Column="2" Text="Formula" FontSize="11" FontWeight="SemiBold" Margin="6,0,0,0" Foreground="{StaticResource MutedTextBrush}" />
+                                            <TextBlock Grid.Column="2" Text="Formula" FontSize="11" FontWeight="SemiBold" Margin="6,0,0,0" Foreground="{StaticResource MutedTextBrush}"
+                                                       ToolTip="{x:Static vm:PricingViewModel.FormulaHelp}" />
                                             <TextBlock Grid.Column="3" Text="Amount" FontSize="11" FontWeight="SemiBold" TextAlignment="Right" Foreground="{StaticResource MutedTextBrush}" />
                                         </Grid>
                                         <views:ItemsList ItemsSource="{Binding Sheet}" AutomationProperties.Name="Cost sheet">
@@ -5089,13 +5091,10 @@
                         <Border DockPanel.Dock="Top" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,1"
                                 Background="{StaticResource PanelBackgroundBrush}" Padding="6,4">
                             <StackPanel Orientation="Horizontal">
-                                <Button Style="{StaticResource ToolbarButton}" Content="New" Command="{Binding NewProjectCommand}" />
-                                <Button Style="{StaticResource ToolbarButton}" Content="Open" ToolTip="Open a saved project (Ctrl+O)"
-                                        Command="{Binding OpenProjectCommand}" />
-                                <Button Style="{StaticResource ToolbarButton}" Content="Save" ToolTip="Save the project (Ctrl+S)"
-                                        Command="{Binding SaveProjectCommand}" />
                                 <Button Style="{StaticResource ToolbarButton}" Content="Library" ToolTip="Library manager: products, prices, stock lengths"
                                         Command="{Binding OpenLibraryManagerCommand}" />
+                                <Button Style="{StaticResource ToolbarButton}" Content="Key" Command="{Binding DrawingKeyCommand}"
+                                        ToolTip="What the labels on the drawing mean (S1, F1, HH, RI, FIXED…)" />
                                 <Rectangle Width="1" Margin="6,2" Fill="{StaticResource BorderBrush}" />
                                 <Button Style="{StaticResource ToolbarButton}" Content="Undo" Command="{Binding UndoCommand}" />
                                 <Button Style="{StaticResource ToolbarButton}" Content="Redo" Command="{Binding RedoCommand}" />

@@ -44,6 +44,10 @@ public sealed class OpeningEditorViewModel : ViewModelBase
 
     public bool IsMixed => MixedText.Length > 0 && _selectedOption is null;
 
+    /// <summary>The tooltip: what the box is for, and the whole mixed text (which is cut off in the box).</summary>
+    public string Hint => IsMixed ? $"{MixedText}. How the openings open, seen from inside: choose one for all of them."
+        : "How the opening opens, seen from inside";
+
     public IReadOnlyList<OpeningOption> Options => AllOptions;
 
     private OpeningOption? _selectedOption;
@@ -55,6 +59,7 @@ public sealed class OpeningEditorViewModel : ViewModelBase
             var previous = _selectedOption;
             if (!SetProperty(ref _selectedOption, value)) return;
             OnPropertyChanged(nameof(IsMixed));
+            OnPropertyChanged(nameof(Hint));
             if (_loading || value is null) return;
             ErrorMessage = _apply(value.Type, null);
             if (ErrorMessage is not null)

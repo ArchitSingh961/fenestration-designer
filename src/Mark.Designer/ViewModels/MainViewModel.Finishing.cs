@@ -24,6 +24,22 @@ public partial class MainViewModel
     /// <summary>Asks the licence server for the latest release (set by the app; null without sign-in).</summary>
     public Func<Task<UpdateInfo?>>? FetchLatest { get; set; }
 
+    /// <summary>What the labels on the drawing and in the quotation mean.</summary>
+    public const string DrawingKeyText =
+        "F1, F2 …   the designs (frames) of the quote, numbered as drawn\n" +
+        "S1, S2 …   the opening sashes of a design, left to right (hardware lines say which sashes they are on)\n" +
+        "M1, M2 …   insect mesh shutters\n" +
+        "1, 2, 3 … in circles   the panes of a design; glass and mesh types are listed by pane: (3,4) SS Flymesh\n" +
+        "FIXED and two short strokes   glass fixed in the frame, no sash\n" +
+        "Dashed lines   an opening sash: they start at the hinged side and meet at the handle side\n" +
+        "Arrow   a sliding sash, in the direction it opens\n" +
+        "HH = 750   handle height: the handle is 750 mm above the bottom of the frame\n" +
+        "RI   reinforcement: the steel inside a uPVC profile (\"FRAME RI\" is the frame's steel)\n" +
+        "#PROFILECOST, @Profile Cost …   in a cost formula: # is a value of the window, @ a line of the cost sheet above";
+
+    private ICommand? _drawingKeyCommand;
+    public ICommand DrawingKeyCommand => _drawingKeyCommand ??= new RelayCommand(() => Dialogs?.Inform("Drawing key", DrawingKeyText));
+
     public ICommand BackupCommand => _backupCommand ??= new RelayCommand(() => Report(Backup(null)), () => HasStore);
     public ICommand RestoreCommand => _restoreCommand ??= new RelayCommand(() => Report(Restore(null)), () => HasStore);
     public ICommand OpenBackupsCommand => _openBackupsCommand ??= new RelayCommand(OpenBackups, () => HasStore);

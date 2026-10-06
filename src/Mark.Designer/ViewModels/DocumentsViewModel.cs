@@ -18,6 +18,18 @@ public sealed class DocumentCategoryRow : ViewModelBase
     public DocumentCategory Category { get; }
     public string Name => ProjectDocument.CategoryName(Category);
 
+    /// <summary>What goes in the category (the tooltip).</summary>
+    public string Description => Category switch
+    {
+        DocumentCategory.PreProductionSurvey => "The site survey before production: measurements, photos, site conditions",
+        DocumentCategory.Quotations => "Every quotation PDF made for this quote (kept by MARK) and others you add",
+        DocumentCategory.Margins => "Margin reports: cost, price and profit of the quote",
+        DocumentCategory.CreditApproval => "Approval to give the client credit or a special discount",
+        DocumentCategory.SalesOrder => "The signed order or contract with the client",
+        DocumentCategory.TypologyHistory => "Typology = the window types (designs) of the quote: here, the designs of every saved revision, to compare",
+        _ => "Anything else kept with the quote"
+    };
+
     private int _count;
     public int Count { get => _count; set { if (SetProperty(ref _count, value)) OnPropertyChanged(nameof(CountText)); } }
 

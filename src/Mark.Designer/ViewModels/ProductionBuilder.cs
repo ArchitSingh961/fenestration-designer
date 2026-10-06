@@ -31,7 +31,7 @@ public static class ProductionBuilder
         var project = ProjectSerializer.Deserialize(i.Order.DocumentJson);
         var result = new CalculationEngine().Calculate(project, i.Library, i.Rules);
         var offcuts = i.Offcuts.Select(o => new StockOffcut(o.Id, o.DefinitionId, o.LengthMm)).ToList();
-        var plan = new CuttingOptimizer().Optimize(result.Profiles, i.Library, i.Rules, offcuts);
+        var plan = new CuttingOptimizer().Optimize(result.Profiles, RatedLibrary.For(i.Library, project), i.Rules, offcuts);
 
         var windows = Windows(project);
         var names = new Names(project, windows);

@@ -51,7 +51,7 @@ public sealed class CalculationEngine : ICalculationEngine
 
         // The quote's own rates (Pricing › Profile rate …) stand in for the library's prices; a library that already has
         // rates (the Pricing tab's preview of rates not applied yet) is used as it is.
-        var run = new Run(library is RatedLibrary ? library : RatedLibrary.For(library, project.Pricing), rules);
+        var run = new Run(library is RatedLibrary ? library : RatedLibrary.For(library, project), rules);
         foreach (var frame in project.Frames)
             run.AddFrame(frame);
         return run.Build();

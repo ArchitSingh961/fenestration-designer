@@ -19,7 +19,7 @@ public static class StockNeeds
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(library);
         var result = new CalculationEngine().Calculate(project, library, rules);
-        var plan = new CuttingOptimizer().Optimize(result.Profiles, library, rules);
+        var plan = new CuttingOptimizer().Optimize(result.Profiles, RatedLibrary.For(library, project), rules);   // the quote's bar lengths
         var needs = new List<StockNeed>();
 
         foreach (var profile in plan.Profiles.Where(p => p.DefinitionId.Length > 0))

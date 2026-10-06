@@ -59,6 +59,37 @@ public static class DuplicateFrameCommand
 }
 
 /// <summary>Replaces the quote's price structure (see <see cref="PricingEditor.TrySetPricing"/>). One undo step.</summary>
+/// <summary>Sets the quote's product settings (bar lengths, Products tab), validated. Undo restores the previous ones.</summary>
+public sealed class SetProductSettingsCommand : IUndoableCommand
+{
+    private readonly Project _project;
+    private readonly ProductSettings _settings;
+    private ProductSettings? _old;
+
+    public SetProductSettingsCommand(Project project, ProductSettings settings, string description = "Change the bar lengths")
+    {
+        _project = project ?? throw new ArgumentNullException(nameof(project));
+        _settings = settings?.Copy() ?? throw new ArgumentNullException(nameof(settings));
+        Description = description;
+    }
+
+    public string Description { get; }
+
+    public void Execute()
+    {
+        if (_settings.Problem() is { } problem) throw new Design.DesignValidationException(problem);
+        _old = _project.Products.Copy();
+        _project.Products = _settings.Copy();
+    }
+
+    public void Undo()
+    {
+        if (_old is null)
+            throw new InvalidOperationException("Cannot undo a command that has not been executed.");
+        _project.Products = _old.Copy();
+    }
+}
+
 public sealed class SetPricingCommand : IUndoableCommand
 {
     private readonly Project _project;

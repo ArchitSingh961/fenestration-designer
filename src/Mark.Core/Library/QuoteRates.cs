@@ -22,14 +22,16 @@ public sealed class RatedLibrary : IProductLibrary
 {
     private readonly IProductLibrary _library;
     private readonly IReadOnlyDictionary<string, decimal> _rates;
+    private readonly IReadOnlyDictionary<string, double> _barLengths;
     private readonly Dictionary<string, ProfileDefinition> _profiles = new();
     private readonly Dictionary<string, GlassDefinition> _glass = new();
     private readonly Dictionary<string, MaterialDefinition> _materials = new();
 
-    private RatedLibrary(IProductLibrary library, IReadOnlyDictionary<string, decimal> rates)
+    private RatedLibrary(IProductLibrary library, IReadOnlyDictionary<string, decimal> rates, IReadOnlyDictionary<string, double> barLengths)
     {
         _library = library;
         _rates = rates;
+        _barLengths = barLengths;
         Profiles = library.Profiles.Select(Rated).ToList();
         Glass = library.Glass.Select(Rated).ToList();
         Materials = library.Materials.Select(Rated).ToList();
@@ -37,18 +39,35 @@ public sealed class RatedLibrary : IProductLibrary
 
     /// <summary><paramref name="library"/> with the rates of <paramref name="pricing"/> (the library itself when it has none).</summary>
     public static IProductLibrary For(IProductLibrary library, PriceStructure? pricing)
+        => For(library, pricing, null);
+
+    /// <summary>
+    /// <paramref name="library"/> as <paramref name="project"/> uses it: its rates (Pricing tab) and its bar lengths
+    /// (Products tab). The library itself when the quote has neither.
+    /// </summary>
+    public static IProductLibrary For(IProductLibrary library, Project? project)
+        => For(library, project?.Pricing, project?.Products);
+
+    public static IProductLibrary For(IProductLibrary library, PriceStructure? pricing, ProductSettings? products)
     {
         ArgumentNullException.ThrowIfNull(library);
-        if (pricing is null || pricing.ItemRates.Count == 0) return library;
+        var rates = pricing?.ItemRates ?? new Dictionary<string, decimal>();
+        var lengths = products?.BarLengths ?? new Dictionary<string, double>();
         if (library is RatedLibrary rated) library = rated._library;
-        return new RatedLibrary(library, pricing.ItemRates);
+        if (rates.Count == 0 && lengths.Count == 0) return library;
+        return new RatedLibrary(library, rates, lengths);
     }
 
     /// <summary>The library underneath (its own prices).</summary>
     public IProductLibrary Library => _library;
 
     private ProfileDefinition Rated(ProfileDefinition p)
-        => _profiles[p.Id] = _rates.TryGetValue(RateKey.Profile(p.Id), out var rate) ? p with { CostPerMetre = rate } : p;
+    {
+        if (_rates.TryGetValue(RateKey.Profile(p.Id), out var rate)) p = p with { CostPerMetre = rate };
+        // The quote's bar length is the only one its cutting plan uses.
+        if (_barLengths.TryGetValue(p.Id, out var length)) p = p with { StockLengthMm = length, StockLengthsMm = Array.Empty<double>() };
+        return _profiles[p.Id] = p;
+    }
 
     private GlassDefinition Rated(GlassDefinition g)
         => _glass[g.Id] = _rates.TryGetValue(RateKey.Glass(g.Id), out var rate) ? g with { CostPerSquareMetre = rate } : g;

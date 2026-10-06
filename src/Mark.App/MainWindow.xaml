@@ -4886,6 +4886,175 @@
                         </ScrollViewer>
                     </Grid>
 
+                    <!-- Products: what the designs use, and this quote's bar lengths -->
+                    <Grid DataContext="{Binding Products}" Background="{StaticResource PageBackgroundBrush}"
+                          Visibility="{Binding DataContext.Section, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource EnumToVisibility}, ConverterParameter=Products}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="215" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0">
+                            <ListBox ItemsSource="{x:Static vm:ProductsViewModel.Pages}" SelectedValuePath="Page" SelectedValue="{Binding Page}"
+                                     BorderThickness="0" Background="Transparent" Margin="0,8,0,0" AutomationProperties.Name="Product pages"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Cursor" Value="Hand" />
+                                        <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                                        <Setter Property="AutomationProperties.Name" Value="{Binding Title}" />
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="ListBoxItem">
+                                                    <Border x:Name="Bd" Background="Transparent" Padding="18,12">
+                                                        <ContentPresenter />
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="Bd" Property="Background" Value="#F2F6FC" />
+                                                        </Trigger>
+                                                        <Trigger Property="IsSelected" Value="True">
+                                                            <Setter TargetName="Bd" Property="Background" Value="#EAF2FB" />
+                                                            <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <DockPanel>
+                                            <TextBlock Text="{Binding Glyph}" FontFamily="Segoe MDL2 Assets" FontSize="17" Margin="0,0,12,0" VerticalAlignment="Center"
+                                                       Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
+                                            <TextBlock Text="{Binding Title}" FontSize="14" VerticalAlignment="Center" TextWrapping="Wrap"
+                                                       Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Border>
+
+                        <DockPanel Grid.Column="1" Margin="24,16,24,16">
+                            <TextBlock DockPanel.Dock="Top" Text="{Binding PageTitle}" Style="{StaticResource PageTitle}" Margin="0,0,0,4" />
+                            <TextBlock DockPanel.Dock="Top" Text="{Binding PageHelp}" TextWrapping="Wrap" FontSize="11"
+                                       Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,10" />
+                            <Border DockPanel.Dock="Top" Padding="10" Margin="0,0,0,10" CornerRadius="6"
+                                    Visibility="{Binding HasMessage, Converter={StaticResource BoolToVisibility}}">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Background" Value="#E8F6EE" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding MessageIsError}" Value="True">
+                                                <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" />
+                            </Border>
+                            <Border Style="{StaticResource Card}" Padding="0">
+                                <DockPanel>
+                                    <Border DockPanel.Dock="Top" Background="#E9ECF1" Padding="12,10" CornerRadius="6,6,0,0">
+                                        <DockPanel>
+                                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
+                                                        Visibility="{Binding HasLengths, Converter={StaticResource BoolToVisibility}}">
+                                                <TextBlock Text="Bar length" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                                <TextBox Width="80" Padding="6,5" TextAlignment="Right" Text="{Binding BulkLength, UpdateSourceTrigger=PropertyChanged}"
+                                                         AutomationProperties.Name="Bar length for the ticked rows">
+                                                    <TextBox.InputBindings>
+                                                        <KeyBinding Key="Enter" Command="{Binding SetLengthCommand}" />
+                                                    </TextBox.InputBindings>
+                                                </TextBox>
+                                                <TextBlock Text="mm" VerticalAlignment="Center" Margin="6,0,8,0" Foreground="{StaticResource MutedTextBrush}" />
+                                                <Button Style="{StaticResource PrimaryButton}" Content="Set for ticked (or all)" Command="{Binding SetLengthCommand}" Margin="0,0,6,0"
+                                                        ToolTip="Give the ticked profiles (or every profile listed, if none is ticked) this bar length, for this quote" />
+                                                <Button Style="{StaticResource SecondaryButton}" Content="Use library lengths" Command="{Binding UseLibraryLengthsCommand}"
+                                                        ToolTip="The ticked profiles (or all) go back to the library's bar length" />
+                                            </StackPanel>
+                                            <Grid Width="240" HorizontalAlignment="Left">
+                                                <TextBox Padding="26,6,6,6" Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Search the products" />
+                                                <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" Margin="9,0,0,0" VerticalAlignment="Center"
+                                                           Foreground="{StaticResource MutedTextBrush}" IsHitTestVisible="False" />
+                                            </Grid>
+                                        </DockPanel>
+                                    </Border>
+                                    <Grid DockPanel.Dock="Top">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="40" />
+                                            <ColumnDefinition Width="110" />
+                                            <ColumnDefinition Width="*" MinWidth="150" />
+                                            <ColumnDefinition Width="170" />
+                                            <ColumnDefinition Width="150" />
+                                            <ColumnDefinition Width="90" />
+                                            <ColumnDefinition Width="120" />
+                                        </Grid.ColumnDefinitions>
+                                        <Button Style="{StaticResource RowButton}" Command="{Binding SelectAllCommand}" Margin="12,8,0,8"
+                                                ToolTip="Tick every row (or none)" AutomationProperties.Name="Tick every row">
+                                            <TextBlock Text="&#xE73A;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource MutedTextBrush}" />
+                                        </Button>
+                                        <TextBlock Grid.Column="1" Text="Code" FontWeight="SemiBold" Margin="6,9" />
+                                        <TextBlock Grid.Column="2" Text="Item name" FontWeight="SemiBold" Margin="6,9" />
+                                        <TextBlock Grid.Column="3" Text="Used" FontWeight="SemiBold" Margin="6,9" />
+                                        <TextBlock Grid.Column="4" Text="Bars (cutting plan)" FontWeight="SemiBold" Margin="6,9" />
+                                        <TextBlock Grid.Column="5" Text="Library" FontWeight="SemiBold" Margin="6,9" TextAlignment="Right" />
+                                        <TextBlock Grid.Column="6" Text="This quote (mm)" FontWeight="SemiBold" Margin="6,9,14,9" />
+                                    </Grid>
+                                    <TextBlock DockPanel.Dock="Top" Text="{Binding NoRowsText}" Margin="14,12" Foreground="{StaticResource MutedTextBrush}"
+                                               Visibility="{Binding HasNoRows, Converter={StaticResource BoolToVisibility}}" />
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                                        <views:ItemsList ItemsSource="{Binding Rows}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="40" />
+                                                                <ColumnDefinition Width="110" />
+                                                                <ColumnDefinition Width="*" MinWidth="150" />
+                                                                <ColumnDefinition Width="170" />
+                                                                <ColumnDefinition Width="150" />
+                                                                <ColumnDefinition Width="90" />
+                                                                <ColumnDefinition Width="120" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <CheckBox IsChecked="{Binding IsSelected}" Margin="14,0,0,0" VerticalAlignment="Center"
+                                                                      AutomationProperties.Name="{Binding Name}" />
+                                                            <TextBlock Grid.Column="1" Text="{Binding Code}" Margin="6,9" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                                            <TextBlock Grid.Column="2" Text="{Binding Name}" Margin="6,9" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                                            <TextBlock Grid.Column="3" Text="{Binding UsedText}" Margin="6,9" VerticalAlignment="Center" TextWrapping="Wrap"
+                                                                       Foreground="{StaticResource MutedTextBrush}" />
+                                                            <TextBlock Grid.Column="4" Text="{Binding BarsText}" Margin="6,9" VerticalAlignment="Center" TextWrapping="Wrap"
+                                                                       Foreground="{StaticResource MutedTextBrush}" />
+                                                            <TextBlock Grid.Column="5" Text="{Binding LibraryLengthText}" Margin="6,9" VerticalAlignment="Center"
+                                                                       TextAlignment="Right" Foreground="{StaticResource MutedTextBrush}" />
+                                                            <StackPanel Grid.Column="6" Margin="6,5,14,5" Visibility="{Binding HasLength, Converter={StaticResource BoolToVisibility}}">
+                                                                <TextBox Padding="6,4" TextAlignment="Right" AutomationProperties.Name="{Binding Name, StringFormat=Bar length of {0}}"
+                                                                         Text="{Binding LengthText, UpdateSourceTrigger=LostFocus}"
+                                                                         ToolTip="The bar length for this quote; changed when you leave the box (Tab)">
+                                                                    <TextBox.Style>
+                                                                        <Style TargetType="TextBox">
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsOwnLength}" Value="True">
+                                                                                    <Setter Property="FontWeight" Value="SemiBold" />
+                                                                                    <Setter Property="Background" Value="#FFF8E6" />
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </TextBox.Style>
+                                                                </TextBox>
+                                                                <TextBlock Text="{Binding SourceText}" FontSize="10" Foreground="{StaticResource MutedTextBrush}" HorizontalAlignment="Right" />
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </views:ItemsList>
+                                    </ScrollViewer>
+                                </DockPanel>
+                            </Border>
+                        </DockPanel>
+                    </Grid>
+
                     <!-- Bill of materials (Pricing area) -->
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False"
                                   Visibility="{Binding Section, Converter={StaticResource EnumToVisibility}, ConverterParameter=Materials}">

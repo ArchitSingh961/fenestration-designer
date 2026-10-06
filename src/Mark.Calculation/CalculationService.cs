@@ -74,7 +74,7 @@ public sealed class CalculationService
             var result = Result;                 // recalculates (and drops the cached plan) if stale
             if (_cuttingPlan is null)
             {
-                _cuttingPlan = _optimizer.Optimize(result, Library, Rules);
+                _cuttingPlan = _optimizer.Optimize(result, RatedLibrary.For(Library, _projectSource()), Rules);   // the quote's bar lengths
                 OptimizationCount++;
             }
             return _cuttingPlan;

@@ -60,3 +60,15 @@ Full stock of bars, glass and hardware, purchase orders and reservations come wi
 | `Mark.Data` | Schema 8: `production_orders`, `offcuts`; `SqliteProductionRepository` (`LocalStore.Production`) |
 | `Mark.Reports` | `ProductionDocument`, `ProductionPdf` (the five papers) |
 | `Mark.Designer` | `ProductionBuilder` (order → papers), `ProductionViewModel`, `OffcutsViewModel`, `MainViewModel.Production` (`StartProduction`) |
+
+## Products tab: what a quote uses, and its bar lengths
+
+Design › **Products** lists, page by page (Profiles, Reinforcement, Hardware, Accessories, Glass), what the open quote's
+designs use (from the bill of materials) and, for profiles, the bars the cutting plan needs. Each profile's **bar
+length** can be changed for this quote: in its row (when the box is left), or for the ticked rows (or all of them) with
+**Set for ticked (or all)**; **Use library lengths** puts them back. Each change is one undo step and is saved with the
+quote (`Project.Products`, `ProductSettings.BarLengths`, 500–12,000 mm).
+
+The quote's library (`RatedLibrary.For(library, project)`) gives such a profile only that stock length, so the cutting
+plan, the production papers (cutting list) and the stock needs for purchasing all use it. The library's own length does
+not change.

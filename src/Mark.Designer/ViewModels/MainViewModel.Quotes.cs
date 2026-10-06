@@ -11,7 +11,7 @@ namespace Mark.Designer.ViewModels;
 public enum AppPage { Dashboard, Quotes, Quote, Account, Library, Overview, Staff, Enquiries, QuotationSetup, ProductionOrders, Offcuts, Orders, Schedule, Stock, PurchaseOrders, Suppliers, Invoices, Receipts, Outstanding, AccountsExport }
 
 /// <summary>The parts of the open quote: Client, Designs (Sales); Drawing (Design); Pricing, Materials (Pricing); Cutting (Production).</summary>
-public enum QuoteSection { Client, Designs, Drawing, Pricing, Materials, Cutting, Documents }
+public enum QuoteSection { Client, Designs, Drawing, Pricing, Materials, Cutting, Documents, Products }
 
 /// <summary>
 /// Milestone 10: the open project is a quote. Navigation (Dashboard, Quotes, the open quote with its Client, Designs
@@ -25,6 +25,9 @@ public partial class MainViewModel
     public QuoteListViewModel Quotes { get; private set; } = null!;
     public DashboardViewModel Dashboard { get; private set; } = null!;
 
+    /// <summary>The Products tab: what the designs use, and the bar lengths of this quote.</summary>
+    public ProductsViewModel Products { get; private set; } = null!;
+
     public ICommand ShowPageCommand { get; private set; } = null!;
     public ICommand ShowSectionCommand { get; private set; } = null!;
 
@@ -35,6 +38,8 @@ public partial class MainViewModel
             EditDesign, DuplicateDesign, DeleteDesign, NewDesign);
         Quotes = new QuoteListViewModel(() => Store?.Projects, () => Project.Id, () => Dialogs, OpenQuote, NewQuote);
         Dashboard = new DashboardViewModel(() => Store?.Projects, OpenQuote, NewQuote);
+        Products = new ProductsViewModel(() => Project, () => Calculation.Result, () => Calculation.CuttingPlan, () => Library,
+            (settings, description) => RunForMessage(() => new SetProductSettingsCommand(Project, settings, description)));
         ShowPageCommand = new RelayCommand(p =>
         {
             if (p is AppPage page) Page = page;
@@ -133,6 +138,7 @@ public partial class MainViewModel
             Designs.IsVisible = _page == AppPage.Quote && value == QuoteSection.Designs;
             if (value == QuoteSection.Client) Details.SyncFromModel();
             if (value == QuoteSection.Pricing) Pricing.SyncFromModel();
+            if (value == QuoteSection.Products) Products.Reload();
             RefreshDocumentsIfShown();
             OnViewChanged();
             if (leftUnapplied is not null) ShowNotice(leftUnapplied, isError: true);
@@ -171,6 +177,7 @@ public partial class MainViewModel
         InvalidatePrice();
         Designs.Invalidate();
         if (_section == QuoteSection.Pricing) Pricing.SyncFromModel();
+        if (_section == QuoteSection.Products && _page == AppPage.Quote) Products.Reload();
         Details.SyncFromModel();
         RefreshDocumentsIfShown();
         OnPropertyChanged(nameof(QuoteHeader));

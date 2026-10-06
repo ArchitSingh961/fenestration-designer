@@ -41,6 +41,15 @@ public class Project
 
     private PriceStructure _pricing = PriceStructure.Default();
 
+    /// <summary>How this quote uses the library's products (bar lengths, Products tab). Never null.</summary>
+    public ProductSettings Products
+    {
+        get => _products;
+        set => _products = value ?? new ProductSettings();
+    }
+
+    private ProductSettings _products = new();
+
     /// <summary>Creates a deep copy of this project. New Ids are assigned to all objects; the quote number is cleared.</summary>
     public Project Clone()
     {
@@ -51,7 +60,8 @@ public class Project
             Units = Units,
             Metadata = new Dictionary<string, string>(Metadata),
             Quote = Quote.Copy(),
-            Pricing = Pricing.Copy()
+            Pricing = Pricing.Copy(),
+            Products = Products.Copy()
         };
         clone.Quote.Number = "";   // a copy is a new quote: it gets its own number when saved
 

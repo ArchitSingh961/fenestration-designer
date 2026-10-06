@@ -129,6 +129,8 @@
                         <CheckBox Content="Interlock" Margin="0,0,12,4" IsChecked="{Binding RoleInterlock}" />
                         <CheckBox Content="Track" Margin="0,0,12,4" IsChecked="{Binding RoleTrack}" />
                         <CheckBox Content="Coupler / cover" Margin="0,0,12,4" IsChecked="{Binding RoleCoupler}" />
+                        <CheckBox Content="Other part" Margin="0,0,12,4" IsChecked="{Binding RoleGeneric}"
+                                  ToolTip="Clips, cleats, adaptors and other parts cut from a bar: listed and priced, not drawn" />
                     </WrapPanel>
                     <TextBlock Grid.Row="2" Text="Face width (mm)" Style="{StaticResource FormLabel}" />
                     <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource FormBox}" Text="{Binding FaceWidth}" IsEnabled="{Binding CanEditDetails}" />

@@ -6,7 +6,8 @@ namespace Mark.Designer.ViewModels;
 
 /// <summary>
 /// The Client tab: project name, quote status, the client's name and contact, the site address and notes. The fields
-/// are a form; "Save details" validates them and changes the model as one undoable step. The form reloads from the model
+/// are a form; Save (the header's, Ctrl+S or the form's own) first validates them and changes the model as one undoable
+/// step, then stores the quote. The form reloads from the model
 /// when the quote changes underneath it (another project opened, undo, redo), never while you are only typing.
 /// </summary>
 public sealed class QuoteDetailsViewModel : ViewModelBase
@@ -168,16 +169,26 @@ public sealed class QuoteDetailsViewModel : ViewModelBase
 
     private void Apply()
     {
+        if (ApplyPending() is not null) return;
+        Message = null;
+    }
+
+    /// <summary>
+    /// Puts what was typed into the quote (one undoable step), as Save does before it stores the quote. Returns the
+    /// problem (also shown on the form), or null when it was applied or nothing was typed.
+    /// </summary>
+    public string? ApplyPending()
+    {
+        if (!HasChanges) return null;
         string? error = _apply(ProjectName, ToQuote());
         if (error is not null)
         {
             Message = error;
             MessageIsError = true;
-            return;
+            return error;
         }
         if (_project is not null) Load(_project);
-        Message = "Details saved to the quote. Use Save (Ctrl+S) to store the quote.";
-        MessageIsError = false;
+        return null;
     }
 
     private void Set<T>(ref T field, T value, [System.Runtime.CompilerServices.CallerMemberName] string? name = null)

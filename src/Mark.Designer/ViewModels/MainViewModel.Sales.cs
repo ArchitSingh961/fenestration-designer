@@ -106,8 +106,7 @@ public partial class MainViewModel
             return ex.Message;
         }
         ShowView(AppView.Client, AppArea.Sales);
-        Hint = $"New quote for enquiry {enquiry.Number}. Add the designs, then save.";
-        HintIsError = false;
+        ShowNotice($"New quote for enquiry {enquiry.Number}. Add the designs, then save.");
         return null;
     }
 
@@ -174,6 +173,7 @@ public partial class MainViewModel
     {
         if (!Access.Allows(Features.QuotationPdf)) return Access.Lock(Features.QuotationPdf);
         if (Project.Frames.Count == 0) return "Add at least one design before making the quotation.";
+        if (CommitPendingEdits() is { } pending) return pending;
         if (Store is not null && (IsDirty || !Store.Projects.Exists(Project.Id)))
             return "Save the quote first, so the quotation shows its number and the saved value.";
         string fileName = string.Join("_", $"{Project.Quote.NumberText} {Project.Name} Quotation".Split(Path.GetInvalidFileNameChars())).Trim() + ".pdf";
@@ -185,8 +185,7 @@ public partial class MainViewModel
             using (var stream = File.Create(path))
                 QuotationPdf.Write(document, stream);
             KeepQuotation(path);
-            Hint = $"Saved the quotation {Path.GetFileName(path)} (a copy is in the quote's Documents › Quotations).";
-            HintIsError = false;
+            ShowNotice($"Saved the quotation {Path.GetFileName(path)} (a copy is in the quote's Documents › Quotations).");
             OpenDocument?.Invoke(path);
             return null;
         }
@@ -208,6 +207,7 @@ public partial class MainViewModel
         if (Access.ReadOnlyMessage is { } readOnly) return readOnly;
         if (IsOrder) return $"This quote is already order {Project.Quote.OrderNumber}.";
         if (Project.Frames.Count == 0) return "Add the designs before converting the quote to an order.";
+        if (CommitPendingEdits() is { } pending) return pending;
         if (IsDirty || !Store.Projects.Exists(Project.Id)) return "Save the quote first.";
         if (Dialogs is not null && !Dialogs.Confirm("Convert to order",
                 $"Convert {Project.Quote.NumberText} '{Project.Name}' to an order? It is marked won and gets an order number."))
@@ -218,7 +218,7 @@ public partial class MainViewModel
         if (RunForMessage(() => new SetQuoteInfoCommand(Project, Project.Name, quote)) is { } error) return error;
         string? saved = Persist($"Converted to an order.");
         if (saved is not null) return saved;
-        Hint = $"{Project.Quote.NumberText} is now order {Project.Quote.OrderNumber}.";
+        ShowNotice($"{Project.Quote.NumberText} is now order {Project.Quote.OrderNumber}.");
         OnPropertyChanged(nameof(OrderText));
         OnPropertyChanged(nameof(IsOrder));
         ((RelayCommand)ConvertToOrderCommand).RaiseCanExecuteChanged();
@@ -233,6 +233,7 @@ public partial class MainViewModel
     {
         if (Store is null) return "There is no local database.";
         if (Access.ReadOnlyMessage is { } readOnly) return readOnly;
+        if (CommitPendingEdits() is { } pending) return pending;
         if (IsDirty || !Store.Projects.Exists(Project.Id)) return "Save the quote first; the saved version is kept as the revision.";
         try
         {
@@ -248,7 +249,7 @@ public partial class MainViewModel
         CommandHistory.Clear();                                   // the kept revision cannot be undone into
         string? saved = Persist($"Started revision R{quote.Revision}.");
         if (saved is not null) return saved;
-        Hint = $"Started revision R{quote.Revision}. R{quote.Revision - 1} is kept and listed on the Client tab.";
+        ShowNotice($"Started revision R{quote.Revision}. R{quote.Revision - 1} is kept and listed on the Client tab.");
         return null;
     }
 
@@ -269,8 +270,7 @@ public partial class MainViewModel
             copy.Quote.Status = QuoteStatus.Active;
             ShowProject(copy);
             ShowView(AppView.Client, AppArea.Sales);
-            Hint = $"Opened a copy of R{revision} as a new quote. Save it to keep it.";
-            HintIsError = false;
+            ShowNotice($"Opened a copy of R{revision} as a new quote. Save it to keep it.");
             return null;
         }
         catch (DataStoreException ex)

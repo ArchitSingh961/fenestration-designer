@@ -57,11 +57,13 @@ public partial class MainViewModel
         get => _page;
         set
         {
+            string? leftUnapplied = null;
             if (_page != value)
             {
                 ActiveTool.Cancel();
                 Interaction.Clear();
                 if (_page == AppPage.QuotationSetup) QuotationSetup.SaveIfChanged();     // what was typed there is kept
+                if (_page == AppPage.Quote) leftUnapplied = ApplyTabOnLeaving(_section);
             }
             _page = value;
             OnPropertyChanged();
@@ -99,8 +101,20 @@ public partial class MainViewModel
             Designs.IsVisible = value == AppPage.Quote && _section == QuoteSection.Designs;
             RefreshDocumentsIfShown();
             OnViewChanged();
+            if (leftUnapplied is not null) ShowNotice(leftUnapplied, isError: true);
         }
     }
+
+    /// <summary>
+    /// Leaving the Client or Pricing tab applies what was typed there, so the header, the quotation and Save use it.
+    /// Returns why it could not be applied (the form keeps it), or null.
+    /// </summary>
+    private string? ApplyTabOnLeaving(QuoteSection section) => section switch
+    {
+        QuoteSection.Client when Details.ApplyPending() is { } error => $"The client details were not applied: {error} (Sales › Client)",
+        QuoteSection.Pricing when Pricing.ApplyPending() is { } error => $"The pricing changes were not applied: {error} (Pricing › Pricing)",
+        _ => null
+    };
 
     private QuoteSection _section = QuoteSection.Drawing;
 
@@ -113,6 +127,7 @@ public partial class MainViewModel
             if (_section == value) return;
             ActiveTool.Cancel();
             Interaction.Clear();
+            string? leftUnapplied = _page == AppPage.Quote ? ApplyTabOnLeaving(_section) : null;
             _section = value;
             OnPropertyChanged();
             Designs.IsVisible = _page == AppPage.Quote && value == QuoteSection.Designs;
@@ -120,6 +135,7 @@ public partial class MainViewModel
             if (value == QuoteSection.Pricing) Pricing.SyncFromModel();
             RefreshDocumentsIfShown();
             OnViewChanged();
+            if (leftUnapplied is not null) ShowNotice(leftUnapplied, isError: true);
         }
     }
 

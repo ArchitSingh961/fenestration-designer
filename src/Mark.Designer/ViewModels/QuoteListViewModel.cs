@@ -53,7 +53,7 @@ public sealed class QuoteListViewModel : ViewModelBase
     public ICommand DeleteCommand { get; }
     public ICommand RefreshCommand { get; }
 
-    private QuoteFilter _filter = QuoteFilter.Active;
+    private QuoteFilter _filter = QuoteFilter.All;                // every quote: a won one is not "gone"
     public QuoteFilter Filter
     {
         get => _filter;
@@ -99,12 +99,39 @@ public sealed class QuoteListViewModel : ViewModelBase
         get => _message;
         private set
         {
+            MessageIsError = true;                                   // unless the caller says it reports something done
             if (SetProperty(ref _message, value))
+            {
                 OnPropertyChanged(nameof(HasMessage));
+                OnPropertyChanged(nameof(IsEmpty));
+            }
         }
     }
 
     public bool HasMessage => !string.IsNullOrEmpty(_message);
+
+    private bool _messageIsError = true;
+    /// <summary>False for a message that reports something done (a quote deleted).</summary>
+    public bool MessageIsError { get => _messageIsError; private set => SetProperty(ref _messageIsError, value); }
+
+    /// <summary>"3 quotes" (or "3 of 12 quotes" when filtered).</summary>
+    public string CountText => Quotes.Count == _all.Count
+        ? $"{_all.Count} quote{(_all.Count == 1 ? "" : "s")}"
+        : $"{Quotes.Count} of {_all.Count} quotes";
+
+    /// <summary>The list is empty: <see cref="EmptyText"/> says why and what to do.</summary>
+    public bool IsEmpty => Quotes.Count == 0 && !HasMessage;
+
+    public string EmptyText
+    {
+        get
+        {
+            if (_all.Count == 0) return "No quotes yet. Start one with New quote, or from an enquiry (Sales › Enquiries › Create quote).";
+            string filter = Filter == QuoteFilter.All ? "" : $" {Filter.ToString().ToLowerInvariant()}";
+            string search = string.IsNullOrWhiteSpace(SearchText) ? "" : $" matching \"{SearchText!.Trim()}\"";
+            return $"No{filter} quotes{search}. All ({_all.Count}) shows every quote.";
+        }
+    }
 
     /// <summary>Reads the saved quotes again (when the page is shown, after a save or delete).</summary>
     public void Reload()
@@ -149,6 +176,9 @@ public sealed class QuoteListViewModel : ViewModelBase
             Quotes.Add(ToRow(q, q.Id == openId));
         }
         SelectedQuote = Quotes.FirstOrDefault(r => r.Id == keep) ?? Quotes.FirstOrDefault();
+        OnPropertyChanged(nameof(CountText));
+        OnPropertyChanged(nameof(IsEmpty));
+        OnPropertyChanged(nameof(EmptyText));
     }
 
     private static QuoteRow ToRow(ProjectSummary q, bool isOpen) => new(
@@ -196,6 +226,7 @@ public sealed class QuoteListViewModel : ViewModelBase
             repository.Delete(row.Id);
             Reload();
             Message = $"Deleted {row.Number} '{row.Name}'.";
+            MessageIsError = false;
         }
         catch (DataStoreException ex)
         {

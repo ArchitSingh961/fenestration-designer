@@ -99,6 +99,8 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase, ILibraryEditor
     public bool RoleInterlock { get; set; }
     public bool RoleTrack { get; set; }
     public bool RoleCoupler { get; set; }
+    /// <summary>Any other part made from a bar (clips, cleats, adaptors): listed, cut and priced, not drawn.</summary>
+    public bool RoleGeneric { get; set; }
     public string FaceWidth { get; set; } = "";
     public string Depth { get; set; } = "";
     public string WeightPerMetre { get; set; } = "";
@@ -163,6 +165,7 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase, ILibraryEditor
         RoleSash = p.Supports(ProfileType.Sash), RoleMeshSash = p.Supports(ProfileType.MeshSash),
         RoleReinforcement = p.Supports(ProfileType.Reinforcement), RoleGlazingBead = p.Supports(ProfileType.GlazingBead),
         RoleInterlock = p.Supports(ProfileType.Interlock), RoleTrack = p.Supports(ProfileType.Track), RoleCoupler = p.Supports(ProfileType.Coupler),
+        RoleGeneric = p.Supports(ProfileType.Generic),
         FaceWidth = Text(p.FaceWidthMm, isNew), Depth = Text(p.DepthMm, isNew), WeightPerMetre = Text(p.WeightKgPerMetre, isNew),
         CostPerMetre = Text(p.CostPerMetre, isNew), StockLength = Text(p.StockLengthMm, isNew),
         OtherStockLengths = string.Join(", ", p.StockLengthsMm.Select(l => Text(l))),
@@ -223,6 +226,7 @@ public sealed class LibraryItemEditorViewModel : ViewModelBase, ILibraryEditor
         if (RoleInterlock) roles.Add(ProfileType.Interlock);
         if (RoleTrack) roles.Add(ProfileType.Track);
         if (RoleCoupler) roles.Add(ProfileType.Coupler);
+        if (RoleGeneric) roles.Add(ProfileType.Generic);
         var original = (ProfileDefinition)_original;
         var reinforcement = Reinforcement?.Id is { } steel
             ? new ReinforcementRule

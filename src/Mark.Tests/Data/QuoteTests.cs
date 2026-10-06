@@ -338,7 +338,13 @@ public class QuoteTests : IDisposable
         vm.Page = AppPage.Quotes;
         Assert.Equal("Active (1)", vm.Quotes.ActiveHeader);
         Assert.Equal("Won (1)", vm.Quotes.WonHeader);
+        Assert.Equal(QuoteFilter.All, vm.Quotes.Filter);               // a won quote is listed too
+        Assert.Equal(2, vm.Quotes.Quotes.Count);
+        vm.Quotes.Filter = QuoteFilter.Active;
         Assert.Equal("Office block", Assert.Single(vm.Quotes.Quotes).Name);
+        vm.Quotes.Filter = QuoteFilter.Lost;
+        Assert.True(vm.Quotes.IsEmpty);
+        Assert.Contains("All (2)", vm.Quotes.EmptyText);
 
         vm.Quotes.Filter = QuoteFilter.All;
         vm.Quotes.SearchText = "neha";

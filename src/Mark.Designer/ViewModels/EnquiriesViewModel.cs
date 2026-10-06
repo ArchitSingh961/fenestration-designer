@@ -131,7 +131,8 @@ public sealed class EnquiryEditorViewModel : ViewModelBase
                 return "Enter the client's name or company.";
             if (string.IsNullOrWhiteSpace(Phone) && string.IsNullOrWhiteSpace(Email))
                 return "Enter a phone number or an e-mail address, so the client can be reached.";
-            return null;
+            // The quote checks the client the same way: what is accepted here is never refused when the quote is ordered.
+            return QuoteEditor.ClientProblem(ToEnquiry().Client);
         }
         if (ExpectedValue.Trim().Length > 0
             && (!decimal.TryParse(ExpectedValue.Replace(",", ""), NumberStyles.Number, CultureInfo.InvariantCulture, out var v) || v < 0))

@@ -85,8 +85,7 @@ public partial class MainViewModel
         {
             return ex.Message;
         }
-        Hint = $"Backed up everything in MARK to {Path.GetFileName(path)}. Keep a copy away from this computer (a pen drive, e-mail, cloud drive).";
-        HintIsError = false;
+        ShowNotice($"Backed up everything in MARK to {Path.GetFileName(path)}. Keep a copy away from this computer (a pen drive, e-mail, cloud drive).");
         return null;
     }
 
@@ -122,8 +121,7 @@ public partial class MainViewModel
             return ex.Message;
         }
         ForgetChanges();
-        Hint = "Restored the backup. MARK starts again.";
-        HintIsError = false;
+        ShowNotice("Restored the backup. MARK starts again.");
         RestartRequested?.Invoke();
         return null;
     }

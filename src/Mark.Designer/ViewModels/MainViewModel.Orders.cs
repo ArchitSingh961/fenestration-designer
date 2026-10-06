@@ -30,6 +30,49 @@ public partial class MainViewModel
         ShowOrderCommand = new RelayCommand(() => Report(ShowOrder()), () => HasStore);
     }
 
+    // ── Changing an order ───────────────────────────────────────────
+
+    /// <summary>The order whose changes the user agreed to save (asked once per opened order).</summary>
+    private Guid? _orderChangeAgreed;
+
+    /// <summary>The open order has a production order: the workshop makes what was saved.</summary>
+    private bool OrderIsInProduction()
+    {
+        try
+        {
+            return IsOrder && Store?.Production.ForProject(Project.Id) is not null;
+        }
+        catch (DataStoreException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>The first change to an order says so at once: it changes what the client ordered (and what is made).</summary>
+    private void WarnOnOrderChange()
+    {
+        if (!IsOrder) return;
+        ShowNotice(OrderIsInProduction()
+            ? $"This is order {Project.Quote.OrderNumber}, in production: the workshop makes what was saved. Undo (Ctrl+Z) to leave the order as it is."
+            : $"This is order {Project.Quote.OrderNumber}: a change changes what the client ordered. Undo (Ctrl+Z) to leave the order as it is.");
+    }
+
+    /// <summary>
+    /// Saving a change to an order asks first (once per opened order). True when the user said no: nothing is saved.
+    /// </summary>
+    private bool OrderChangeRefused()
+    {
+        if (!IsOrder || !IsDirty || Dialogs is null || _orderChangeAgreed == Project.Id) return false;
+        bool inProduction = OrderIsInProduction();
+        string question = inProduction
+            ? $"{Project.Quote.OrderNumber} is in production. Save the changes to the order anyway?\n\nThe production order " +
+              "was made from the saved designs: its cutting list, glass order and labels do not change by themselves. Tell the workshop."
+            : $"{Project.Quote.OrderNumber} is an order. Save the changes to it anyway?\n\nThey change what the client ordered.";
+        if (!Dialogs.Confirm("Change an order", question)) return true;
+        _orderChangeAgreed = Project.Id;
+        return false;
+    }
+
     /// <summary>The open quote's order in Orders › Orders (the quote must be an order, and saved). Returns an error, or null.</summary>
     public string? ShowOrder()
     {

@@ -99,6 +99,11 @@ public partial class MainViewModel
             return "There is no local database, so the project cannot be saved.";
         if (Access.ReadOnlyMessage is { } readOnly)
             return readOnly;
+        // What was typed on the Client and Pricing tabs and in the properties panel is part of what is saved.
+        if (CommitPendingEdits() is { } pending)
+            return pending;
+        if (OrderChangeRefused())
+            return null;
         try
         {
             // A quote named on its Client tab is saved under that name; only a still-default name is asked for.
@@ -151,8 +156,7 @@ public partial class MainViewModel
             OnPropertyChanged(nameof(Title));
             RefreshQuoteViews();
             RefreshHistory();
-            Hint = success;
-            HintIsError = false;
+            ShowNotice(success);
             return null;
         }
         catch (DataStoreException ex)
@@ -179,8 +183,7 @@ public partial class MainViewModel
         {
             var project = Store.Projects.Load(id);
             ShowProject(project);
-            Hint = $"Opened '{project.Name}'.";
-            HintIsError = false;
+            ShowNotice($"Opened '{project.Name}'.");
             return null;
         }
         catch (DataStoreException ex)
@@ -214,9 +217,44 @@ public partial class MainViewModel
     /// <summary>Treats the open design as saved, after the user agreed to discard its changes (e.g. when signing out).</summary>
     public void ForgetChanges() => IsDirty = false;
 
+    /// <summary>
+    /// True when it is fine to replace or close the open quote: nothing is unsaved, or the user chose Save (and it was
+    /// saved) or Don't save. Cancel, or a save that failed (the reason is shown), keeps the quote open.
+    /// </summary>
     public bool ConfirmDiscardChanges()
-        => !IsDirty || Dialogs is null
-           || Dialogs.Confirm("Unsaved changes", $"'{Project.Name}' has unsaved changes. Discard them?");
+    {
+        if (!HasUnsavedWork || Dialogs is null) return true;
+        switch (Dialogs.AskSaveChanges("Unsaved changes", $"Save the changes to '{Project.Name}'?",
+                    "If you don't save, the changes are lost."))
+        {
+            case true:
+                if (SaveProject() is { } error)
+                {
+                    Report(error);
+                    return false;
+                }
+                return !HasUnsavedWork;                                  // false: the save was cancelled (no name)
+            case false:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>The quote changed since it was saved, or something typed on its tabs is not in it yet.</summary>
+    public bool HasUnsavedWork => IsDirty || Details.HasChanges || Pricing.HasChanges || Properties.HasPendingEdits;
+
+    /// <summary>
+    /// Puts everything typed but not applied into the quote: the Client tab, the Pricing tab and the properties panel
+    /// (each one undoable step). Returns the first problem, saying where it is, or null.
+    /// </summary>
+    public string? CommitPendingEdits()
+    {
+        if (Details.ApplyPending() is { } client) return $"Client tab: {client}";
+        if (Pricing.ApplyPending() is { } pricing) return $"Pricing tab: {pricing}";
+        if (Properties.ApplyPending() is { } design) return $"Design properties: {design}";
+        return null;
+    }
 
     // ── Project files (import / export) ─────────────────────────────
 
@@ -254,9 +292,8 @@ public partial class MainViewModel
         }
         ShowProject(project);
         IsDirty = true;                                          // not in the database until saved
-        Hint = copied ? $"Imported as a copy ('{project.Name}'): a project with the same Id is already saved."
-                      : $"Imported '{project.Name}'. Save it to keep it in the database.";
-        HintIsError = false;
+        ShowNotice(copied ? $"Imported as a copy ('{project.Name}'): a project with the same Id is already saved."
+                          : $"Imported '{project.Name}'. Save it to keep it in the database.");
         return null;
     }
 
@@ -266,8 +303,7 @@ public partial class MainViewModel
         try
         {
             File.WriteAllText(path, ProjectSerializer.Serialize(Project));
-            Hint = $"Exported '{Project.Name}' to {Path.GetFileName(path)}.";
-            HintIsError = false;
+            ShowNotice($"Exported '{Project.Name}' to {Path.GetFileName(path)}.");
             return null;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -334,9 +370,10 @@ public partial class MainViewModel
             pricesOnly: Access.IsCatalogueManaged, ownItems: ownItems is null ? null : OwnItemsSection.Of(ownItems)));
     }
 
+    /// <summary>Shows why an action did not happen in the message strip of the page that is open (nothing if null).</summary>
     private void Report(string? error)
     {
         if (error is not null)
-            DesignMessage = error;
+            ShowNotice(error, isError: true);
     }
 }

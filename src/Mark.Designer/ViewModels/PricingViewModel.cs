@@ -435,19 +435,36 @@ public sealed class PricingViewModel : ViewModelBase
 
     private void Apply()
     {
+        if (!HasChanges)
+        {
+            Show("The quote already uses this pricing.", false);
+            return;
+        }
+        if (ApplyPending() is null)
+            Show("Pricing applied to this quote.", false);
+    }
+
+    /// <summary>
+    /// Applies what was typed to the quote (one undoable step), as leaving the Pricing tab and Save do, so the header,
+    /// the quotation and the saved value never use an older price than the form shows. Returns the problem (also shown
+    /// on the form, which keeps what was typed), or null when it was applied or nothing was typed.
+    /// </summary>
+    public string? ApplyPending()
+    {
+        if (!HasChanges) return null;
         var (pricing, error) = TryBuild();
         if (pricing is null)
         {
             Show(error!, true);
-            return;
+            return error;
         }
         if (_apply(pricing) is { } applyError)
         {
             Show(applyError, true);
-            return;
+            return applyError;
         }
         Load(_project().Pricing);
-        Show("Pricing applied to this quote.", false);
+        return null;
     }
 
     private void SaveAsDefault()

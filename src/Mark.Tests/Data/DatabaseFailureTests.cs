@@ -83,12 +83,12 @@ public class DatabaseFailureTests : IDisposable
         DamageTheFile();
 
         vm.SaveProjectCommand.Execute(null);                              // checks Exists first, then saves
-        Assert.Contains("local database could not", vm.DesignMessage);
+        Assert.Contains("local database could not", vm.Notice);
         Assert.True(vm.IsDirty);
 
-        vm.DesignMessage = null;
+        vm.DismissNoticeCommand.Execute(null);
         vm.OpenProjectCommand.Execute(null);                              // lists the saved projects
-        Assert.Contains("local database could not", vm.DesignMessage);
+        Assert.Contains("local database could not", vm.Notice);
         Assert.Same(frame, Assert.Single(vm.Project.Frames));
     }
 

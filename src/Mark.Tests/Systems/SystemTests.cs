@@ -424,6 +424,21 @@ public class SystemTests
     }
 
     [Fact]
+    public void AnOtherPart_KeepsItsRole_WhenItsPriceIsSaved()
+    {
+        // A clip or cleat cut from a bar has the "other part" role; saving its price must not lose it.
+        var clip = Library.FindProfile("PRF-FRM-60")! with { Id = "PRF-CLIP", Name = "Mesh Clip", Roles = new[] { ProfileType.Generic } };
+        var editor = LibraryItemEditorViewModel.For(clip, library: Library);
+        Assert.True(editor.RoleGeneric);
+        editor.CostPerMetre = "85";
+        var built = (ProfileDefinition)editor.Build(out string? error)!;
+
+        Assert.Null(error);
+        Assert.Equal(new[] { ProfileType.Generic }, built.Roles);
+        Assert.Equal(85, built.CostPerMetre);
+    }
+
+    [Fact]
     public void ProfileEditor_SetsReinforcementAndUsedWith()
     {
         var editor = LibraryItemEditorViewModel.For(Library.FindProfile("PRF-UPVC-FRM-70")!, library: Library);

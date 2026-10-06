@@ -101,8 +101,10 @@ public partial class MainViewModel : ViewModelBase, IDesignService
         {
             ((RelayCommand)UndoCommand).RaiseCanExecuteChanged();
             ((RelayCommand)RedoCommand).RaiseCanExecuteChanged();
+            bool wasDirty = IsDirty;
             IsDirty = true;
             OnDesignChanged();
+            if (!wasDirty && CommandHistory.CanUndo) WarnOnOrderChange();
         };
         CreatePersistenceCommands();
         CreateDesignFeatures();
@@ -418,8 +420,7 @@ public partial class MainViewModel : ViewModelBase, IDesignService
         if (!ConfirmDiscardChanges())
             return;
         ShowProject(new Project { Name = "New quote", Pricing = DefaultPricing() });
-        Hint = "New quote: add the client and the designs, then save.";              // not the last quote's message
-        HintIsError = false;
+        ShowNotice("New quote: add the client and the designs, then save.");
     }
 
     /// <summary>
@@ -505,6 +506,47 @@ public partial class MainViewModel : ViewModelBase, IDesignService
     }
 
     public bool HasDesignMessage => !string.IsNullOrEmpty(_designMessage);
+
+    // ── Notice: the message strip under the header ─────────────────
+
+    private string? _notice;
+    private AppView _noticeView;
+
+    /// <summary>
+    /// What the last action did, or why it did not happen, shown in one strip under the header on every page (so a
+    /// button that could not do its job always says why). It goes when dismissed or when another page is shown.
+    /// </summary>
+    public string? Notice
+    {
+        get => _notice;
+        private set
+        {
+            if (SetProperty(ref _notice, value))
+                OnPropertyChanged(nameof(HasNotice));
+        }
+    }
+
+    public bool HasNotice => !string.IsNullOrEmpty(_notice);
+
+    private bool _noticeIsError;
+    public bool NoticeIsError { get => _noticeIsError; private set => SetProperty(ref _noticeIsError, value); }
+
+    private ICommand? _dismissNoticeCommand;
+    public ICommand DismissNoticeCommand => _dismissNoticeCommand ??= new RelayCommand(() => Notice = null);
+
+    /// <summary>Shows <paramref name="text"/> in the notice strip of the page that is open now.</summary>
+    public void ShowNotice(string text, bool isError = false)
+    {
+        NoticeIsError = isError;
+        Notice = text;
+        _noticeView = CurrentView;
+    }
+
+    /// <summary>A notice belongs to the page it was shown on: another page clears it.</summary>
+    private void ClearNoticeOfOtherView()
+    {
+        if (_notice is not null && CurrentView != _noticeView) Notice = null;
+    }
 
     private string? _hint;
     /// <summary>Transient status-bar feedback from the interaction in progress (position, snap, or why it's invalid).</summary>

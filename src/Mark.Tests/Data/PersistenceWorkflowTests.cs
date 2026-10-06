@@ -231,7 +231,8 @@ public class PersistenceWorkflowTests : IDisposable
 
         vm.ImportProjectFileCommand.Execute(null);
 
-        Assert.Contains("could not be read", vm.DesignMessage);
+        Assert.Contains("could not be read", vm.Notice);
+        Assert.True(vm.NoticeIsError);
         Assert.Same(frame, vm.Project.Frames[0]);
     }
 

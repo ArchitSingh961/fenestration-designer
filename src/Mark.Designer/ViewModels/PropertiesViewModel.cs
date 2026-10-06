@@ -276,8 +276,8 @@ public class PropertiesViewModel : ViewModelBase
         _systemId = frame.SystemId;
         _openings = frame.GlassPanels.Select(p => p.Opening).ToList();
         IsFrameEditable = true;
-        WidthText = Format(frame.Width);
-        HeightText = Format(frame.Height);
+        WidthText = _shownWidth = Format(frame.Width);
+        HeightText = _shownHeight = Format(frame.Height);
 
         if (frame.SystemId is { } systemId)
             Items.Add(new PropertyItem("System", Library.FindSystem(systemId)?.Name ?? $"Missing: {systemId}"));
@@ -291,8 +291,7 @@ public class PropertiesViewModel : ViewModelBase
 
         if (Library.Systems.Count > 0)
             SystemPicker = CreateSystemPicker(new[] { frame });
-        DesignEditor = new DesignInfoEditorViewModel(frame.Design,
-            info => SetDesignInfo is { } set ? set(info) : "The design details cannot be changed here.");
+        DesignEditor = new DesignInfoEditorViewModel(frame.Design, ApplyDesignInfo);
         if (frame.GlassPanels.Count > 0)
             OpeningEditor = CreateOpeningEditor(frame.GlassPanels);
 
@@ -327,7 +326,7 @@ public class PropertiesViewModel : ViewModelBase
         {
             IsDivisionEditable = true;
             PositionLabel = profile.ProfileType == ProfileType.Mullion ? "From left" : "From top";
-            PositionText = Format(Members.DivisionPosition(profile));
+            PositionText = _shownPosition = Format(Members.DivisionPosition(profile));
         }
         else
         {
@@ -487,24 +486,66 @@ public class PropertiesViewModel : ViewModelBase
 
     // ── Apply ───────────────────────────────────────────────────────
 
-    private void ApplyFrameSize()
+    // What the size and position fields showed: a field that differs was typed in, and is applied with the panel.
+    private string _shownWidth = "", _shownHeight = "", _shownPosition = "";
+
+    private bool SizeTyped => IsFrameEditable && (WidthText != _shownWidth || HeightText != _shownHeight);
+
+    private bool PositionTyped => IsDivisionEditable && PositionText != _shownPosition;
+
+    /// <summary>True when something typed in the panel is not in the design yet.</summary>
+    public bool HasPendingEdits => SizeTyped || PositionTyped || DesignEditor is { HasChanges: true };
+
+    /// <summary>
+    /// Applies everything typed in the panel (design details, frame size, division position) that is not in the design
+    /// yet, as Save does before it stores the quote. Returns the first problem (also shown in the panel), or null.
+    /// </summary>
+    public string? ApplyPending()
     {
-        if (!TryParse(WidthText, out double width) || !TryParse(HeightText, out double height))
-        {
-            ErrorMessage = "Enter the width and height as numbers in mm.";
-            return;
-        }
-        ErrorMessage = ResizeFrame?.Invoke(width, height);
+        if (DesignEditor is { HasChanges: true } editor)
+            return editor.ApplyPending();                          // applies a typed size as well
+        if (SizeTyped) return ApplyFrameSizeCore();
+        if (PositionTyped) return ApplyPositionCore();
+        return null;
     }
 
-    private void ApplyPosition()
+    /// <summary>The design details, then a size typed beside them: applying one never throws away the other.</summary>
+    private string? ApplyDesignInfo(DesignInfo info)
+    {
+        if (SetDesignInfo is not { } set) return "The design details cannot be changed here.";
+        bool sizeTyped = SizeTyped;
+        string width = WidthText, height = HeightText;
+        if (set(info) is { } error) return error;
+        if (!sizeTyped || !IsFrameEditable) return null;
+        // The panel was rebuilt from the changed design: put the typed size back and apply it.
+        WidthText = width;
+        HeightText = height;
+        return ApplyFrameSizeCore();
+    }
+
+    private void ApplyFrameSize()
+    {
+        // Details typed beside the size are applied first; their Apply carries the typed size along.
+        if (DesignEditor is { HasChanges: true } editor)
+            editor.ApplyPending();
+        else
+            ApplyFrameSizeCore();
+    }
+
+    private string? ApplyFrameSizeCore()
+    {
+        if (!TryParse(WidthText, out double width) || !TryParse(HeightText, out double height))
+            return ErrorMessage = "Enter the width and height as numbers in mm.";
+        return ErrorMessage = ResizeFrame?.Invoke(width, height);
+    }
+
+    private void ApplyPosition() => ApplyPositionCore();
+
+    private string? ApplyPositionCore()
     {
         if (!TryParse(PositionText, out double position))
-        {
-            ErrorMessage = "Enter the position as a number in mm.";
-            return;
-        }
-        ErrorMessage = MoveDivision?.Invoke(position);
+            return ErrorMessage = "Enter the position as a number in mm.";
+        return ErrorMessage = MoveDivision?.Invoke(position);
     }
 
     /// <summary>Accepts the user's culture ("600,5") and invariant ("600.5") formats.</summary>

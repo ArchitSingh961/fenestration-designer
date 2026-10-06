@@ -14,6 +14,13 @@ public sealed class WpfDialogService : IDialogService
     public bool Confirm(string title, string message)
         => MessageBox.Show(Owner!, message, title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
 
+    public bool? AskSaveChanges(string title, string question, string detail)
+    {
+        var window = new SaveChangesWindow(title, question, detail) { Owner = Owner };
+        window.ShowDialog();
+        return window.Choice;
+    }
+
     public void Inform(string title, string message)
         => MessageBox.Show(Owner!, message, title, MessageBoxButton.OK, MessageBoxImage.Information);
 

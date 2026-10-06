@@ -9,6 +9,13 @@ public interface IDialogService
     /// <summary>Asks a yes/no question. True = yes.</summary>
     bool Confirm(string title, string message);
 
+    /// <summary>
+    /// "Save changes to …?" with Save, Don't save and Cancel: true = save, false = don't save, null = cancel. Without its
+    /// own window it asks <see cref="Confirm"/> whether to go on without saving (yes = don't save, no = cancel).
+    /// </summary>
+    bool? AskSaveChanges(string title, string question, string detail)
+        => Confirm(title, $"{question}\n\n{detail}\n\nContinue without saving?") ? false : null;
+
     /// <summary>Asks for a line of text; null if cancelled.</summary>
     string? PromptText(string title, string label, string initialText);
 

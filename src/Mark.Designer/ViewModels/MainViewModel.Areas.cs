@@ -247,6 +247,7 @@ public partial class MainViewModel
             _area = area;
             _lastView[area] = view;
         }
+        ClearNoticeOfOtherView();
         RefreshNavigation();
     }
 

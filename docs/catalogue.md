@@ -155,3 +155,33 @@ is not published, and MARK Owner says which company is affected.
 
 - Door frames and inward/outward variants as separate design choices (systems already say windows, doors or both).
 - Couplers joining frames in a design (coupler profiles can be in the catalogue).
+
+## Items in a system (no bundles by hand)
+
+A system's form in the Library Manager has **Items in this system**: every profile (other than frames) and every
+material, with a tick box. Tick what goes with a design in the system (interlock, guide rail, beads, rollers, handles,
+locks, gaskets, cleats…); each row says where it goes and how many:
+
+| Where it goes | Usually for |
+|---|---|
+| each sliding sash | interlocks (cut to the sash height), rollers (2), sliding locks |
+| each opening sash | handles, locks, espags |
+| hinges by sash height | hinges: 2 up to 1200 mm, 3 above |
+| sash corners (4 per sash) | corner cleats (a profile can be cut to a fixed length, e.g. 50 mm) |
+| each sash bar / each mesh shutter bar | glazing beads, mesh clips |
+| each frame bar / bottom frame bar / top and bottom frame bars | cover caps, guide rails, thresholds |
+| per metre of frame / of sash | gaskets, brush seals |
+| once per window | drainage caps, packing |
+
+The use is guessed from the item's role (profiles) or kind and name (materials) when it is ticked (`SystemKit.DefaultUse`).
+**Choosing the frame** ticks the items of the frame's series (or marked as used with the system) and fills the sash,
+mesh shutter, mullion and transom if they are empty; **Fill from the frame** does it again. The items are stored in
+`ProductSystem.Items` (`KitItem`: item, use, quantity, fixed length); the calculation turns them into bundles for the
+system (`SystemKit.BundlesOf`), so they are cut, listed, priced and ordered like any bundle part. Ticked hardware stands
+in for the per-sash hardware rate; an interlock alone does not. Hand-made bundles still work alongside.
+
+In a design, choosing a system's frame profile (Design properties › Frame profile) puts the window in that system, so
+its sash, mesh shutter and ticked items follow (one undo step).
+
+A company whose library follows the owner's catalogue sees the items but cannot change them: the owner ticks them in
+MARK Owner › Catalogue, and they come with the system.

@@ -100,6 +100,13 @@ public sealed record ProductSystem
 
     public string? GlassId { get; init; }
 
+    /// <summary>
+    /// Everything else that goes with a design in the system, ticked in the system's form: interlocks, guide rails,
+    /// beads, hardware, gaskets, accessories, each with where it goes (<see cref="KitUse"/>). The calculation adds them
+    /// like bundle parts (<see cref="SystemKit.BundlesOf"/>).
+    /// </summary>
+    public IReadOnlyList<KitItem> Items { get; init; } = Array.Empty<KitItem>();
+
     /// <summary>The thinnest glass (or unit) the system takes; 0 = no limit.</summary>
     public double GlassMinThicknessMm { get; init; }
 
@@ -197,6 +204,9 @@ public sealed record BundlePart
 
     /// <summary>Profile parts: the part is cut this much shorter than its measure.</summary>
     public double CutDeductionMm { get; init; }
+
+    /// <summary>Profile parts: every piece is cut to this length (e.g. a 50 mm cleat); 0 = to the measure.</summary>
+    public double FixedLengthMm { get; init; }
 
     /// <summary>By size: the steps, smallest "up to" first.</summary>
     public IReadOnlyList<SizeStep> Steps { get; init; } = Array.Empty<SizeStep>();

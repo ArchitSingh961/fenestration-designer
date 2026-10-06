@@ -30,8 +30,11 @@ public static class CatalogueSelector
         items.UnionWith(master.Glass.Where(g => UsedWithKept(g.UsedWith)).Select(g => g.Id));
         items.UnionWith(master.Materials.Where(m => UsedWithKept(m.UsedWith)).Select(m => m.Id));
         foreach (var system in systems)
+        {
             items.UnionWith(new[] { system.FrameProfileId, system.MullionProfileId, system.TransomProfileId, system.SashProfileId,
                 system.MeshSashProfileId, system.GlassId }.OfType<string>());
+            items.UnionWith(system.Items.Select(i => i.ItemId));                     // what was ticked in the system
+        }
 
         var chosenBundles = selection.BundleIds.ToHashSet(StringComparer.Ordinal);
         var bundles = master.Bundles.Where(b => b.SystemId is { } id ? systemIds.Contains(id) : chosenBundles.Contains(b.Id)).ToList();

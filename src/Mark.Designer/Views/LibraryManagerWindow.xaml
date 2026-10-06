@@ -310,6 +310,58 @@
                         <TextBox Style="{StaticResource FormBox}" Width="60" Text="{Binding GlassMax}" ToolTip="Thickest; empty = no limit" />
                     </StackPanel>
                 </Grid>
+
+                <!-- Everything else that goes with the system: tick it, and say where it goes -->
+                <TextBlock Text="ITEMS IN THIS SYSTEM" Style="{StaticResource SectionLabel}" />
+                <TextBlock TextWrapping="Wrap" Margin="0,0,0,6" Foreground="{StaticResource MutedTextBrush}"
+                           Text="Tick everything that goes with a design in this system: interlock, guide rail, beads, rollers, handles, locks, gaskets, cleats… Choosing the frame ticks the items of its series for you. Each goes where its role or kind says; change it if needed." />
+                <DockPanel Margin="0,0,0,6">
+                    <Button DockPanel.Dock="Right" Content="Fill from the frame" Padding="10,2" Margin="8,0,0,0" Command="{Binding FillFromFrameCommand}"
+                            ToolTip="Tick the items of the frame's series (and set the sash, mesh shutter and divisions if empty)" />
+                    <CheckBox DockPanel.Dock="Right" Content="Ticked only" VerticalAlignment="Center" Margin="8,0,0,0" IsChecked="{Binding TickedOnly}" />
+                    <TextBox Style="{StaticResource FormBox}" Text="{Binding KitSearch, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.Name="Search the items" ToolTip="Search by code, name or kind" />
+                </DockPanel>
+                <TextBlock Text="{Binding KitNote}" TextWrapping="Wrap" Margin="0,0,0,4" Foreground="#1D6B3A" />
+                <TextBlock Text="{Binding KitCountText}" TextWrapping="Wrap" Margin="0,0,0,6" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" />
+                <Border BorderBrush="#D5DAE1" BorderThickness="1">
+                    <ScrollViewer MaxHeight="380" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding ShownKitRows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="#ECEFF3" BorderThickness="0,0,0,1" Padding="6,4">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" MinWidth="150" />
+                                                <ColumnDefinition Width="168" />
+                                                <ColumnDefinition Width="44" />
+                                                <ColumnDefinition Width="54" />
+                                            </Grid.ColumnDefinitions>
+                                            <CheckBox IsChecked="{Binding IsTicked}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Name}">
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
+                                                    <TextBlock FontSize="10" Foreground="{StaticResource MutedTextBrush}"><Run Text="{Binding Code, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding Kind, Mode=OneWay}" /></TextBlock>
+                                                </StackPanel>
+                                            </CheckBox>
+                                            <ComboBox Grid.Column="1" Margin="6,0,0,0" VerticalAlignment="Center" ItemsSource="{x:Static vm:SystemEditorViewModel.KitUses}"
+                                                      DisplayMemberPath="Name" SelectedItem="{Binding Use}" IsEnabled="{Binding IsTicked}"
+                                                      AutomationProperties.Name="Where it goes" ToolTip="Where it goes, and so how many a window gets" />
+                                            <TextBox Grid.Column="2" Margin="6,0,0,0" VerticalAlignment="Center" Padding="3,2" TextAlignment="Right"
+                                                     Text="{Binding QuantityText}" IsEnabled="{Binding IsTicked}" AutomationProperties.Name="How many"
+                                                     ToolTip="How many each time (or metres per metre)" />
+                                            <TextBox Grid.Column="3" Margin="6,0,0,0" VerticalAlignment="Center" Padding="3,2" TextAlignment="Right"
+                                                     Text="{Binding LengthText}" IsEnabled="{Binding IsTicked}" AutomationProperties.Name="Cut length"
+                                                     Visibility="{Binding IsProfile, Converter={StaticResource BoolToVisibility}}"
+                                                     ToolTip="Profiles: cut every piece to this length in mm (e.g. 50 for a cleat); empty = to what it goes with" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+                <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap"
+                           Text="Columns: where it goes · how many · cut length (profiles, mm; empty = to the bar or sash)." />
             </StackPanel>
         </DataTemplate>
 

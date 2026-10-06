@@ -319,6 +319,14 @@ public sealed class ProductLibrary : IProductLibrary
             if (!double.IsFinite(x.GlassMinThicknessMm) || !double.IsFinite(x.GlassMaxThicknessMm) || x.GlassMinThicknessMm < 0
                 || x.GlassMaxThicknessMm < 0 || (x.GlassMaxThicknessMm > 0 && x.GlassMinThicknessMm > x.GlassMaxThicknessMm))
                 errors.Add($"'{x.Name}': the glass thickness range is not valid.");
+            foreach (var item in x.Items ?? Array.Empty<KitItem>())
+            {
+                if (item is null || !(profiles.ContainsKey(item.ItemId) || materialIds.Contains(item.ItemId)))
+                    errors.Add($"System '{x.Name}' has an item '{item?.ItemId}' that is not a profile or material in the library.");
+                else if (!Enum.IsDefined(item.Use) || !double.IsFinite(item.Quantity) || item.Quantity < 0
+                         || !double.IsFinite(item.LengthMm) || item.LengthMm < 0 || item.LengthMm > Units.MaxDimensionMm)
+                    errors.Add($"System '{x.Name}': the quantity or length of '{item.ItemId}' is not valid.");
+            }
         }
 
         foreach (var b in Bundles)

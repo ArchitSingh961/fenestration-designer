@@ -683,8 +683,24 @@ public partial class MainViewModel : ViewModelBase, IDesignService
         if (targets.Count == 0)
             return "Select a frame, mullion or transom first.";
         string name = Library.FindProfile(definitionId)?.Name ?? definitionId;
-        return RunForMessage(() => CompositeCommand.Combine($"Change profile to {name}", targets
-            .Select(t => (IUndoableCommand)new AssignProfileCommand(t.Frame, t.Ids, definitionId, Library, Rules)).ToList())!);
+        // Choosing a system's frame puts the window in that system: its sash, mesh, interlock, hardware… follow.
+        var system = Library.Systems.FirstOrDefault(x => x.IsActive && x.FrameProfileId == definitionId);
+        var commands = new List<IUndoableCommand>();
+        var moved = new List<Frame>();
+        foreach (var (frame, ids) in targets)
+        {
+            bool outer = frame.Profiles.Any(p => p.ProfileType == ProfileType.Frame && ids.Contains(p.Id));
+            if (system is not null && outer && frame.SystemId != system.Id)
+            {
+                commands.Add(new SetFrameSystemCommand(frame, system.Id, Library, Rules));
+                moved.Add(frame);
+            }
+            commands.Add(new AssignProfileCommand(frame, ids, definitionId, Library, Rules));
+        }
+        string? error = RunForMessage(() => CompositeCommand.Combine($"Change profile to {name}", commands)!);
+        if (error is null && moved.Count > 0)
+            ShowNotice($"{(moved.Count == 1 ? "The window is" : $"{moved.Count} windows are")} now in {system!.Name}: its sash, mesh shutter and the items ticked in the system follow.");
+        return error;
     }
 
     /// <summary>

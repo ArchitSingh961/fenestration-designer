@@ -83,6 +83,20 @@ public sealed class CalculationEngine : ICalculationEngine
         /// <summary>Quantity of the design being added (lines are per window; this is how many windows).</summary>
         private int _windows = 1;
 
+        /// <summary>The library's bundles and those the system's ticked items stand for, per system.</summary>
+        private readonly Dictionary<string, IReadOnlyList<Bundle>> _bundlesBySystem = new();
+
+        private IReadOnlyList<Bundle> Bundles
+        {
+            get
+            {
+                string key = _systemId ?? "";
+                if (!_bundlesBySystem.TryGetValue(key, out var bundles))
+                    _bundlesBySystem[key] = bundles = _library.Bundles.Concat(SystemKit.BundlesOf(_system)).ToList();
+                return bundles;
+            }
+        }
+
         public Run(IProductLibrary library, CalculationRules rules)
         {
             _library = library;
@@ -216,7 +230,7 @@ public sealed class CalculationEngine : ICalculationEngine
         {
             if (bar.CutLengthMm <= 0) return;
             Guid source = panel?.Id ?? bar.ProfileId;
-            foreach (var bundle in _library.Bundles.Where(b => b.IsActive && b.ProfileId == definition.Id && b.AppliesToSystem(_systemId)
+            foreach (var bundle in Bundles.Where(b => b.IsActive && b.ProfileId == definition.Id && b.AppliesToSystem(_systemId)
                                                                && (panel is null || b.OpeningTypes.Count == 0 || b.OpeningTypes.Contains(panel.Opening))))
             {
                 foreach (var part in bundle.Parts.Where(p => OnSide(p.Side, side)))
@@ -224,7 +238,10 @@ public sealed class CalculationEngine : ICalculationEngine
                     double length = bar.CutLengthMm;
                     if (_library.FindProfile(part.ItemId) is { } partProfile)
                     {
-                        if (part.Basis == PartBasis.PerMetre)
+                        if (part.FixedLengthMm > 0)
+                            for (int i = 0, n = Count(part.QuantityFor(length)); i < n; i++)
+                                AddPartBar(frame, bar.ProfileId, bar.OpeningId, partProfile, part.FixedLengthMm, bundle.Name);
+                        else if (part.Basis == PartBasis.PerMetre)
                             AddPartBar(frame, bar.ProfileId, bar.OpeningId, partProfile, length * part.Quantity - part.CutDeductionMm, bundle.Name);
                         else
                             for (int i = 0, n = Count(part.QuantityFor(length)); i < n; i++)
@@ -254,10 +271,12 @@ public sealed class CalculationEngine : ICalculationEngine
         private bool AddOpeningSets(Frame frame, GlassPanel panel, Rectangle2D outer)
         {
             bool any = false;
-            foreach (var set in _library.Bundles.Where(b => b.IsActive && b.IsOpeningSet && b.AppliesToSystem(_systemId)
-                                                            && b.AppliesToOpening(panel.Opening)))
+            foreach (var set in Bundles.Where(b => b.IsActive && b.IsOpeningSet && b.AppliesToSystem(_systemId)
+                                                    && b.AppliesToOpening(panel.Opening)))
             {
-                any = true;
+                // A system's ticked items stand in for the per-sash hardware rate only when they are hardware.
+                any |= !SystemKit.IsKitBundle(set)
+                       || set.Parts.Any(p => _library.FindMaterial(p.ItemId)?.Category == MaterialCategory.Hardware);
                 foreach (var part in set.Parts)
                 {
                     double size = part.Measure switch
@@ -269,7 +288,10 @@ public sealed class CalculationEngine : ICalculationEngine
                     };
                     if (_library.FindProfile(part.ItemId) is { } partProfile)
                     {
-                        if (part.Basis == PartBasis.PerMetre)
+                        if (part.FixedLengthMm > 0)
+                            for (int i = 0, n = Count(part.QuantityFor(size)); i < n; i++)
+                                AddPartBar(frame, Guid.Empty, panel.Id, partProfile, part.FixedLengthMm, set.Name);
+                        else if (part.Basis == PartBasis.PerMetre)
                             AddPartBar(frame, Guid.Empty, panel.Id, partProfile, size * part.Quantity - part.CutDeductionMm, set.Name);
                         else
                             for (int i = 0, n = Count(part.QuantityFor(size)); i < n; i++)
